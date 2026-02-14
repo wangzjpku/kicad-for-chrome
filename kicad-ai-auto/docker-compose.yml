@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kicad-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./projects:/projects
+      - ./output:/output
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/kicad_editor.db
+      - PROJECTS_DIR=/projects
+      - OUTPUT_DIR=/output
+    networks:
+      - kicad-network
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: kicad-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - kicad-network
+
+networks:
+  kicad-network:
+    driver: bridge

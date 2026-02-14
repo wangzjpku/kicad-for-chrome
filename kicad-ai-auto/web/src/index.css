@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* KiCad style overrides */
+.kicad-canvas {
+  background-color: #000000;
+  image-rendering: pixelated;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Context menu styling */
+.context-menu {
+  @apply absolute bg-gray-800 border border-gray-700 rounded shadow-lg py-1 z-50;
+}
+
+.context-menu-item {
+  @apply px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm;
+}
+
+/* Menu styling */
+.menu-bar {
+  @apply flex items-center bg-gray-800 border-b border-gray-700 px-2;
+}
+
+.menu-item {
+  @apply px-3 py-2 hover:bg-gray-700 cursor-pointer text-sm relative;
+}
+
+.menu-dropdown {
+  @apply absolute left-0 top-full bg-gray-800 border border-gray-700 rounded shadow-lg py-1 min-w-48 z-50;
+}
+
+/* Toolbar styling */
+.toolbar {
+  @apply flex items-center gap-1 p-2 bg-gray-800 border-b border-gray-700;
+}
+
+.toolbar-button {
+  @apply p-2 rounded hover:bg-gray-700 active:bg-gray-600 transition-colors;
+}
+
+.toolbar-button.active {
+  @apply bg-blue-600 hover:bg-blue-700;
+}
+
+/* Status bar styling */
+.status-bar {
+  @apply flex items-center justify-between px-4 py-1 bg-gray-800 border-t border-gray-700 text-xs;
+}
+
+.status-item {
+  @apply px-2 py-1;
+}
+
+/* Output panel styling */
+.output-panel {
+  @apply flex flex-col bg-gray-900 border-t border-gray-700;
+}
+
+.output-tab {
+  @apply px-4 py-2 text-sm cursor-pointer border-b-2 border-transparent hover:bg-gray-800;
+}
+
+.output-tab.active {
+  @apply border-blue-500 bg-gray-800;
+}
+
+/* Log styling */
+.log-entry {
+  @apply px-2 py-1 font-mono text-xs;
+}
+
+.log-entry.info {
+  @apply text-gray-300;
+}
+
+.log-entry.warning {
+  @apply text-yellow-400;
+}
+
+.log-entry.error {
+  @apply text-red-400;
+}
+
+.log-entry.success {
+  @apply text-green-400;
+}

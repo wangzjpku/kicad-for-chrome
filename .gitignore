@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Build output
+*.log
+
+# Test/Coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# KiCad specific (optional - keep if needed)
+*.pro
+*.sch
+*.kicad_pcb
+*.kicad_pro
+
+# KiCad libraries (large, should be submodules or downloaded separately)
+kicad-source/
+kicad-footprints/
+kicad-symbols/
+kicad-packages3D/
+kicad-templates/
+
+# Test outputs
+test_results/
+test5_results/
+test_screenshots/
+test5_verification.md
+TEST*_*.md
+test*.png
+
+# Development artifacts
+package-lock.json
+*.bat
+*.sh
+
+# Projects directory (output)
+projects/
+versions/
+
+# Claude artifacts
+.claude/
+.claude_loop_prompts/
+*.txt
+!VERSION.md
+!CLAUDE.md
+!test5.md
+!ToDo2.txt
+!Todo.txt

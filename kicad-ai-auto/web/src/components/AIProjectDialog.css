@@ -1,0 +1,386 @@
+/**
+ * AIProjectDialog 样式
+ */
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-container {
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  background: #1a1a2e;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* 标题栏 */
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  color: #eaeaea;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+/* 内容区 */
+.dialog-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+/* 输入步骤 */
+.step-input {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-input label {
+  color: #eaeaea;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.step-input textarea {
+  background: #0f3460;
+  border: 1px solid #1a4a7a;
+  border-radius: 8px;
+  padding: 16px;
+  color: #eaeaea;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 150px;
+}
+
+.step-input textarea:focus {
+  outline: none;
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.step-input textarea::placeholder {
+  color: #666;
+}
+
+.hint {
+  color: #888;
+  font-size: 12px;
+  margin: 0;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 分析步骤 */
+.step-analyzing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #1a4a7a;
+  border-top-color: #4a9eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progress-text {
+  color: #4a9eff;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+/* 预览步骤 */
+.step-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.spec-section,
+.schematic-section {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.spec-section h3,
+.schematic-section h3 {
+  margin: 0 0 16px 0;
+  color: #eaeaea;
+  font-size: 16px;
+  border-bottom: 1px solid #1a4a7a;
+  padding-bottom: 12px;
+}
+
+.spec-content h4 {
+  margin: 0 0 12px 0;
+  color: #4a9eff;
+  font-size: 18px;
+}
+
+.spec-content h5 {
+  margin: 16px 0 8px 0;
+  color: #eaeaea;
+  font-size: 14px;
+}
+
+.spec-content p {
+  color: #aaa;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.params-table,
+.components-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.params-table td,
+.components-table th,
+.components-table td {
+  padding: 8px 12px;
+  border: 1px solid #1a4a7a;
+  color: #ccc;
+}
+
+.components-table th {
+  background: #1a4a7a;
+  color: #eaeaea;
+  text-align: left;
+}
+
+.schematic-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.schematic-preview p {
+  background: #1a4a7a;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 0;
+}
+
+/* 通用原理图可视化预览 */
+.schematic-canvas-wrapper {
+  grid-column: 1 / -1;
+  background: #0a1a2a;
+  border: 2px solid #2a5a8a;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.schematic-canvas {
+  width: 100%;
+  height: 350px;
+  display: block;
+}
+
+/* 元件详情列表 */
+.schematic-components-detail {
+  grid-column: 1 / -1;
+  margin-top: 16px;
+}
+
+.schematic-components-detail h4 {
+  margin: 0 0 12px 0;
+  color: #7ac0f0;
+  font-size: 14px;
+}
+
+.component-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.component-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a4a7a;
+  padding: 8px 12px;
+  border-radius: 6px;
+  min-width: 150px;
+}
+
+.card-symbol {
+  font-size: 20px;
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 12px;
+}
+
+.card-model {
+  color: #aaa;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 错误步骤 */
+.step-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.error-text {
+  color: #ff6b6b;
+  font-size: 16px;
+  text-align: center;
+  margin: 0 0 24px 0;
+}
+
+/* 底部按钮栏 */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #16213e;
+  border-top: 1px solid #0f3460;
+}
+
+.dialog-footer button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.cancel-btn {
+  background: #3d3d3d;
+  color: #ccc;
+}
+
+.cancel-btn:hover {
+  background: #4d4d4d;
+}
+
+.submit-btn {
+  background: #4a9eff;
+  color: #fff;
+}
+
+.submit-btn:hover {
+  background: #3a8eef;
+}
+
+.submit-btn:disabled {
+  background: #2a4a6a;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.back-btn {
+  background: #3d3d3d;
+  color: #ccc;
+}
+
+.back-btn:hover {
+  background: #4d4d4d;
+}
+
+.abandon-btn {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+.abandon-btn:hover {
+  background: #ff5252;
+}
+
+.confirm-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+.confirm-btn:hover {
+  background: #45a049;
+}
+
+.retry-btn,
+.retry-btn-large {
+  background: #4a9eff;
+  color: #fff;
+}
+
+.retry-btn:hover,
+.retry-btn-large:hover {
+  background: #3a8eef;
+}
