@@ -3,13 +3,14 @@
  * 采用专业 PCB 软件设计风格 (KiCad/Altium)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import PCBEditor from './editors/PCBEditor';
 import SchematicEditor from './editors/SchematicEditor';
 import ProjectList from './pages/ProjectList';
 import { Project } from './types';
 import { usePCBStore } from './stores/pcbStore';
 import { useSchematicStore } from './stores/schematicStore';
+import { exportApi, drcApi } from './services/api';
 
 type EditorType = 'pcb' | 'schematic';
 type ViewType = 'project-list' | 'editor';
@@ -58,15 +59,34 @@ function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const { setCurrentProject: setPCBProject } = usePCBStore();
-  const { setCurrentProject: setSchematicProject } = useSchematicStore();
+  const { setCurrentProject: setPCBProject, loadPCBData, savePCBData, undo, redo } = usePCBStore();
+  const { setCurrentProject: setSchematicProject, loadSchematicData } = useSchematicStore();
 
-  const handleOpenProject = (project: Project) => {
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleOpenProject = async (project: Project) => {
     setPCBProject(project);
     setSchematicProject(project);
     setCurrentProject(project);
     setCurrentView('editor');
+
+    // 加载PCB和原理图数据
+    if (project.id) {
+      await loadPCBData(project.id);
+      await loadSchematicData(project.id);
+    }
   };
 
   const handleBackToList = () => {
@@ -77,6 +97,129 @@ function App() {
   const handleSwitchEditor = (type: EditorType) => {
     setEditorType(type);
   };
+
+  // 菜单操作处理
+  const handleMenuAction = useCallback(async (action: string) => {
+    setActiveMenu(null);
+    if (!currentProject?.id) return;
+
+    switch (action) {
+      case 'new':
+        handleBackToList();
+        break;
+      case 'open':
+        handleBackToList();
+        break;
+      case 'save':
+        await savePCBData();
+        break;
+      case 'undo':
+        undo();
+        break;
+      case 'redo':
+        redo();
+        break;
+      case 'drc':
+        try {
+          const result = await drcApi.runDRC(currentProject.id);
+          console.log('DRC Result:', result);
+          alert(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
+        } catch (e) {
+          console.error('DRC failed:', e);
+        }
+        break;
+      case 'gerber':
+        try {
+          const result = await exportApi.exportGerber(currentProject.id);
+          console.log('Gerber export:', result);
+          alert('Gerber导出成功！');
+        } catch (e) {
+          console.error('Gerber export failed:', e);
+        }
+        break;
+      case 'bom':
+        try {
+          const result = await exportApi.exportBOM(currentProject.id);
+          console.log('BOM export:', result);
+          alert('BOM导出成功！');
+        } catch (e) {
+          console.error('BOM export failed:', e);
+        }
+        break;
+    }
+  }, [currentProject, savePCBData, undo, redo]);
+
+  // 菜单配置
+  const menus = [
+    {
+      label: '文件',
+      key: 'file',
+      items: [
+        { label: '新建项目', action: 'new', shortcut: 'Ctrl+N' },
+        { label: '打开项目', action: 'open', shortcut: 'Ctrl+O' },
+        { divider: true },
+        { label: '保存', action: 'save', shortcut: 'Ctrl+S' },
+        { label: '另存为...', action: 'saveas' },
+      ]
+    },
+    {
+      label: '编辑',
+      key: 'edit',
+      items: [
+        { label: '撤销', action: 'undo', shortcut: 'Ctrl+Z' },
+        { label: '重做', action: 'redo', shortcut: 'Ctrl+Y' },
+        { divider: true },
+        { label: '剪切', action: 'cut', shortcut: 'Ctrl+X' },
+        { label: '复制', action: 'copy', shortcut: 'Ctrl+C' },
+        { label: '粘贴', action: 'paste', shortcut: 'Ctrl+V' },
+        { divider: true },
+        { label: '删除', action: 'delete', shortcut: 'Del' },
+      ]
+    },
+    {
+      label: '视图',
+      key: 'view',
+      items: [
+        { label: '放大', action: 'zoom_in', shortcut: 'Ctrl+=' },
+        { label: '缩小', action: 'zoom_out', shortcut: 'Ctrl+-' },
+        { label: '适应窗口', action: 'zoom_fit', shortcut: 'Ctrl+0' },
+        { divider: true },
+        { label: '切换左侧面板', action: 'toggle_left' },
+        { label: '切换右侧面板', action: 'toggle_right' },
+      ]
+    },
+    {
+      label: '放置',
+      key: 'place',
+      items: [
+        { label: '放置封装', action: 'place_footprint' },
+        { label: '绘制走线', action: 'route' },
+        { label: '放置过孔', action: 'place_via' },
+        { label: '放置铜区', action: 'place_zone' },
+        { label: '放置文本', action: 'place_text' },
+      ]
+    },
+    {
+      label: '工具',
+      key: 'tools',
+      items: [
+        { label: '设计规则检查', action: 'drc', shortcut: 'F5' },
+        { label: '重新灌铜', action: 'refill' },
+        { divider: true },
+        { label: '导出Gerber...', action: 'gerber' },
+        { label: '导出BOM...', action: 'bom' },
+        { label: '导出DXF...', action: 'dxf' },
+      ]
+    },
+    {
+      label: '帮助',
+      key: 'help',
+      items: [
+        { label: '使用手册', action: 'manual' },
+        { label: '关于', action: 'about' },
+      ]
+    },
+  ];
 
   // ===== 项目列表视图 =====
   if (currentView === 'project-list') {
@@ -170,39 +313,83 @@ function App() {
       overflow: 'hidden',
     }}>
       {/* ===== 顶部菜单栏 ===== */}
-      <header style={{
-        height: 32,
-        backgroundColor: THEME.bg.toolbar,
-        borderBottom: `1px solid ${THEME.border.default}`,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 8px',
-      }}>
+      <header
+        ref={menuRef}
+        style={{
+          height: 32,
+          backgroundColor: THEME.bg.toolbar,
+          borderBottom: `1px solid ${THEME.border.default}`,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 8px',
+        }}
+      >
         {/* 菜单项 */}
-        {['文件', '编辑', '视图', '放置', '工具', '帮助'].map((menu) => (
-          <button
-            key={menu}
-            style={{
-              padding: '4px 12px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: THEME.text.secondary,
-              fontSize: 13,
-              cursor: 'pointer',
-              borderRadius: 4,
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = THEME.hover.default;
-              e.currentTarget.style.color = THEME.text.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = THEME.text.secondary;
-            }}
-          >
-            {menu}
-          </button>
+        {menus.map((menu) => (
+          <div key={menu.key} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setActiveMenu(activeMenu === menu.key ? null : menu.key)}
+              onMouseEnter={() => activeMenu && setActiveMenu(menu.key)}
+              style={{
+                padding: '4px 12px',
+                backgroundColor: activeMenu === menu.key ? THEME.hover.default : 'transparent',
+                border: 'none',
+                color: activeMenu === menu.key ? THEME.text.primary : THEME.text.secondary,
+                fontSize: 13,
+                cursor: 'pointer',
+                borderRadius: 4,
+                transition: 'all 0.15s',
+              }}
+            >
+              {menu.label}
+            </button>
+            {/* 下拉菜单 */}
+            {activeMenu === menu.key && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                backgroundColor: THEME.bg.secondary,
+                border: `1px solid ${THEME.border.default}`,
+                borderRadius: 4,
+                minWidth: 180,
+                zIndex: 1000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                padding: '4px 0',
+              }}>
+                {menu.items.map((item, idx) => (
+                  'divider' in item ? (
+                    <div key={idx} style={{ height: 1, backgroundColor: THEME.border.default, margin: '4px 8px' }} />
+                  ) : (
+                    <div
+                      key={item.action}
+                      onClick={() => handleMenuAction(item.action)}
+                      style={{
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: 13,
+                        color: THEME.text.secondary,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = THEME.hover.default;
+                        e.currentTarget.style.color = THEME.text.primary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = THEME.text.secondary;
+                      }}
+                    >
+                      <span>{item.label}</span>
+                      {'shortcut' in item && <span style={{ fontSize: 11, color: THEME.text.muted, marginLeft: 16 }}>{item.shortcut}</span>}
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+          </div>
         ))}
 
         {/* 右侧空白区域 */}

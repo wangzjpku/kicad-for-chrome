@@ -12,8 +12,8 @@ import { useSchematicStore } from '../stores/schematicStore';
 import { SchematicComponent, Wire, Label, Point2D } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
-// 比例尺: 1mm = 10px
-const MM_TO_PX = 10;
+// 原理图使用1:1像素坐标（AI生成的是像素坐标）
+const MM_TO_PX = 1;
 
 // 网格配置
 const GRID_SIZE = 10;

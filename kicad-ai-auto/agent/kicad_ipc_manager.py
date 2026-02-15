@@ -12,6 +12,14 @@ from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
 from pathlib import Path
 
+from footprint_library import (
+    get_default_footprint,
+    find_best_footprint,
+    get_footprint_library_manager,
+    SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS,
+    DEFAULT_FOOTPRINT_MAPPING,
+)
+
 # 尝试导入 kicad-python (kipy)
 try:
     import kipy
@@ -694,3 +702,162 @@ def reset_kicad_manager():
     if _kicad_manager:
         _kicad_manager.cleanup()
     _kicad_manager = None
+
+
+# ========== 封装库 API 方法 ==========
+
+
+def get_footprint_recommendations(
+    component_name: str, component_value: str = None, package: str = None
+) -> Dict[str, Any]:
+    """
+    获取元件的推荐封装
+
+    这是 AI 生成时调用的主要方法，会：
+    1. 尝试在 KiCad 封装库中搜索匹配
+    2. 如果没有找到，使用内置的默认映射
+
+    Args:
+        component_name: 元件名称/型号
+        component_value: 元件值（可选）
+        package: 指定封装（可选）
+
+    Returns:
+        包含推荐封装和建议的字典
+    """
+    result = {
+        "component_name": component_name,
+        "component_value": component_value,
+        "package": package,
+        "recommendation": None,
+        "source": None,  # "library" | "default_mapping" | "fallback"
+        "alternatives": [],
+        "message": "",
+    }
+
+    # 1. 首先尝试在 KiCad 封装库中搜索
+    try:
+        lib_manager = get_footprint_library_manager()
+
+        # 搜索关键词
+        search_terms = [component_name]
+        if component_value:
+            search_terms.append(component_value)
+        if package:
+            search_terms.append(package)
+
+        search_keyword = " ".join(search_terms)
+        library_results = lib_manager.search_footprints(search_keyword)
+
+        if library_results:
+            result["recommendation"] = library_results[0]
+            result["alternatives"] = library_results[1:6]  # 最多5个备选
+            result["source"] = "library"
+            result["message"] = f"从 KiCad 封装库找到 {len(library_results)} 个匹配"
+            logger.info(
+                f"Found {len(library_results)} footprints in library for '{search_keyword}'"
+            )
+            return result
+    except Exception as e:
+        logger.warning(f"Failed to search KiCad footprint library: {e}")
+
+    # 2. 使用内置的符号到封装推荐表
+    if component_name in SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS:
+        result["recommendation"] = SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS[component_name]
+        result["source"] = "default_mapping"
+        result["message"] = "使用内置符号-封装映射"
+        return result
+
+    # 3. 使用智能推断 + 默认封装
+    try:
+        footprint = find_best_footprint(component_name, component_value, package)
+        result["recommendation"] = footprint
+        result["source"] = "fallback"
+        result["message"] = "使用默认封装（智能推断）"
+        return result
+    except Exception as e:
+        logger.warning(f"Failed to find default footprint: {e}")
+
+    # 4. 最终 fallback
+    result["recommendation"] = "Resistor_SMD:R_0603_1608Metric"
+    result["source"] = "fallback"
+    result["message"] = "使用通用 fallback 封装"
+
+    return result
+
+
+def search_footprint_library(keyword: str, limit: int = 20) -> List[str]:
+    """
+    搜索 KiCad 封装库
+
+    优先使用内置封装映射表搜索，如果没有结果再尝试系统库
+
+    Args:
+        keyword: 搜索关键词
+        limit: 返回结果数量限制
+
+    Returns:
+        封装名称列表
+    """
+    results: List[str] = []
+    keyword_lower = keyword.lower()
+
+    # 1. 首先在内置封装映射表中搜索
+    for component_type, mapping in DEFAULT_FOOTPRINT_MAPPING.items():
+        # 检查类型名是否匹配
+        if keyword_lower in component_type.lower():
+            for pkg, footprint in mapping.items():
+                if footprint and footprint not in results:
+                    results.append(footprint)
+
+        # 检查封装名是否匹配
+        for pkg, footprint in mapping.items():
+            if footprint and (
+                keyword_lower in pkg.lower() or keyword_lower in footprint.lower()
+            ):
+                if footprint not in results:
+                    results.append(footprint)
+
+    # 2. 在符号-封装推荐表中搜索
+    for symbol, footprint in SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS.items():
+        if keyword_lower in symbol.lower() or keyword_lower in footprint.lower():
+            if footprint not in results:
+                results.append(footprint)
+
+    # 3. 尝试搜索系统 KiCad 封装库
+    try:
+        lib_manager = get_footprint_library_manager()
+        library_results = lib_manager.search_footprints(keyword)
+        for fp in library_results:
+            if fp not in results:
+                results.append(fp)
+    except Exception as e:
+        logger.debug(f"System library search failed: {e}")
+
+    return results[:limit]
+
+
+def get_all_libraries() -> List[str]:
+    """获取所有封装库名称"""
+    try:
+        lib_manager = get_footprint_library_manager()
+        return lib_manager.get_libraries()
+    except Exception as e:
+        logger.error(f"Failed to get libraries: {e}")
+        return []
+
+
+def get_default_footprint_for_component(
+    component_type: str, package: str = None
+) -> str:
+    """
+    获取元件类型的默认封装
+
+    Args:
+        component_type: 元件类型 (resistor, capacitor, ic 等)
+        package: 封装大小 (可选)
+
+    Returns:
+        封装名称
+    """
+    return get_default_footprint(component_type, package)

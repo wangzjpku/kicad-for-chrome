@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { kicadApi } from '../services/api'
+import { kicadApi, aiApi } from '../services/api'
 import { useKiCadStore } from '../stores/kicadStore'
 
 interface Symbol {
@@ -7,6 +7,7 @@ interface Symbol {
   library: string
   description: string
   footprint?: string
+  footprintSource?: 'builtin' | 'library' | 'default_mapping' | 'fallback'  // 封装来源
 }
 
 interface SymbolSelectorProps {

@@ -76,6 +76,21 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
   // 只有选择工具或移动工具时可以拖拽
   const draggable = selected && (currentTool === 'select' || currentTool === 'move');
 
+  // 如果没有焊盘，渲染一个默认的封装形状
+  const renderDefaultFootprint = () => {
+    return (
+      <Rect
+        x={-10}
+        y={-10}
+        width={20}
+        height={20}
+        fill={highlightColor}
+        stroke={selected ? '#FFFF00' : color}
+        strokeWidth={selected ? 2 : 1}
+      />
+    );
+  };
+
   return (
     <Group
       x={x}
@@ -89,19 +104,24 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
       onDragEnd={handleDragEnd}
     >
       {/* 绘制焊盘 */}
-      {padList.map((pad) => (
-        <Rect
-          key={pad.id}
-          x={pad.position.x * MM_TO_PX - (pad.size.x * MM_TO_PX) / 2}
-          y={pad.position.y * MM_TO_PX - (pad.size.y * MM_TO_PX) / 2}
-          width={pad.size.x * MM_TO_PX}
-          height={pad.size.y * MM_TO_PX}
-          fill={highlightColor}
-          stroke={selected ? '#FFFF00' : '#FFFFFF'}
-          strokeWidth={selected ? 2 : 1}
-        />
-      ))}
-      
+      {padList.length > 0 ? (
+        padList.map((pad) => (
+          <Rect
+            key={pad.id}
+            x={pad.position.x * MM_TO_PX - (pad.size.x * MM_TO_PX) / 2}
+            y={pad.position.y * MM_TO_PX - (pad.size.y * MM_TO_PX) / 2}
+            width={pad.size.x * MM_TO_PX}
+            height={pad.size.y * MM_TO_PX}
+            fill={highlightColor}
+            stroke={selected ? '#FFFF00' : '#FFFFFF'}
+            strokeWidth={selected ? 2 : 1}
+          />
+        ))
+      ) : (
+        // 没有焊盘时渲染默认形状
+        renderDefaultFootprint()
+      )}
+
       {/* 位号文字 */}
       <Text
         text={reference}
@@ -111,7 +131,7 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
         fill="#FFFFFF"
         align="center"
       />
-      
+
       {/* 选中高亮框 */}
       {selected && (
         <Rect

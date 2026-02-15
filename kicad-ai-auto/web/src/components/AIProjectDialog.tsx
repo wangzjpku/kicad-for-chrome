@@ -84,7 +84,17 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('AI 分析失败，请重试');
+        // 尝试从响应中获取详细错误信息
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'AI 分析失败，请重试');
+        } catch (e: any) {
+          if (e.message === 'AI 分析失败，请重试') {
+            throw e;
+          }
+          // 如果无法解析JSON，使用默认消息
+          throw new Error(`AI 分析失败 (${response.status}): 请重试`);
+        }
       }
 
       const data = await response.json();
@@ -395,6 +405,9 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
           {step === 'error' && (
             <div className="step-error">
               <p className="error-text">{error}</p>
+              {(error?.includes('余额') || error?.includes('API') || error?.includes('智谱')) && (
+                <p className="error-hint">请访问 https://open.bigmodel.cn/ 检查API余额</p>
+              )}
               <button className="retry-btn" onClick={handleRetry}>
                 重新输入
               </button>

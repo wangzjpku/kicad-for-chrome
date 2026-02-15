@@ -3,6 +3,14 @@ KiCad AI Auto - Control Agent
 FastAPI backend for controlling KiCad through browser
 """
 
+# 加载环境变量
+from dotenv import load_dotenv
+import os
+
+# 加载项目根目录的.env文件
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", ".env")
+load_dotenv(env_path)
+
 from fastapi import (
     FastAPI,
     WebSocket,

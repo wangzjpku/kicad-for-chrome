@@ -143,6 +143,52 @@ export const exportApi = {
   },
 };
 
+// ==================== AI 和封装库 API ====================
+
+// 封装推荐请求类型
+export interface FootprintRecommendRequest {
+  component_name: string;
+  component_value?: string;
+  package?: string;
+}
+
+// 封装推荐响应类型
+export interface FootprintRecommendResponse {
+  component_name: string;
+  component_value?: string;
+  package?: string;
+  recommendation: string;
+  source: 'library' | 'default_mapping' | 'fallback';
+  alternatives: string[];
+  message: string;
+}
+
+export const aiApi = {
+  // AI 分析电路需求
+  analyzeRequirements: async (requirements: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/ai/analyze', { requirements });
+    return response.data;
+  },
+
+  // 获取封装推荐
+  recommendFootprint: async (request: FootprintRecommendRequest): Promise<FootprintRecommendResponse> => {
+    const response = await apiClient.post('/ai/footprint/recommend', request);
+    return response.data;
+  },
+
+  // 获取所有封装库
+  getFootprintLibraries: async (): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get('/ai/footprint/libraries');
+    return response.data;
+  },
+
+  // 搜索封装
+  searchFootprints: async (keyword: string, limit: number = 20): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get('/ai/footprint/search', { params: { keyword, limit } });
+    return response.data;
+  },
+};
+
 // ==================== 兼容旧代码的导出 ====================
 
 // 定义 kicadApi 的接口类型
