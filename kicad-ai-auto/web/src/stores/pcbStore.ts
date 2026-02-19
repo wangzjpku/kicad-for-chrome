@@ -100,20 +100,23 @@ export const usePCBStore = create<PCBStoreState>()(
       loadPCBData: async (projectId: string) => {
         set({ isLoading: true, error: null });
         try {
-          // pcbApi.getPCB 已经返回了 response.data
+          // pcbApi.getPCB 返回后端数据
           const response = await pcbApi.getPCB(projectId);
           console.log('[PCBStore] Load PCB response:', response);
-          // 后端直接返回数据，没有 success 包装器
-          // 直接使用 response 作为 PCBData
-          if (response && typeof response === 'object' && 'id' in response) {
+          
+          // 后端直接返回 PCBData 对象（没有 success 包装器）
+          // 需要进行类型断言
+          const pcbData = response as unknown as PCBData;
+          
+          if (pcbData && typeof pcbData === 'object' && 'id' in pcbData) {
             set({
-              pcbData: response,
+              pcbData: pcbData,
               projectId,
               isLoading: false,
-              history: [{ pcbData: response, selectedIds: [] }],
+              history: [{ pcbData: pcbData, selectedIds: [] }],
               historyIndex: 0,
             });
-            console.log('[PCBStore] PCB data loaded, footprints:', response.footprints?.length);
+            console.log('[PCBStore] PCB data loaded, footprints:', pcbData.footprints?.length);
           } else {
             console.error('[PCBStore] Invalid PCB data:', response);
             set({ error: 'Failed to load PCB data', isLoading: false });

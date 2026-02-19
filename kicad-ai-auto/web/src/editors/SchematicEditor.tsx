@@ -192,6 +192,17 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     const y = (comp.position?.y ?? 0) * MM_TO_PX;
     const selected = selectedIds.includes(comp.id);
     
+    // 拖拽结束处理
+    const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      updateComponent(comp.id, {
+        position: {
+          x: node.x() / MM_TO_PX,
+          y: node.y() / MM_TO_PX
+        }
+      });
+    };
+    
     return (
       <Group
         key={comp.id}
@@ -200,6 +211,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
         rotation={comp.rotation}
         onClick={() => toggleSelection(comp.id)}
         draggable={currentTool === 'select'}
+        onDragEnd={handleDragEnd}
       >
         {/* 元件主体 - 简化为矩形 */}
         <Rect
@@ -368,6 +380,12 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             onWheel={handleWheel}
             onClick={currentTool === 'place_symbol' ? handlePlaceSymbol : handleStageClick}
             draggable={currentTool === 'select'}
+            onDragEnd={(e) => {
+              setPan({
+                x: e.target.x(),
+                y: e.target.y()
+              });
+            }}
             x={pan.x}
             y={pan.y}
             ref={(ref) => setStageRef(ref)}

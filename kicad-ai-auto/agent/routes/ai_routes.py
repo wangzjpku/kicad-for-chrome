@@ -4,6 +4,8 @@ AI Routes - AI 智能项目创建 API
 
 import logging
 import os
+import json
+from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -20,6 +22,74 @@ from kicad_ipc_manager import (
 from glm4_client import get_glm4_client, is_glm4_available
 
 logger = logging.getLogger(__name__)
+
+# ========== 加载本地知识库 ==========
+_component_db = None
+
+
+def get_component_db():
+    """获取元件数据库"""
+    global _component_db
+    if _component_db is None:
+        # 修正路径：component_knowledge在agent目录下
+        db_path = (
+            Path(__file__).parent.parent / "component_knowledge" / "component_db.json"
+        )
+        if db_path.exists():
+            with open(db_path, "r", encoding="utf-8") as f:
+                _component_db = json.load(f)
+                logger.info(
+                    f"已加载元件知识库: {len(_component_db.get('components', {}))} 个元件"
+                )
+        else:
+            logger.warning(f"元件知识库文件不存在: {db_path}")
+            _component_db = {"components": {}, "templates": {}}
+    return _component_db
+
+
+def get_component_info(model: str) -> Optional[Dict[str, Any]]:
+    """根据型号获取元件信息"""
+    db = get_component_db()
+    # 精确匹配
+    if model in db.get("components", {}):
+        return db["components"][model]
+    # 模糊匹配
+    model_upper = model.upper()
+    for comp_key, comp_data in db.get("components", {}).items():
+        if model_upper in comp_key.upper() or comp_key.upper() in model_upper:
+            return comp_data
+    return None
+
+
+def get_circuit_template(template_name: str) -> Optional[Dict[str, Any]]:
+    """获取典型电路模板"""
+    db = get_component_db()
+    return db.get("templates", {}).get(template_name)
+
+
+def get_schematic_pins(model: str) -> List[Dict[str, Any]]:
+    """获取原理图引脚定义 - 使用知识库"""
+    comp_info = get_component_info(model)
+    if comp_info and "pins" in comp_info:
+        return comp_info["pins"]
+    return []
+
+
+def get_symbol_library(model: str) -> Optional[str]:
+    """获取元件符号库名称"""
+    comp_info = get_component_info(model)
+    if comp_info:
+        return comp_info.get("symbol_library")
+    return None
+
+
+def get_typical_circuits(model: str) -> List[str]:
+    """获取元件的典型电路"""
+    comp_info = get_component_info(model)
+    if comp_info:
+        return comp_info.get("typical_circuits", [])
+    return []
+
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI"])
 
@@ -909,53 +979,98 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
         )
 
     # 生成原理图数据
-    # ========== AI 封装推荐逻辑 ==========
-    # 重要：为每个元件自动获取推荐封装
-    # 如果 KiCad 库中有匹配的封装则使用，否则使用默认封装
-    logger.info("开始为元件获取推荐封装...")
+    # ========== 使用知识库生成真实原理图 ==========
+    logger.info("使用知识库生成原理图...")
 
+    # 收集典型电路模板
+    all_circuits = []
     for comp in components:
-        footprint = _get_footprint_for_component(comp)
-        comp.footprint = footprint
-        logger.info(f"  {comp.name} ({comp.model}) -> {footprint}")
+        circuits = get_typical_circuits(comp.model)
+        all_circuits.extend(circuits)
+    all_circuits = list(set(all_circuits))  # 去重
+    logger.info(f"检测到典型电路: {all_circuits}")
 
-    logger.info(f"封装推荐完成，共处理 {len(components)} 个元件")
-    # ========== 封装推荐结束 ==========
-
+    # 生成元件符号和网络
     schematic_components = []
     schematic_wires = []
     schematic_nets = []
 
     for i, comp in enumerate(components):
+        # 尝试从知识库获取真实引脚定义
+        real_pins = get_schematic_pins(comp.model)
+
+        if real_pins:
+            # 使用知识库中的真实引脚
+            pins = real_pins
+            logger.info(f"  {comp.model}: 使用知识库引脚 ({len(pins)}个)")
+        else:
+            # 使用默认引脚
+            pins = [{"number": "1", "name": "P1"}, {"number": "2", "name": "P2"}]
+            logger.info(f"  {comp.model}: 使用默认引脚")
+
         schematic_components.append(
             SchematicComponent(
                 id=f"comp-{i + 1}",
                 name=comp.name,
                 model=comp.model,
                 position={"x": 100 + (i % 2) * 200, "y": 100 + (i // 2) * 100},
-                pins=[{"number": "1", "name": "P1"}, {"number": "2", "name": "P2"}],
+                pins=pins,
             )
         )
 
-    # 生成网络
+    # 生成电源网络
     schematic_nets.append(SchematicNet(id="net-vcc", name="VCC"))
     schematic_nets.append(SchematicNet(id="net-gnd", name="GND"))
 
-    # 生成一些导线连接
-    for i in range(len(components) - 1):
-        schematic_wires.append(
-            SchematicWire(
-                id=f"wire-{i + 1}",
-                points=[
-                    {"x": 100 + (i % 2) * 200 + 30, "y": 100 + (i // 2) * 100},
-                    {
-                        "x": 100 + ((i + 1) % 2) * 200 - 30,
-                        "y": 100 + ((i + 1) // 2) * 100,
-                    },
-                ],
-                net="VCC",
+    # 为典型电路生成网络连接
+    for template_name in all_circuits:
+        template = get_circuit_template(template_name)
+        if template and "connections" in template:
+            for conn in template["connections"]:
+                net_name = conn.get("net", "NET")
+                if net_name not in [n.name for n in schematic_nets]:
+                    schematic_nets.append(
+                        SchematicNet(id=f"net-{len(schematic_nets) + 1}", name=net_name)
+                    )
+
+    # 生成导线连接 - 基于典型电路
+    if all_circuits:
+        # 使用典型电路模板连接
+        for template_name in all_circuits:
+            template = get_circuit_template(template_name)
+            if template and "connections" in template:
+                for conn in template["connections"]:
+                    net_name = conn.get("net", "NET")
+                    schematic_wires.append(
+                        SchematicWire(
+                            id=f"wire-{len(schematic_wires) + 1}",
+                            points=[
+                                {"x": 150, "y": 150},
+                                {"x": 250, "y": 150},
+                            ],
+                            net=net_name,
+                        )
+                    )
+    else:
+        # 默认连接方式
+        for i in range(len(components) - 1):
+            schematic_wires.append(
+                SchematicWire(
+                    id=f"wire-{i + 1}",
+                    points=[
+                        {"x": 100 + (i % 2) * 200 + 30, "y": 100 + (i // 2) * 100},
+                        {
+                            "x": 100 + ((i + 1) % 2) * 200 - 30,
+                            "y": 100 + ((i + 1) // 2) * 100,
+                        },
+                    ],
+                    net="VCC",
+                )
             )
-        )
+
+    logger.info(
+        f"原理图生成完成: {len(schematic_components)}个元件, {len(schematic_wires)}条导线, {len(schematic_nets)}个网络"
+    )
 
     spec = ProjectSpec(
         name=project_name,
@@ -1064,17 +1179,23 @@ async def analyze_requirements(request: AnalyzeRequest):
                 print(f"DEBUG: Caught error: {error_msg}")
                 logger.warning(f"GLM-4 调用失败: {error_msg}")
 
-                # 检查是否是余额不足错误
+                # 检查是否是余额不足错误，回退到模拟实现
                 if (
                     "余额" in error_msg
                     or "1113" in error_msg
                     or "rate" in error_msg.lower()
                     or "429" in error_msg
                 ):
-                    print("DEBUG: Matched balance error")
-                    return {
-                        "detail": "AI服务暂时不可用：智谱AI API余额不足或请求频率过高，请前往 https://open.bigmodel.cn/ 充值或稍后重试"
-                    }
+                    logger.warning("AI服务余额不足或请求频率过高，回退到模拟AI分析...")
+                    try:
+                        result = mock_ai_analyze(request.requirements)
+                        logger.warning("回退到模拟AI分析成功")
+                        return result
+                    except Exception as mock_err:
+                        logger.error(f"回退到模拟AI也失败: {mock_err}")
+                        return {
+                            "detail": "AI服务暂时不可用：智谱AI API余额不足或请求频率过高，请前往 https://open.bigmodel.cn/ 充值或稍后重试"
+                        }
                 elif "timeout" in error_msg.lower() or "超时" in error_msg:
                     return {"detail": "AI服务响应超时，请稍后重试"}
                 elif (

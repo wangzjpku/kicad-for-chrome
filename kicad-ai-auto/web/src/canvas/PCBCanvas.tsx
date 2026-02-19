@@ -88,6 +88,14 @@ const PCBCanvas: React.FC<PCBCanvasProps> = ({
     });
   }, [setPan]);
 
+  // 拖拽结束 - 更新最终的平移位置
+  const handleDragEnd = useCallback((e: KonvaEventObject<DragEvent>) => {
+    setPan({
+      x: e.target.x(),
+      y: e.target.y(),
+    });
+  }, [setPan]);
+
   // 生成网格线
   const generateGridLines = () => {
     const lines = [];
@@ -156,6 +164,7 @@ const PCBCanvas: React.FC<PCBCanvasProps> = ({
         onClick={handleStageClick}
         draggable={true}
         onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
         x={pan.x}
         y={pan.y}
         style={{

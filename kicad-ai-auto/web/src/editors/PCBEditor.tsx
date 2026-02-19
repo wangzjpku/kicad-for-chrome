@@ -238,6 +238,12 @@ const PCBEditor: React.FC = () => {
               onWheel={handleWheel}
               onClick={handleStageClick}
               draggable
+              onDragEnd={(e) => {
+                setPan({
+                  x: e.target.x(),
+                  y: e.target.y()
+                });
+              }}
               x={pan.x}
               y={pan.y}
               ref={(ref) => setStageRef(ref)}

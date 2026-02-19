@@ -60,6 +60,7 @@ export interface Footprint extends PCBElement {
   rotation: number;
   layer: string;
   pads: Pad[];
+  pad?: Pad[]; // 兼容后端返回的字段名（单数形式）
   attributes: Record<string, any>;
   model3d?: {
     path: string;
