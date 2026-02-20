@@ -177,8 +177,8 @@ class SchematicGenerator:
         self._generate_wires()
         logger.info(f"导线生成完成: {len(self.sheet.wires)} 条导线")
 
-        # 7. 添加网络标签
-        self._add_net_labels()
+        # 7. 添加网络标签 - 已在 _connect_signal_pins 中完成
+        pass
         logger.info(f"网络标签添加完成: {len(self.sheet.net_labels)} 个标签")
 
         # 8. ERC 预检查
