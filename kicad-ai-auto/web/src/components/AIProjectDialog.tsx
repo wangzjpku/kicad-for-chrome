@@ -1,11 +1,14 @@
 /**
- * AIProjectDialog - AI 智能项目创建对话框组件 (增强版)
+ * AIProjectDialog - AI 智能项目创建对话框组件 (增强版 v2)
  *
- * 支持交互式问答流程:
- * 1. 用户输入初始需求
+ * 支持完整的交互式流程:
+ * 1. 用户输入需求
  * 2. AI 生成澄清问题列表
  * 3. 用户回答问题
- * 4. AI 生成完整 BOM 和原理图
+ * 4. AI 生成方案（BOM + 参数）
+ * 5. 【新增】用户编辑 BOM 和参数
+ * 6. 用户确认方案
+ * 7. 【新增】生成最终结果并确认
  */
 
 import React, { useState, useEffect } from 'react';
@@ -32,13 +35,6 @@ interface ClarificationResponse {
   detected_type: string;
 }
 
-interface ProjectSpec {
-  name: string;
-  description: string;
-  components: ComponentSpec[];
-  parameters: ParameterSpec[];
-}
-
 interface ComponentSpec {
   name: string;
   model: string;
@@ -53,13 +49,20 @@ interface ParameterSpec {
   unit?: string;
 }
 
+interface ProjectSpec {
+  name: string;
+  description: string;
+  components: ComponentSpec[];
+  parameters: ParameterSpec[];
+}
+
 interface SchematicData {
   components: any[];
   wires: any[];
   nets: any[];
 }
 
-type DialogStep = 'input' | 'clarifying' | 'analyzing' | 'preview' | 'error';
+type DialogStep = 'input' | 'clarifying' | 'analyzing' | 'preview' | 'editing' | 'generating' | 'confirm' | 'error';
 
 const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   isOpen,
@@ -76,6 +79,15 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>('');
 
+  // 编辑状态
+  const [editingComponent, setEditingComponent] = useState<number | null>(null);
+  const [editingParameter, setEditingParameter] = useState<number | null>(null);
+  const [tempComponent, setTempComponent] = useState<ComponentSpec | null>(null);
+  const [tempParameter, setTempParameter] = useState<ParameterSpec | null>(null);
+
+  // 最终结果
+  const [finalResult, setFinalResult] = useState<any>(null);
+
   // 重置状态
   useEffect(() => {
     if (!isOpen) {
@@ -87,6 +99,9 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       setSchematicData(null);
       setError(null);
       setProgress('');
+      setEditingComponent(null);
+      setEditingParameter(null);
+      setFinalResult(null);
     }
   }, [isOpen]);
 
@@ -110,7 +125,6 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       });
 
       if (clarifyResponse.ok) {
-        // clarify API 可用，显示问答界面
         const data: ClarificationResponse = await clarifyResponse.json();
 
         // 初始化默认答案
@@ -127,13 +141,11 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
         setClarificationData(data);
         setStep('clarifying');
       } else {
-        // clarify API 不可用，直接调用 analyze API（旧流程兼容）
         console.log('Clarify API not available, falling back to direct analyze...');
         await directAnalyze();
       }
 
     } catch (err: any) {
-      // 网络错误，尝试直接分析
       console.log('Clarify API error, falling back to direct analyze:', err.message);
       try {
         await directAnalyze();
@@ -210,17 +222,120 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
     }
   };
 
-  // ========== Step 3: 确认创建项目 ==========
-  const handleConfirm = async () => {
-    if (!projectSpec) return;
+  // ========== 编辑功能 ==========
+
+  // 开始编辑器件
+  const startEditComponent = (index: number) => {
+    setEditingComponent(index);
+    setTempComponent({ ...projectSpec!.components[index] });
+  };
+
+  // 保存器件编辑
+  const saveComponentEdit = () => {
+    if (tempComponent && editingComponent !== null) {
+      const newComponents = [...projectSpec!.components];
+      newComponents[editingComponent] = tempComponent;
+      setProjectSpec({ ...projectSpec!, components: newComponents });
+    }
+    setEditingComponent(null);
+    setTempComponent(null);
+  };
+
+  // 取消器件编辑
+  const cancelComponentEdit = () => {
+    setEditingComponent(null);
+    setTempComponent(null);
+  };
+
+  // 添加新器件
+  const addComponent = () => {
+    const newComponent: ComponentSpec = {
+      name: '新器件',
+      model: '',
+      package: '0805',
+      quantity: 1
+    };
+    setProjectSpec({
+      ...projectSpec!,
+      components: [...projectSpec!.components, newComponent]
+    });
+  };
+
+  // 删除器件
+  const deleteComponent = (index: number) => {
+    const newComponents = projectSpec!.components.filter((_, i) => i !== index);
+    setProjectSpec({ ...projectSpec!, components: newComponents });
+  };
+
+  // 开始编辑参数
+  const startEditParameter = (index: number) => {
+    setEditingParameter(index);
+    setTempParameter({ ...projectSpec!.parameters[index] });
+  };
+
+  // 保存参数编辑
+  const saveParameterEdit = () => {
+    if (tempParameter && editingParameter !== null) {
+      const newParameters = [...projectSpec!.parameters];
+      newParameters[editingParameter] = tempParameter;
+      setProjectSpec({ ...projectSpec!, parameters: newParameters });
+    }
+    setEditingParameter(null);
+    setTempParameter(null);
+  };
+
+  // 取消参数编辑
+  const cancelParameterEdit = () => {
+    setEditingParameter(null);
+    setTempParameter(null);
+  };
+
+  // 添加新参数
+  const addParameter = () => {
+    const newParameter: ParameterSpec = {
+      key: '新参数',
+      value: '',
+      unit: ''
+    };
+    setProjectSpec({
+      ...projectSpec!,
+      parameters: [...projectSpec!.parameters, newParameter]
+    });
+  };
+
+  // 删除参数
+  const deleteParameter = (index: number) => {
+    const newParameters = projectSpec!.parameters.filter((_, i) => i !== index);
+    setProjectSpec({ ...projectSpec!, parameters: newParameters });
+  };
+
+  // 进入编辑模式
+  const enterEditMode = () => {
+    setStep('editing');
+  };
+
+  // 退出编辑模式
+  const exitEditMode = () => {
+    setStep('preview');
+    setEditingComponent(null);
+    setEditingParameter(null);
+  };
+
+  // ========== Step 3: 提交方案，生成最终结果 ==========
+  const handleSubmitForGeneration = async () => {
+    setStep('generating');
+    setError(null);
+    setProgress('正在生成最终项目...');
 
     try {
       const response = await fetch('/api/v1/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: projectSpec.name,
-          description: projectSpec.description,
+          name: projectSpec!.name,
+          description: projectSpec!.description,
+          components: projectSpec!.components,
+          parameters: projectSpec!.parameters,
           schematicData: schematicData
         })
       });
@@ -229,11 +344,21 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
         throw new Error('创建项目失败');
       }
 
-      const newProject = await response.json();
-      onProjectCreated(newProject);
-      onClose();
+      const result = await response.json();
+      setFinalResult(result);
+      setStep('confirm');
+
     } catch (err: any) {
-      setError(err.message || '创建项目失败');
+      setError(err.message || '生成最终结果失败');
+      setStep('error');
+    }
+  };
+
+  // ========== Step 4: 确认最终结果 ==========
+  const handleFinalConfirm = () => {
+    if (finalResult) {
+      onProjectCreated(finalResult);
+      onClose();
     }
   };
 
@@ -241,8 +366,10 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   const handleBack = () => {
     if (step === 'clarifying') {
       setStep('input');
-    } else if (step === 'preview') {
+    } else if (step === 'preview' || step === 'editing') {
       setStep('clarifying');
+    } else if (step === 'confirm') {
+      setStep('preview');
     } else if (step === 'error') {
       setStep('input');
       setError(null);
@@ -256,7 +383,6 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
 
   // 跳过可选问题
   const handleSkipOptional = () => {
-    // 直接提交当前答案
     handleSubmitAnswers();
   };
 
@@ -273,24 +399,34 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
 
         {/* 进度指示器 */}
         <div className="progress-indicator">
-          <div className={`progress-step ${step === 'input' ? 'active' : ''} ${['clarifying', 'analyzing', 'preview'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'input' ? 'active' : ''} ${['clarifying', 'analyzing', 'preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">1</span>
             <span className="step-label">输入需求</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${step === 'clarifying' ? 'active' : ''} ${['analyzing', 'preview'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'clarifying' ? 'active' : ''} ${['analyzing', 'preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">2</span>
             <span className="step-label">明确细节</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${['analyzing'].includes(step) ? 'active' : ''} ${step === 'preview' ? 'completed' : ''}`}>
+          <div className={`progress-step ${['analyzing'].includes(step) ? 'active' : ''} ${['preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">3</span>
             <span className="step-label">生成方案</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${step === 'preview' ? 'active' : ''}`}>
+          <div className={`progress-step ${['preview', 'editing'].includes(step) ? 'active' : ''} ${['generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">4</span>
-            <span className="step-label">确认创建</span>
+            <span className="step-label">编辑确认</span>
+          </div>
+          <div className="progress-line"></div>
+          <div className={`progress-step ${['generating'].includes(step) ? 'active' : ''} ${step === 'confirm' ? 'completed' : ''}`}>
+            <span className="step-number">5</span>
+            <span className="step-label">生成项目</span>
+          </div>
+          <div className="progress-line"></div>
+          <div className={`progress-step ${step === 'confirm' ? 'active' : ''}`}>
+            <span className="step-number">6</span>
+            <span className="step-label">最终确认</span>
           </div>
         </div>
 
@@ -306,7 +442,7 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
                 id="requirements"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="例如：设计一个5V稳压电源，输入220V交流电，输出5V直流电，电流1A"
+                placeholder="例如：设计一个5V稳压电源，输入220V交流电，输出5V直流电"
                 rows={8}
               />
               <p className="hint">
@@ -381,25 +517,94 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
             </div>
           )}
 
-          {/* Step 4: 预览结果 */}
-          {step === 'preview' && projectSpec && (
+          {/* Step 4: 预览结果（带编辑功能） */}
+          {(step === 'preview' || step === 'editing') && projectSpec && (
             <div className="step-preview">
+              {/* 工具栏 */}
+              <div className="preview-toolbar">
+                {step === 'preview' ? (
+                  <button className="edit-mode-btn" onClick={enterEditMode}>
+                    ✏️ 进入编辑模式
+                  </button>
+                ) : (
+                  <button className="exit-edit-btn" onClick={exitEditMode}>
+                    ✓ 完成编辑
+                  </button>
+                )}
+              </div>
+
               {/* 项目方案 */}
               <div className="spec-section">
-                <h3>📦 项目方案</h3>
+                <h3>📦 项目方案 {step === 'editing' && <span className="edit-badge">编辑中</span>}</h3>
                 <div className="spec-content">
                   <h4>{projectSpec.name}</h4>
                   <p>{projectSpec.description}</p>
 
+                  {/* 技术参数表格 */}
                   {projectSpec.parameters.length > 0 && (
                     <>
-                      <h5>技术参数</h5>
-                      <table className="params-table">
+                      <h5>
+                        技术参数
+                        {step === 'editing' && (
+                          <button className="add-btn small" onClick={addParameter}>+ 添加参数</button>
+                        )}
+                      </h5>
+                      <table className="params-table editable-table">
+                        <thead>
+                          <tr>
+                            <th>参数名</th>
+                            <th>数值</th>
+                            <th>单位</th>
+                            {step === 'editing' && <th>操作</th>}
+                          </tr>
+                        </thead>
                         <tbody>
                           {projectSpec.parameters.map((param, idx) => (
                             <tr key={idx}>
-                              <td>{param.key}</td>
-                              <td>{param.value} {param.unit || ''}</td>
+                              {editingParameter === idx ? (
+                                <>
+                                  <td>
+                                    <input
+                                      type="text"
+                                      value={tempParameter?.key || ''}
+                                      onChange={(e) => setTempParameter({ ...tempParameter!, key: e.target.value })}
+                                      className="inline-input"
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="text"
+                                      value={tempParameter?.value || ''}
+                                      onChange={(e) => setTempParameter({ ...tempParameter!, value: e.target.value })}
+                                      className="inline-input"
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="text"
+                                      value={tempParameter?.unit || ''}
+                                      onChange={(e) => setTempParameter({ ...tempParameter!, unit: e.target.value })}
+                                      className="inline-input small"
+                                    />
+                                  </td>
+                                  <td>
+                                    <button className="save-btn small" onClick={saveParameterEdit}>💾</button>
+                                    <button className="cancel-btn small" onClick={cancelParameterEdit}>✕</button>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{param.key}</td>
+                                  <td>{param.value}</td>
+                                  <td>{param.unit || ''}</td>
+                                  {step === 'editing' && (
+                                    <td>
+                                      <button className="edit-btn small" onClick={() => startEditParameter(idx)}>✏️</button>
+                                      <button className="delete-btn small" onClick={() => deleteParameter(idx)}>🗑️</button>
+                                    </td>
+                                  )}
+                                </>
+                              )}
                             </tr>
                           ))}
                         </tbody>
@@ -407,23 +612,80 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
                     </>
                   )}
 
-                  <h5>📋 BOM 器件清单</h5>
-                  <table className="components-table">
+                  {/* BOM 器件清单 */}
+                  <h5>
+                    📋 BOM 器件清单 ({projectSpec.components.length} 个器件)
+                    {step === 'editing' && (
+                      <button className="add-btn small" onClick={addComponent}>+ 添加器件</button>
+                    )}
+                  </h5>
+                  <table className="components-table editable-table">
                     <thead>
                       <tr>
                         <th>器件</th>
                         <th>型号</th>
                         <th>封装</th>
                         <th>数量</th>
+                        {step === 'editing' && <th>操作</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {projectSpec.components.map((comp, idx) => (
                         <tr key={idx}>
-                          <td>{comp.name}</td>
-                          <td>{comp.model}</td>
-                          <td>{comp.package}</td>
-                          <td>{comp.quantity}</td>
+                          {editingComponent === idx ? (
+                            <>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={tempComponent?.name || ''}
+                                  onChange={(e) => setTempComponent({ ...tempComponent!, name: e.target.value })}
+                                  className="inline-input"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={tempComponent?.model || ''}
+                                  onChange={(e) => setTempComponent({ ...tempComponent!, model: e.target.value })}
+                                  className="inline-input"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={tempComponent?.package || ''}
+                                  onChange={(e) => setTempComponent({ ...tempComponent!, package: e.target.value })}
+                                  className="inline-input small"
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  value={tempComponent?.quantity || 1}
+                                  onChange={(e) => setTempComponent({ ...tempComponent!, quantity: parseInt(e.target.value) || 1 })}
+                                  className="inline-input tiny"
+                                  min="1"
+                                />
+                              </td>
+                              <td>
+                                <button className="save-btn small" onClick={saveComponentEdit}>💾</button>
+                                <button className="cancel-btn small" onClick={cancelComponentEdit}>✕</button>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td>{comp.name}</td>
+                              <td>{comp.model}</td>
+                              <td>{comp.package}</td>
+                              <td>{comp.quantity}</td>
+                              {step === 'editing' && (
+                                <td>
+                                  <button className="edit-btn small" onClick={() => startEditComponent(idx)}>✏️</button>
+                                  <button className="delete-btn small" onClick={() => deleteComponent(idx)}>🗑️</button>
+                                </td>
+                              )}
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -492,6 +754,45 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
             </div>
           )}
 
+          {/* Step 5: 生成中 */}
+          {step === 'generating' && (
+            <div className="step-analyzing">
+              <div className="spinner"></div>
+              <p className="progress-text">{progress}</p>
+            </div>
+          )}
+
+          {/* Step 6: 最终确认 */}
+          {step === 'confirm' && finalResult && (
+            <div className="step-confirm">
+              <div className="success-icon">✅</div>
+              <h3>项目已生成完成！</h3>
+
+              <div className="final-result-card">
+                <div className="result-item">
+                  <span className="label">项目名称</span>
+                  <span className="value">{projectSpec?.name}</span>
+                </div>
+                <div className="result-item">
+                  <span className="label">项目 ID</span>
+                  <span className="value code">{finalResult.id}</span>
+                </div>
+                <div className="result-item">
+                  <span className="label">器件数量</span>
+                  <span className="value">{projectSpec?.components.length} 个</span>
+                </div>
+                <div className="result-item">
+                  <span className="label">创建时间</span>
+                  <span className="value">{new Date().toLocaleString()}</span>
+                </div>
+              </div>
+
+              <p className="confirm-hint">
+                请确认以上信息无误，点击"确认完成"完成项目创建
+              </p>
+            </div>
+          )}
+
           {/* 错误步骤 */}
           {step === 'error' && (
             <div className="step-error">
@@ -542,8 +843,33 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
               <button className="abandon-btn" onClick={onClose}>
                 放弃
               </button>
-              <button className="confirm-btn" onClick={handleConfirm}>
-                ✅ 确认创建项目
+              <button className="edit-btn" onClick={enterEditMode}>
+                ✏️ 编辑方案
+              </button>
+              <button className="submit-btn" onClick={handleSubmitForGeneration}>
+                提交并生成项目
+              </button>
+            </>
+          )}
+
+          {step === 'editing' && (
+            <>
+              <button className="back-btn" onClick={exitEditMode}>
+                完成编辑
+              </button>
+            </>
+          )}
+
+          {step === 'confirm' && (
+            <>
+              <button className="back-btn" onClick={handleBack}>
+                返回修改
+              </button>
+              <button className="abandon-btn" onClick={onClose}>
+                放弃
+              </button>
+              <button className="confirm-btn large" onClick={handleFinalConfirm}>
+                ✅ 确认完成
               </button>
             </>
           )}
