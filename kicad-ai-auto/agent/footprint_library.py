@@ -256,7 +256,7 @@ SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS = {
 }
 
 
-def get_default_footprint(component_type: str, package: str = None) -> str:
+def get_default_footprint(component_type: str, package: Optional[str] = None) -> str:
     """
     获取默认封装
 
@@ -317,7 +317,9 @@ def get_footprint_by_keyword(keyword: str) -> Optional[str]:
 
 
 def find_best_footprint(
-    component_name: str, component_value: str = None, package: str = None
+    component_name: str,
+    component_value: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> str:
     """
     根据元件信息找到最佳封装
@@ -355,7 +357,9 @@ def find_best_footprint(
     return get_default_footprint(component_type)
 
 
-def infer_component_type(component_name: str, component_value: str = None) -> str:
+def infer_component_type(
+    component_name: str, component_value: Optional[str] = None
+) -> str:
     """
     根据元件名称和值推断元件类型
 
@@ -556,7 +560,7 @@ class FootprintLibraryManager:
     从 KiCad 安装目录读取封装库
     """
 
-    def __init__(self, kicad_footprint_dir: str = None):
+    def __init__(self, kicad_footprint_dir: Optional[str] = None):
         """
         初始化封装库管理器
 
@@ -601,7 +605,7 @@ class FootprintLibraryManager:
                 logger.info(f"Found KiCad footprint directory: {dir_path}")
                 self._scan_directory(dir_path)
 
-    def _scan_directory(self, dir_path: str):
+    def _scan_directory(self, dir_path: Optional[str]):
         """扫描目录获取封装列表"""
         if not os.path.exists(dir_path):
             return

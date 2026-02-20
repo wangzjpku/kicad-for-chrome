@@ -21,6 +21,9 @@ from kicad_ipc_manager import (
 # 导入GLM-4客户端
 from glm4_client import get_glm4_client, is_glm4_available
 
+# 导入新的原理图生成器
+from schematic_generator import generate_standard_schematic, SchematicGenerator
+
 logger = logging.getLogger(__name__)
 
 # ========== 加载本地知识库 ==========
@@ -94,8 +97,144 @@ def get_typical_circuits(model: str) -> List[str]:
 router = APIRouter(prefix="/api/v1/ai", tags=["AI"])
 
 
+def _generate_reference(component_name: str, index: int) -> str:
+    """
+    根据元件名称生成位号（如 U1, R1, C1）
+
+    Args:
+        component_name: 元件名称
+        index: 元件索引
+
+    Returns:
+        位号字符串
+    """
+    name_lower = component_name.lower()
+
+    # 根据元件类型确定前缀
+    if any(kw in name_lower for kw in ["电容", "capacitor", "cap", "电容"]):
+        prefix = "C"
+    elif any(kw in name_lower for kw in ["电阻", "resistor", "res"]):
+        prefix = "R"
+    elif any(kw in name_lower for kw in ["电感", "inductor", "inductor"]):
+        prefix = "L"
+    elif any(kw in name_lower for kw in ["二极管", "diode", "led"]):
+        prefix = "D"
+    elif any(kw in name_lower for kw in ["三极管", "mos", "transistor", "晶体管"]):
+        prefix = "Q"
+    elif any(
+        kw in name_lower
+        for kw in ["单片机", "mcu", "ic", "芯片", "stm32", "atmega", "esp"]
+    ):
+        prefix = "U"
+    elif any(kw in name_lower for kw in ["连接器", "connector", "接口", "usb", "jack"]):
+        prefix = "J"
+    elif any(kw in name_lower for kw in ["开关", "switch", "按键", "button"]):
+        prefix = "SW"
+    elif any(kw in name_lower for kw in ["晶振", "crystal", "oscillator"]):
+        prefix = "Y"
+    elif any(kw in name_lower for kw in ["继电器", "relay"]):
+        prefix = "K"
+    elif any(kw in name_lower for kw in ["电池", "battery"]):
+        prefix = "BT"
+    elif any(kw in name_lower for kw in ["保险丝", "fuse"]):
+        prefix = "F"
+    elif any(kw in name_lower for kw in ["蜂鸣器", "buzzer", "扬声器", "speaker"]):
+        prefix = "LS"
+    elif any(kw in name_lower for kw in ["显示屏", "display", "oled", "lcd"]):
+        prefix = "DS"
+    elif any(kw in name_lower for kw in ["传感器", "sensor", "模块", "module"]):
+        prefix = "U"
+    else:
+        prefix = "U"  # 默认使用 U
+
+    return f"{prefix}{index + 1}"
+
+
+def _get_pin_offset(pin_number: str, total_pins: int) -> Dict[str, float]:
+    """
+    根据引脚号和总引脚数计算引脚的偏移位置
+
+    偏移量必须与前端 AIProjectDialog.tsx 中的元件渲染匹配：
+    - 元件框: width=60, height=40
+    - transform: translate(x-30, y-20)
+    - 左引脚圆心: cx=0, cy=20 -> 绝对位置 (x-30, y)
+    - 右引脚圆心: cx=60, cy=20 -> 绝对位置 (x+30, y)
+
+    所以相对于元件位置 (x, y)：
+    - 左侧引脚偏移: (-30, 0)
+    - 右侧引脚偏移: (+30, 0)
+
+    Args:
+        pin_number: 引脚号
+        total_pins: 总引脚数
+
+    Returns:
+        包含x和y偏移的字典
+    """
+    try:
+        pin_num = int(pin_number)
+    except ValueError:
+        pin_num = 1
+
+    # 元件框尺寸：60x40（与前端 AIProjectDialog.tsx 匹配）
+    element_width = 60.0
+    element_height = 40.0
+    half_width = element_width / 2  # 30
+    pin_spacing = 25.0  # 引脚垂直间距
+
+    if total_pins <= 2:
+        # 两引脚元件（如电阻、电容）- 左右分布
+        # 左引脚在 x-30，右引脚在 x+30
+        if pin_num == 1:
+            return {"x": -half_width, "y": 0.0}
+        else:
+            return {"x": half_width, "y": 0.0}
+    elif total_pins <= 4:
+        # 四引脚元件 - 两侧分布，每侧2个引脚
+        if pin_num <= 2:
+            # 左侧引脚
+            y_offset = (pin_num - 1.5) * pin_spacing
+            return {"x": -half_width, "y": y_offset}
+        else:
+            # 右侧引脚
+            y_offset = (total_pins - pin_num - 0.5) * pin_spacing
+            return {"x": half_width, "y": y_offset}
+    else:
+        # 多引脚元件 - 根据引脚号计算位置
+        half = total_pins // 2
+        if pin_num <= half:
+            # 左侧引脚
+            y_offset = (pin_num - half / 2 - 0.5) * pin_spacing
+            return {"x": -half_width, "y": y_offset}
+        else:
+            # 右侧引脚
+            y_offset = (total_pins - pin_num - half / 2 + 0.5) * pin_spacing
+            return {"x": half_width, "y": y_offset}
+
+
 class AnalyzeRequest(BaseModel):
     requirements: str
+    # 新增：用户对澄清问题的回答
+    answers: Optional[Dict[str, str]] = None
+    # 新增：是否只需要生成问题（不生成方案）
+    questions_only: bool = False
+
+
+class ClarificationQuestion(BaseModel):
+    """澄清问题模型"""
+    id: str
+    question: str
+    category: str  # "power", "interface", "size", "cost", etc.
+    options: Optional[List[str]] = None  # 可选的预设选项
+    default: Optional[str] = None  # 默认值
+    required: bool = True  # 是否必须回答
+
+
+class ClarificationResponse(BaseModel):
+    """澄清问题响应"""
+    questions: List[ClarificationQuestion]
+    summary: str  # 需求摘要
+    detected_type: str  # 检测到的电路类型
 
 
 class ComponentSpec(BaseModel):
@@ -125,6 +264,9 @@ class SchematicComponent(BaseModel):
     model: str
     position: Dict[str, float]
     pins: List[Dict[str, Any]] = []
+    footprint: Optional[str] = None  # 添加封装字段
+    symbol_library: Optional[str] = None  # 添加符号库字段
+    reference: Optional[str] = None  # 添加位号字段 (如 U1, R1, C1)
 
 
 class SchematicWire(BaseModel):
@@ -978,104 +1120,85 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
             req
         )
 
-    # 生成原理图数据
-    # ========== 使用知识库生成真实原理图 ==========
-    logger.info("使用知识库生成原理图...")
+    # ========== 使用新的标准原理图生成器 ==========
+    logger.info("使用标准原理图生成器...")
 
-    # 收集典型电路模板
-    all_circuits = []
+    # 确定电路类型
+    circuit_type = "general"
+    req_lower = req.lower()
+    if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+        circuit_type = "power_supply"
+    elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+        circuit_type = "mcu"
+
+    # 准备元件数据
+    comp_dicts = []
     for comp in components:
-        circuits = get_typical_circuits(comp.model)
-        all_circuits.extend(circuits)
-    all_circuits = list(set(all_circuits))  # 去重
-    logger.info(f"检测到典型电路: {all_circuits}")
+        comp_dicts.append({
+            "name": comp.name,
+            "model": comp.model,
+            "package": comp.package,
+            "quantity": comp.quantity,
+        })
 
-    # 生成元件符号和网络
-    schematic_components = []
-    schematic_wires = []
-    schematic_nets = []
+    # 使用新的原理图生成器
+    schematic_data = generate_standard_schematic(comp_dicts, circuit_type)
+    logger.info(f"原理图生成完成: {len(schematic_data['components'])}个元件, "
+                f"{len(schematic_data['wires'])}条导线, "
+                f"{len(schematic_data['nets'])}个网络, "
+                f"{len(schematic_data.get('powerSymbols', []))}个电源符号, "
+                f"{len(schematic_data.get('netLabels', []))}个网络标签")
 
+    # 转换为兼容格式
+    schematic_components = [
+        SchematicComponent(
+            id=c["id"],
+            name=c["name"],
+            model=c["model"],
+            position=c["position"],
+            pins=c["pins"],
+            footprint=c.get("footprint", ""),
+            symbol_library=c.get("symbol_library", ""),
+            reference=c.get("reference", "U1"),
+        )
+        for c in schematic_data["components"]
+    ]
+
+    schematic_wires = [
+        SchematicWire(
+            id=w["id"],
+            points=w["points"],
+            net=w["net"]
+        )
+        for w in schematic_data["wires"]
+    ]
+
+    schematic_nets = [
+        SchematicNet(
+            id=n["id"],
+            name=n["name"]
+        )
+        for n in schematic_data["nets"]
+    ]
+
+    # 为 spec.components 添加封装信息
+    components_with_footprint = []
     for i, comp in enumerate(components):
-        # 尝试从知识库获取真实引脚定义
-        real_pins = get_schematic_pins(comp.model)
-
-        if real_pins:
-            # 使用知识库中的真实引脚
-            pins = real_pins
-            logger.info(f"  {comp.model}: 使用知识库引脚 ({len(pins)}个)")
-        else:
-            # 使用默认引脚
-            pins = [{"number": "1", "name": "P1"}, {"number": "2", "name": "P2"}]
-            logger.info(f"  {comp.model}: 使用默认引脚")
-
-        schematic_components.append(
-            SchematicComponent(
-                id=f"comp-{i + 1}",
+        footprint = _get_footprint_for_component(comp)
+        components_with_footprint.append(
+            ComponentSpec(
                 name=comp.name,
                 model=comp.model,
-                position={"x": 100 + (i % 2) * 200, "y": 100 + (i // 2) * 100},
-                pins=pins,
+                package=comp.package,
+                quantity=comp.quantity,
+                footprint=footprint,
             )
         )
-
-    # 生成电源网络
-    schematic_nets.append(SchematicNet(id="net-vcc", name="VCC"))
-    schematic_nets.append(SchematicNet(id="net-gnd", name="GND"))
-
-    # 为典型电路生成网络连接
-    for template_name in all_circuits:
-        template = get_circuit_template(template_name)
-        if template and "connections" in template:
-            for conn in template["connections"]:
-                net_name = conn.get("net", "NET")
-                if net_name not in [n.name for n in schematic_nets]:
-                    schematic_nets.append(
-                        SchematicNet(id=f"net-{len(schematic_nets) + 1}", name=net_name)
-                    )
-
-    # 生成导线连接 - 基于典型电路
-    if all_circuits:
-        # 使用典型电路模板连接
-        for template_name in all_circuits:
-            template = get_circuit_template(template_name)
-            if template and "connections" in template:
-                for conn in template["connections"]:
-                    net_name = conn.get("net", "NET")
-                    schematic_wires.append(
-                        SchematicWire(
-                            id=f"wire-{len(schematic_wires) + 1}",
-                            points=[
-                                {"x": 150, "y": 150},
-                                {"x": 250, "y": 150},
-                            ],
-                            net=net_name,
-                        )
-                    )
-    else:
-        # 默认连接方式
-        for i in range(len(components) - 1):
-            schematic_wires.append(
-                SchematicWire(
-                    id=f"wire-{i + 1}",
-                    points=[
-                        {"x": 100 + (i % 2) * 200 + 30, "y": 100 + (i // 2) * 100},
-                        {
-                            "x": 100 + ((i + 1) % 2) * 200 - 30,
-                            "y": 100 + ((i + 1) // 2) * 100,
-                        },
-                    ],
-                    net="VCC",
-                )
-            )
-
-    logger.info(
-        f"原理图生成完成: {len(schematic_components)}个元件, {len(schematic_wires)}条导线, {len(schematic_nets)}个网络"
-    )
 
     spec = ProjectSpec(
         name=project_name,
         description=description,
-        components=components,
+        components=components_with_footprint,
         parameters=parameters,
     )
 
@@ -1084,6 +1207,210 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
     )
 
     return AnalyzeResponse(spec=spec, schematic=schematic)
+
+
+def generate_clarification_questions(requirements: str) -> ClarificationResponse:
+    """
+    根据用户需求生成澄清问题列表
+
+    分析需求描述，识别需要澄清的关键参数，
+    生成有针对性的问题帮助用户明确需求。
+    """
+    import re
+
+    logger.info(f"生成澄清问题: {requirements[:100]}...")
+
+    req_lower = requirements.lower()
+    questions = []
+
+    # ========== 检测电路类型 ==========
+    detected_type = "通用电路模块"
+    circuit_keywords = {
+        "电源/稳压": ["电源", "稳压", "power", "voltage", "供电", "变压"],
+        "LED驱动": ["led", "灯", "照明", "发光"],
+        "电机控制": ["电机", "马达", "motor", "舵机", "servo"],
+        "传感器模块": ["传感器", "sensor", "测温", "温湿度", "检测"],
+        "通信模块": ["蓝牙", "wifi", "usb", "串口", "通信", "uart", "i2c"],
+        "音频电路": ["音频", "声音", "audio", "扬声器", "麦克风"],
+        "充电电路": ["充电", "电池", "battery", "锂电池"],
+    }
+
+    for ctype, keywords in circuit_keywords.items():
+        if any(kw in req_lower for kw in keywords):
+            detected_type = ctype
+            break
+
+    # ========== 电源相关问题 ==========
+    if any(kw in req_lower for kw in ["电源", "稳压", "power", "供电", "voltage"]):
+        # 检查是否已指定输入电压
+        input_v_match = re.search(r"(\d+(?:\.\d+)?)\s*[Vv].*输入|输入.*(\d+(?:\.\d+)?)\s*[Vv]", requirements)
+        if not input_v_match:
+            questions.append(ClarificationQuestion(
+                id="input_voltage",
+                question="输入电压是多少？",
+                category="power",
+                options=["220V AC (市电)", "12V DC", "5V DC (USB)", "3.7V (锂电池)", "其他"],
+                required=True
+            ))
+
+        # 检查是否已指定输出电压
+        output_v_match = re.search(r"输出.*(\d+(?:\.\d+)?)\s*[Vv]|(\d+(?:\.\d+)?)\s*[Vv].*输出", requirements)
+        if not output_v_match:
+            questions.append(ClarificationQuestion(
+                id="output_voltage",
+                question="需要的输出电压是多少？",
+                category="power",
+                options=["3.3V", "5V", "9V", "12V", "可调"],
+                required=True
+            ))
+
+        # 检查输出电流
+        current_match = re.search(r"(\d+(?:\.\d+)?)\s*[Aa]", requirements)
+        if not current_match:
+            questions.append(ClarificationQuestion(
+                id="output_current",
+                question="最大输出电流需求是多少？",
+                category="power",
+                options=["<500mA (小功率)", "500mA-1A", "1A-2A", "2A-5A", ">5A (大功率)"],
+                required=True
+            ))
+
+    # ========== 尺寸和封装相关问题 ==========
+    if "尺寸" not in req_lower and "大小" not in req_lower:
+        questions.append(ClarificationQuestion(
+            id="pcb_size",
+            question="PCB 尺寸有要求吗？",
+            category="size",
+            options=["越小越好", "50x50mm", "100x100mm", "无特殊要求"],
+            default="无特殊要求",
+            required=False
+        ))
+
+    # 封装偏好
+    questions.append(ClarificationQuestion(
+        id="package_type",
+        question="器件封装偏好？",
+        category="package",
+        options=["全贴片 (SMD)", "插件 (THT)", "混合使用", "无所谓"],
+        default="混合使用",
+        required=False
+    ))
+
+    # ========== 成本相关问题 ==========
+    if "成本" not in req_lower and "价格" not in req_lower and "预算" not in req_lower:
+        questions.append(ClarificationQuestion(
+            id="cost_target",
+            question="成本预算范围？",
+            category="cost",
+            options=["低成本 (<20元)", "中等 (20-50元)", "高性能 (50-100元)", "不计成本"],
+            default="中等 (20-50元)",
+            required=False
+        ))
+
+    # ========== 接口相关问题 ==========
+    if any(kw in req_lower for kw in ["控制", "mcu", "单片机", "智能"]):
+        questions.append(ClarificationQuestion(
+            id="control_interface",
+            question="需要什么控制接口？",
+            category="interface",
+            options=["GPIO (简单控制)", "I2C", "SPI", "UART/串口", "不需要MCU控制"],
+            required=False
+        ))
+
+    # ========== 特殊功能需求 ==========
+    # 是否需要指示灯
+    questions.append(ClarificationQuestion(
+        id="status_led",
+        question="需要状态指示灯吗？",
+        category="features",
+        options=["需要 (电源指示+状态)", "仅电源指示", "不需要"],
+        default="需要 (电源指示+状态)",
+        required=False
+    ))
+
+    # 是否需要保护电路
+    if any(kw in req_lower for kw in ["电源", "充电", "电池"]):
+        questions.append(ClarificationQuestion(
+            id="protection",
+            question="需要哪些保护功能？",
+            category="protection",
+            options=["过流保护", "过压保护", "过热保护", "全部需要", "不需要"],
+            default="全部需要",
+            required=False
+        ))
+
+    # ========== 连接器相关问题 ==========
+    questions.append(ClarificationQuestion(
+        id="connector_type",
+        question="输入/输出连接器偏好？",
+        category="connector",
+        options=["接线端子", "排针 (2.54mm)", "USB 接口", "DC 插座", "根据需要选择"],
+        default="根据需要选择",
+        required=False
+    ))
+
+    # 生成需求摘要
+    summary = f"检测到电路类型: {detected_type}。需要澄清 {len(questions)} 个问题以生成精确的 BOM 和原理图。"
+
+    logger.info(f"生成了 {len(questions)} 个澄清问题")
+
+    return ClarificationResponse(
+        questions=questions,
+        summary=summary,
+        detected_type=detected_type
+    )
+
+
+def build_enhanced_requirements(original: str, answers: Dict[str, str]) -> str:
+    """
+    将原始需求和用户回答合并成增强版需求描述
+    """
+    enhanced_parts = [f"原始需求: {original}", "\n明确要求:"]
+
+    answer_mapping = {
+        "input_voltage": "输入电压",
+        "output_voltage": "输出电压",
+        "output_current": "输出电流",
+        "pcb_size": "PCB尺寸",
+        "package_type": "器件封装",
+        "cost_target": "成本预算",
+        "control_interface": "控制接口",
+        "status_led": "状态指示",
+        "protection": "保护功能",
+        "connector_type": "连接器类型",
+    }
+
+    for key, value in answers.items():
+        label = answer_mapping.get(key, key)
+        enhanced_parts.append(f"- {label}: {value}")
+
+    return "\n".join(enhanced_parts)
+
+
+@router.post("/clarify", response_model=ClarificationResponse)
+async def get_clarification_questions(request: AnalyzeRequest):
+    """
+    获取澄清问题列表
+
+    用户提交初始需求后，调用此接口获取需要澄清的问题列表。
+    前端展示问题，收集用户回答后，再调用 /analyze 接口生成方案。
+    """
+    try:
+        if not request.requirements.strip():
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "需求描述不能为空"}
+            )
+
+        result = generate_clarification_questions(request.requirements)
+        return result
+
+    except Exception as e:
+        logger.error(f"生成澄清问题失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"生成问题失败: {str(e)}"}
+        )
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
@@ -1135,13 +1462,31 @@ async def analyze_requirements(request: AnalyzeRequest):
                 schematic_data = project_spec.get("schematic", {})
                 schematic_components = []
                 for i, comp in enumerate(schematic_data.get("components", [])):
+                    # 获取封装 - 优先使用GLM返回的footprint，否则推断
+                    footprint = comp.get("footprint")
+                    if not footprint:
+                        footprint = _get_footprint_for_component(
+                            ComponentSpec(
+                                name=comp.get("name", ""),
+                                model=comp.get("model", ""),
+                                package=comp.get("package", "0805"),
+                                quantity=1,
+                            )
+                        )
+
                     schematic_components.append(
                         SchematicComponent(
                             id=comp.get("id", f"comp-{i + 1}"),
                             name=comp.get("name", ""),
                             model=comp.get("model", ""),
-                            position=comp.get("position", {"x": 100, "y": 100}),
+                            position=comp.get(
+                                "position",
+                                {"x": 100 + (i % 5) * 200, "y": 100 + (i // 5) * 150},
+                            ),
                             pins=comp.get("pins", []),
+                            footprint=footprint,
+                            symbol_library=comp.get("symbol_library"),
+                            reference=comp.get("reference"),
                         )
                     )
 

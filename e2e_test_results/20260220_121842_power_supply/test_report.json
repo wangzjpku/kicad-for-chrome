@@ -1,0 +1,132 @@
+{
+  "total_steps": 19,
+  "passed": 17,
+  "failed": 2,
+  "success_rate": "89.5%",
+  "duration_seconds": 42.91,
+  "steps": {
+    "browser_setup": {
+      "success": true,
+      "message": "浏览器初始化成功",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:46.083529"
+    },
+    "step1_backend": {
+      "success": true,
+      "message": "后端服务 (8000): 运行中",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:47.097659"
+    },
+    "step1_frontend": {
+      "success": true,
+      "message": "前端服务 (3000): 运行中",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:47.097899"
+    },
+    "step2_navigate": {
+      "success": true,
+      "message": "页面标题: KiCad AI Auto",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:50.403918"
+    },
+    "step3_find_button": {
+      "success": true,
+      "message": "找到 AI 创建按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:50.701993"
+    },
+    "step3_open_dialog": {
+      "success": true,
+      "message": "AI 对话框已打开",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:51.802728"
+    },
+    "step4_find_input": {
+      "success": true,
+      "message": "找到需求输入框",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:51.916856"
+    },
+    "step4_input": {
+      "success": true,
+      "message": "已输入需求 (33 字符)",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:52.444491"
+    },
+    "step5_find_button": {
+      "success": true,
+      "message": "找到开始分析按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:52.582857"
+    },
+    "step5_submit": {
+      "success": true,
+      "message": "已点击开始分析",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:52.618325"
+    },
+    "step5_analysis_complete": {
+      "success": true,
+      "message": "AI 分析完成，显示预览",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.743943"
+    },
+    "step6_project_name": {
+      "success": true,
+      "message": "项目名称: 5V稳压电源",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.862981"
+    },
+    "step6_params": {
+      "success": true,
+      "message": "技术参数: 3 行",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.880433"
+    },
+    "step6_components": {
+      "success": true,
+      "message": "器件选型: 5 个器件",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.900405"
+    },
+    "step6_schematic": {
+      "success": true,
+      "message": "原理图预览已渲染",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.906589"
+    },
+    "step6_component_list": {
+      "success": true,
+      "message": "器件清单: 5 个",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:54.917699"
+    },
+    "step7_find_button": {
+      "success": true,
+      "message": "找到确认创建按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:18:55.033277"
+    },
+    "step7_confirm": {
+      "success": false,
+      "message": "确认创建失败: ElementHandle.click: Timeout 30000ms exceeded.\nCall log:\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"dialog-content\">…</div> from <div class=\"dialog-overlay\">…</div> subtree intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"dialog-content\">…</div> from <div class=\"dialog-overlay\">…</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    57 × waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"dialog-content\">…</div> from <div class=\"dialog-overlay\">…</div> subtree intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n",
+      "details": {},
+      "timestamp": "2026-02-20T12:19:25.055605"
+    },
+    "test_error": {
+      "success": false,
+      "message": "确认创建失败",
+      "details": {},
+      "timestamp": "2026-02-20T12:19:25.055850"
+    }
+  },
+  "screenshots": [
+    "e2e_test_results\\20260220_121842_power_supply\\121850_01_homepage.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121851_02_ai_dialog_opened.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121852_03_requirements_input.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121854_04_analyzing.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121854_05_preview_result.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121854_06_full_preview.png",
+    "e2e_test_results\\20260220_121842_power_supply\\121925_error_final.png"
+  ]
+}

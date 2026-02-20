@@ -214,11 +214,12 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
         onDragEnd={handleDragEnd}
       >
         {/* 元件主体 - 简化为矩形 */}
+        {/* 尺寸 60x40，与后端 _get_pin_offset 匹配 */}
         <Rect
-          x={-15}
-          y={-10}
-          width={30}
-          height={20}
+          x={-30}
+          y={-20}
+          width={60}
+          height={40}
           fill={selected ? '#4a9eff' : '#2d5a87'}
           stroke={selected ? '#ffffff' : '#4a9eff'}
           strokeWidth={selected ? 2 : 1}
@@ -238,8 +239,8 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
         {/* 位号 */}
         <Text
           text={comp.reference}
-          x={-15}
-          y={-22}
+          x={-30}
+          y={-32}
           fontSize={10}
           fill="#ffffff"
         />
@@ -247,8 +248,8 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
         {/* 值 */}
         <Text
           text={comp.value}
-          x={-15}
-          y={12}
+          x={-30}
+          y={22}
           fontSize={8}
           fill="#aaaaaa"
         />

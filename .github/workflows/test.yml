@@ -1,0 +1,100 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd kicad-ai-auto/agent
+          pip install -r ../docker/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run pytest
+        run: |
+          cd kicad-ai-auto/agent
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=term
+        env:
+          PYTHONPATH: ${{ github.workspace }}/kicad-ai-auto/agent
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./kicad-ai-auto/agent/coverage.xml
+          flags: unittests
+
+  frontend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: kicad-ai-auto/web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd kicad-ai-auto/web
+          npm install
+
+      - name: Run vitest
+        run: |
+          cd kicad-ai-auto/web
+          npm run test -- --run --coverage
+
+      - name: Build
+        run: |
+          cd kicad-ai-auto/web
+          npm run build
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install ruff black
+
+      - name: Run ruff
+        run: |
+          cd kicad-ai-auto/agent
+          ruff check .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd kicad-ai-auto/web
+          npm install
+
+      - name: Run ESLint
+        run: |
+          cd kicad-ai-auto/web
+          npm run lint

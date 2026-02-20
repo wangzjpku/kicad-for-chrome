@@ -708,7 +708,9 @@ def reset_kicad_manager():
 
 
 def get_footprint_recommendations(
-    component_name: str, component_value: str = None, package: str = None
+    component_name: str,
+    component_value: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     获取元件的推荐封装

@@ -1,0 +1,193 @@
+{
+  "total_steps": 26,
+  "passed": 25,
+  "failed": 1,
+  "success_rate": "96.2%",
+  "duration_seconds": 16.93,
+  "steps": {
+    "browser_setup": {
+      "success": true,
+      "message": "浏览器初始化成功",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:06.155494"
+    },
+    "step1_backend": {
+      "success": true,
+      "message": "后端服务 (8000): 运行中",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:07.158297"
+    },
+    "step1_frontend": {
+      "success": true,
+      "message": "前端服务 (3000): 运行中",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:07.158465"
+    },
+    "step2_navigate": {
+      "success": true,
+      "message": "页面标题: KiCad AI Auto",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:10.375663"
+    },
+    "step3_find_button": {
+      "success": true,
+      "message": "找到 AI 创建按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:10.674486"
+    },
+    "step3_open_dialog": {
+      "success": true,
+      "message": "AI 对话框已打开",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:11.779541"
+    },
+    "step4_find_input": {
+      "success": true,
+      "message": "找到需求输入框",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:11.921802"
+    },
+    "step4_input": {
+      "success": true,
+      "message": "已输入需求 (33 字符)",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:12.457371"
+    },
+    "step5_find_button": {
+      "success": true,
+      "message": "找到开始分析按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:12.576512"
+    },
+    "step5_submit": {
+      "success": true,
+      "message": "已点击开始分析",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:12.608267"
+    },
+    "step5_analysis_complete": {
+      "success": true,
+      "message": "AI 分析完成，显示预览",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.752394"
+    },
+    "step6_project_name": {
+      "success": true,
+      "message": "项目名称: 5V稳压电源",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.876916"
+    },
+    "step6_params": {
+      "success": true,
+      "message": "技术参数: 3 行",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.894212"
+    },
+    "step6_components": {
+      "success": true,
+      "message": "器件选型: 5 个器件",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.910913"
+    },
+    "step6_schematic": {
+      "success": true,
+      "message": "原理图预览已渲染",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.916869"
+    },
+    "step6_component_list": {
+      "success": true,
+      "message": "器件清单: 5 个",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:14.925615"
+    },
+    "step7_find_button": {
+      "success": true,
+      "message": "找到确认创建按钮",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:15.038232"
+    },
+    "step7_click": {
+      "success": true,
+      "message": "已点击确认创建",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:15.048315"
+    },
+    "step7_dialog_closed": {
+      "success": true,
+      "message": "对话框仍然可见 (可能在加载)",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:18.158177"
+    },
+    "step8_url": {
+      "success": true,
+      "message": "仍在项目列表: http://localhost:3000/",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.172049"
+    },
+    "step8_editor": {
+      "success": true,
+      "message": "未检测到编辑器 (可能在项目列表)",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.176854"
+    },
+    "step8_projects": {
+      "success": true,
+      "message": "项目列表: 0 个项目",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.182091"
+    },
+    "step9_api_total": {
+      "success": true,
+      "message": "总 API 调用: 3 次",
+      "details": {
+        "calls": [
+          {
+            "method": "GET",
+            "url": "http://localhost:3000/api/v1/projects",
+            "time": "2026-02-20T12:20:07.830787"
+          },
+          {
+            "method": "GET",
+            "url": "http://localhost:3000/api/v1/projects",
+            "time": "2026-02-20T12:20:07.831416"
+          },
+          {
+            "method": "POST",
+            "url": "http://localhost:3000/api/v1/ai/analyze",
+            "time": "2026-02-20T12:20:12.607002"
+          }
+        ]
+      },
+      "timestamp": "2026-02-20T12:20:20.289177"
+    },
+    "step9_ai_analyze": {
+      "success": true,
+      "message": "AI 分析调用: 1 次",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.289228"
+    },
+    "step9_project_create": {
+      "success": false,
+      "message": "项目创建调用: 0 次",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.289272"
+    },
+    "step9_console_errors": {
+      "success": true,
+      "message": "无控制台错误",
+      "details": {},
+      "timestamp": "2026-02-20T12:20:20.289316"
+    }
+  },
+  "screenshots": [
+    "e2e_test_results\\20260220_122003_power_supply\\122010_01_homepage.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122011_02_ai_dialog_opened.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122012_03_requirements_input.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122014_04_analyzing.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122014_05_preview_result.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122014_06_full_preview.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122018_07_creating.png",
+    "e2e_test_results\\20260220_122003_power_supply\\122020_08_final_state.png"
+  ]
+}

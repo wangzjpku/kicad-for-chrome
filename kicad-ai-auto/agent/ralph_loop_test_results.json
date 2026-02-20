@@ -1,0 +1,345 @@
+{
+  "summary": {
+    "total": 20,
+    "success": 20,
+    "failed": 0,
+    "bugs": []
+  },
+  "results": [
+    {
+      "success": true,
+      "name": "custom_pads_test",
+      "components": 5,
+      "tracks": 19,
+      "vias": 0,
+      "pads": 3,
+      "nets": 9,
+      "initial_issues": 0,
+      "final_issues": 0,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {}
+    },
+    {
+      "success": true,
+      "name": "test_pads_inside_pads",
+      "components": 4,
+      "tracks": 4,
+      "vias": 0,
+      "pads": 14,
+      "nets": 16,
+      "initial_issues": 7,
+      "final_issues": 5,
+      "fix_rate": 28.57142857142857,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 7
+      }
+    },
+    {
+      "success": true,
+      "name": "interf_u",
+      "components": 25,
+      "tracks": 731,
+      "vias": 84,
+      "pads": 86,
+      "nets": 546,
+      "initial_issues": 1118,
+      "final_issues": 1118,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 1118
+      }
+    },
+    {
+      "success": true,
+      "name": "test_pads_inside_pads",
+      "components": 4,
+      "tracks": 4,
+      "vias": 0,
+      "pads": 14,
+      "nets": 16,
+      "initial_issues": 7,
+      "final_issues": 5,
+      "fix_rate": 28.57142857142857,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 7
+      }
+    },
+    {
+      "success": true,
+      "name": "pic_programmer",
+      "components": 63,
+      "tracks": 370,
+      "vias": 6,
+      "pads": 117,
+      "nets": 347,
+      "initial_issues": 442,
+      "final_issues": 441,
+      "fix_rate": 0.22624434389140274,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 442
+      }
+    },
+    {
+      "success": true,
+      "name": "microwave",
+      "components": 4,
+      "tracks": 0,
+      "vias": 0,
+      "pads": 8,
+      "nets": 2,
+      "initial_issues": 0,
+      "final_issues": 0,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {}
+    },
+    {
+      "success": true,
+      "name": "pic_programmer",
+      "components": 63,
+      "tracks": 370,
+      "vias": 6,
+      "pads": 117,
+      "nets": 347,
+      "initial_issues": 442,
+      "final_issues": 441,
+      "fix_rate": 0.22624434389140274,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 442
+      }
+    },
+    {
+      "success": true,
+      "name": "interf_u",
+      "components": 25,
+      "tracks": 731,
+      "vias": 84,
+      "pads": 86,
+      "nets": 546,
+      "initial_issues": 1118,
+      "final_issues": 1118,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 1118
+      }
+    },
+    {
+      "success": true,
+      "name": "vme-wren",
+      "components": 1508,
+      "tracks": 24858,
+      "vias": 4374,
+      "pads": 1715,
+      "nets": 8628,
+      "initial_issues": 27586,
+      "final_issues": 24949,
+      "fix_rate": 9.559196693975206,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 27586
+      }
+    },
+    {
+      "success": true,
+      "name": "video",
+      "components": 189,
+      "tracks": 7932,
+      "vias": 808,
+      "pads": 956,
+      "nets": 2634,
+      "initial_issues": 8353,
+      "final_issues": 8349,
+      "fix_rate": 0.047886986711361185,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 8353
+      }
+    },
+    {
+      "success": true,
+      "name": "complex_hierarchy",
+      "components": 68,
+      "tracks": 364,
+      "vias": 0,
+      "pads": 44,
+      "nets": 216,
+      "initial_issues": 640,
+      "final_issues": 640,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 640
+      }
+    },
+    {
+      "success": true,
+      "name": "microwave",
+      "components": 4,
+      "tracks": 0,
+      "vias": 0,
+      "pads": 8,
+      "nets": 2,
+      "initial_issues": 0,
+      "final_issues": 0,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {}
+    },
+    {
+      "success": true,
+      "name": "sonde xilinx",
+      "components": 25,
+      "tracks": 208,
+      "vias": 3,
+      "pads": 43,
+      "nets": 150,
+      "initial_issues": 363,
+      "final_issues": 363,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 363
+      }
+    },
+    {
+      "success": true,
+      "name": "test_pads_inside_pads",
+      "components": 4,
+      "tracks": 4,
+      "vias": 0,
+      "pads": 14,
+      "nets": 16,
+      "initial_issues": 7,
+      "final_issues": 5,
+      "fix_rate": 28.57142857142857,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 7
+      }
+    },
+    {
+      "success": true,
+      "name": "video",
+      "components": 189,
+      "tracks": 7932,
+      "vias": 808,
+      "pads": 956,
+      "nets": 2634,
+      "initial_issues": 8353,
+      "final_issues": 8349,
+      "fix_rate": 0.047886986711361185,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 8353
+      }
+    },
+    {
+      "success": true,
+      "name": "flat_hierarchy",
+      "components": 64,
+      "tracks": 371,
+      "vias": 7,
+      "pads": 159,
+      "nets": 349,
+      "initial_issues": 440,
+      "final_issues": 440,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 440
+      }
+    },
+    {
+      "success": true,
+      "name": "complex_hierarchy",
+      "components": 68,
+      "tracks": 364,
+      "vias": 0,
+      "pads": 44,
+      "nets": 216,
+      "initial_issues": 640,
+      "final_issues": 640,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 640
+      }
+    },
+    {
+      "success": true,
+      "name": "test_pads_inside_pads",
+      "components": 4,
+      "tracks": 4,
+      "vias": 0,
+      "pads": 14,
+      "nets": 16,
+      "initial_issues": 7,
+      "final_issues": 5,
+      "fix_rate": 28.57142857142857,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 7
+      }
+    },
+    {
+      "success": true,
+      "name": "test_pads_inside_pads",
+      "components": 4,
+      "tracks": 4,
+      "vias": 0,
+      "pads": 14,
+      "nets": 16,
+      "initial_issues": 7,
+      "final_issues": 5,
+      "fix_rate": 28.57142857142857,
+      "iterations": 2,
+      "converged": true,
+      "issue_types": {
+        "Issue": 7
+      }
+    },
+    {
+      "success": true,
+      "name": "sonde xilinx",
+      "components": 25,
+      "tracks": 208,
+      "vias": 3,
+      "pads": 43,
+      "nets": 150,
+      "initial_issues": 363,
+      "final_issues": 363,
+      "fix_rate": 0.0,
+      "iterations": 1,
+      "converged": true,
+      "issue_types": {
+        "Issue": 363
+      }
+    }
+  ],
+  "bugs": []
+}

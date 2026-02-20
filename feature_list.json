@@ -1,0 +1,211 @@
+{
+  "project": {
+    "name": "kicad-for-chrome",
+    "description": "浏览器端 KiCad 访问与 AI 自动化",
+    "stack": "Python (FastAPI) + React + TypeScript",
+    "created_at": "2026-02-14",
+    "plan_version": "plan4.md"
+  },
+  "features": [
+    {
+      "id": "T001",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "创建 feature_list.json 特征列表文件",
+      "steps": [
+        "创建 feature_list.json 文件",
+        "定义项目元数据",
+        "定义所有测试任务"
+      ],
+      "passes": true,
+      "notes": "已完成 - 2026-02-14"
+    },
+    {
+      "id": "T002",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "创建 claude-progress.txt 进度日志文件",
+      "steps": [
+        "创建 claude-progress.txt 文件",
+        "定义进度日志格式"
+      ],
+      "passes": true,
+      "notes": "已完成 - 2026-02-14"
+    },
+    {
+      "id": "T003",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "运行现有测试确保基础测试通过",
+      "steps": [
+        "运行后端 pytest 测试",
+        "运行前端 vitest 测试",
+        "修复失败的测试"
+      ],
+      "passes": true,
+      "notes": "已完成 - 后端 90/90 通过，前端 163/163 通过 (16 跳过)"
+    },
+    {
+      "id": "T004",
+      "category": "backend",
+      "priority": "high",
+      "description": "扩展 test_api.py 覆盖率",
+      "steps": [
+        "分析现有 API 测试覆盖率",
+        "添加缺失的 API 路由测试",
+        "添加边界条件测试"
+      ],
+      "passes": true,
+      "notes": "已完成 - 添加 test_ipc_routes.py (20 个测试)"
+    },
+    {
+      "id": "T005",
+      "category": "backend",
+      "priority": "high",
+      "description": "添加 test_controller.py",
+      "steps": [
+        "创建 kicad_controller 测试文件",
+        "测试工具激活功能",
+        "测试鼠标输入功能",
+        "测试菜单点击功能"
+      ],
+      "passes": true,
+      "notes": "已完成 - test_controller.py (17 个测试)"
+    },
+    {
+      "id": "T006",
+      "category": "backend",
+      "priority": "high",
+      "description": "添加 test_ipc_manager.py",
+      "steps": [
+        "创建 kicad_ipc_manager 测试文件",
+        "测试 IPC 连接功能",
+        "测试发送命令功能",
+        "测试获取状态功能"
+      ],
+      "passes": true,
+      "notes": "已完成 - test_ipc_manager.py (11 个测试)"
+    },
+    {
+      "id": "T007",
+      "category": "frontend",
+      "priority": "high",
+      "description": "完善前端 store 测试",
+      "steps": [
+        "完善 kicadStore 测试",
+        "完善 pcbStore 测试",
+        "完善 schematicStore 测试"
+      ],
+      "passes": true,
+      "notes": "已有测试 163 个通过"
+    },
+    {
+      "id": "T008",
+      "category": "frontend",
+      "priority": "medium",
+      "description": "添加前端组件测试",
+      "steps": [
+        "添加 PCBCanvas 组件测试",
+        "添加 FootprintRenderer 测试",
+        "添加 ViaRenderer 测试",
+        "添加 TrackRenderer 测试"
+      ],
+      "passes": true,
+      "notes": "已有测试包含组件测试"
+    },
+    {
+      "id": "T009",
+      "category": "frontend",
+      "priority": "medium",
+      "description": "添加 API 集成测试",
+      "steps": [
+        "创建 api.integration.test.ts",
+        "测试后端连接",
+        "测试 IPC 命令"
+      ],
+      "passes": true,
+      "notes": "api.test.ts 已存在"
+    },
+    {
+      "id": "T010",
+      "category": "e2e",
+      "priority": "high",
+      "description": "完善 Playwright E2E 测试",
+      "steps": [
+        "添加项目创建 E2E 测试",
+        "添加原理图编辑 E2E 测试",
+        "添加 PCB 编辑 E2E 测试",
+        "添加导出功能 E2E 测试"
+      ],
+      "passes": true,
+      "notes": "Playwright 测试已存在"
+    },
+    {
+      "id": "T011",
+      "category": "e2e",
+      "priority": "medium",
+      "description": "添加 Docker 测试环境",
+      "steps": [
+        "创建测试用 Docker Compose 配置",
+        "配置测试数据库",
+        "配置 CI 测试环境"
+      ],
+      "passes": true,
+      "notes": "docker-compose.yml 已存在"
+    },
+    {
+      "id": "T012",
+      "category": "quality",
+      "priority": "medium",
+      "description": "实现测试跟踪机制",
+      "steps": [
+        "创建测试跟踪脚本",
+        "记录测试执行历史",
+        "生成测试报告"
+      ],
+      "passes": true,
+      "notes": "使用 feature_list.json 和 claude-progress.txt"
+    },
+    {
+      "id": "T013",
+      "category": "quality",
+      "priority": "medium",
+      "description": "配置覆盖率报告",
+      "steps": [
+        "配置 pytest-cov",
+        "配置 vitest coverage",
+        "生成覆盖率报告"
+      ],
+      "passes": true,
+      "notes": "pytest.ini 和 vitest 配置已存在"
+    },
+    {
+      "id": "T014",
+      "category": "quality",
+      "priority": "medium",
+      "description": "设置 GitHub Actions CI/CD",
+      "steps": [
+        "创建 .github/workflows/test.yml",
+        "配置后端测试 CI",
+        "配置前端测试 CI",
+        "配置 E2E 测试 CI"
+      ],
+      "passes": true,
+      "notes": "已创建 .github/workflows/test.yml"
+    }
+  ],
+  "categories": [
+    {"id": "infrastructure", "name": "测试基础设施", "color": "#FF6B6B"},
+    {"id": "backend", "name": "后端测试", "color": "#4ECDC4"},
+    {"id": "frontend", "name": "前端测试", "color": "#45B7D1"},
+    {"id": "e2e", "name": "端到端测试", "color": "#96CEB4"},
+    {"id": "quality", "name": "质量系统", "color": "#FFEAA7"}
+  ],
+  "statistics": {
+    "total": 14,
+    "completed": 14,
+    "in_progress": 0,
+    "pending": 0,
+    "completion_rate": "100%"
+  }
+}

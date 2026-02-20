@@ -11,8 +11,223 @@ from uuid import uuid4
 import json
 import os
 from pathlib import Path
+import logging
+
+# 导入封装库函数
+from footprint_library import (
+    get_default_footprint,
+    infer_component_type,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
+
+
+# ========== 辅助函数 ==========
+
+
+def _get_default_footprint_for_pcb(
+    component_name: str, component_model: str = ""
+) -> str:
+    """
+    根据元件名称获取PCB封装
+
+    Args:
+        component_name: 元件名称
+        component_model: 元件型号
+
+    Returns:
+        封装名称字符串
+    """
+    component_type = infer_component_type(component_name, component_model)
+    return get_default_footprint(component_type)
+
+
+def _generate_pads_for_footprint(
+    footprint_name: str, pins: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """
+    根据封装名称和引脚定义生成焊盘列表
+
+    Args:
+        footprint_name: 封装名称
+        pins: 原理图引脚列表
+
+    Returns:
+        焊盘列表
+    """
+    pads = []
+
+    # 如果有原理图引脚信息，生成对应的焊盘
+    if pins:
+        for i, pin in enumerate(pins):
+            pad = {
+                "id": f"P{i + 1}",
+                "number": pin.get("number", str(i + 1)),
+                "name": pin.get("name", f"Pin{i + 1}"),
+                "type": "thru_hole"
+                if "THT" in footprint_name or "DIP" in footprint_name
+                else "smd",
+                "shape": "rect" if i == 1 else "circle",  # 第一个焊盘通常是方形
+                "position": {"x": 0, "y": i * 2.54},  # 简化的焊盘位置
+                "size": {"x": 1.5, "y": 1.5},
+                "drill": 0.8
+                if "thru_hole" in ["thru_hole", "smd"]
+                and ("THT" in footprint_name or "DIP" in footprint_name)
+                else 0,
+                "layer": "F.Cu",
+                "net": None,
+            }
+            pads.append(pad)
+    else:
+        # 没有引脚信息时，根据封装类型生成默认焊盘
+        # 检测封装类型
+        if (
+            "0603" in footprint_name
+            or "0805" in footprint_name
+            or "1206" in footprint_name
+        ):
+            # SMD 电阻/电容 - 两个焊盘
+            pads = [
+                {
+                    "id": "P1",
+                    "number": "1",
+                    "name": "1",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": -0.75, "y": 0},
+                    "size": {"x": 0.8, "y": 0.9},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+                {
+                    "id": "P2",
+                    "number": "2",
+                    "name": "2",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": 0.75, "y": 0},
+                    "size": {"x": 0.8, "y": 0.9},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+            ]
+        elif "SOT-23" in footprint_name:
+            # SOT-23 - 三个焊盘
+            pads = [
+                {
+                    "id": "P1",
+                    "number": "1",
+                    "name": "1",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": -0.95, "y": 0.95},
+                    "size": {"x": 0.6, "y": 1.1},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+                {
+                    "id": "P2",
+                    "number": "2",
+                    "name": "2",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": -0.95, "y": -0.95},
+                    "size": {"x": 0.6, "y": 1.1},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+                {
+                    "id": "P3",
+                    "number": "3",
+                    "name": "3",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": 0.95, "y": 0},
+                    "size": {"x": 0.6, "y": 1.1},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+            ]
+        elif "SOIC" in footprint_name or "SOP" in footprint_name:
+            # SOIC/SOP - 8个焊盘 (默认)
+            for i in range(8):
+                side = "left" if i < 4 else "right"
+                idx = i if i < 4 else i - 4
+                x = -3.9 if side == "left" else 3.9
+                y = -2.54 + idx * 1.27
+                pads.append(
+                    {
+                        "id": f"P{i + 1}",
+                        "number": str(i + 1),
+                        "name": str(i + 1),
+                        "type": "smd",
+                        "shape": "rect",
+                        "position": {"x": x, "y": y},
+                        "size": {"x": 1.0, "y": 0.5},
+                        "drill": 0,
+                        "layer": "F.Cu",
+                        "net": None,
+                    }
+                )
+        elif "DIP" in footprint_name:
+            # DIP - 通孔封装
+            for i in range(8):  # 默认8脚
+                side = "left" if i < 4 else "right"
+                idx = i if i < 4 else i - 4
+                x = -3.81 if side == "left" else 3.81
+                y = -3.81 + idx * 2.54
+                pads.append(
+                    {
+                        "id": f"P{i + 1}",
+                        "number": str(i + 1),
+                        "name": str(i + 1),
+                        "type": "thru_hole",
+                        "shape": "oval" if i == 0 else "circle",
+                        "position": {"x": x, "y": y},
+                        "size": {"x": 1.5, "y": 1.5},
+                        "drill": 0.8,
+                        "layer": "F.Cu",
+                        "net": None,
+                    }
+                )
+        else:
+            # 默认两个焊盘
+            pads = [
+                {
+                    "id": "P1",
+                    "number": "1",
+                    "name": "1",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": -1, "y": 0},
+                    "size": {"x": 1, "y": 1},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+                {
+                    "id": "P2",
+                    "number": "2",
+                    "name": "2",
+                    "type": "smd",
+                    "shape": "rect",
+                    "position": {"x": 1, "y": 0},
+                    "size": {"x": 1, "y": 1},
+                    "drill": 0,
+                    "layer": "F.Cu",
+                    "net": None,
+                },
+            ]
+
+    return pads
+
 
 # 内存存储 (生产环境应使用数据库)
 _projects: Dict[str, Dict[str, Any]] = {}
@@ -98,18 +313,30 @@ async def create_project(project: ProjectCreate):
     pcb_footprints = []
     if project.schematicData and project.schematicData.get("components"):
         for i, comp in enumerate(project.schematicData["components"]):
-            # 根据元件名称生成封装
+            # 获取封装 - 优先使用footprint字段，否则使用package字段
+            footprint_name = comp.get("footprint") or comp.get("package", "")
+            if not footprint_name:
+                # 根据元件类型推断默认封装
+                footprint_name = _get_default_footprint_for_pcb(
+                    comp.get("name", ""), comp.get("model", "")
+                )
+
+            # 获取位号 - 使用schematic中的reference字段
+            reference = comp.get("reference") or f"{comp.get('name', 'U')[0]}{i + 1}"
+
             footprint = {
-                "id": f"FP{i+1}",
-                "reference": f"{comp.get('name', 'U')[0]}{i+1}",
+                "id": f"FP{i + 1}",
+                "reference": reference,
                 "value": comp.get("model", ""),
-                "footprint": comp.get("package", ""),
+                "footprint": footprint_name,
                 "layer": "F.Cu",
                 "position": {"x": 20 + (i % 4) * 15, "y": 20 + (i // 4) * 15},
                 "rotation": 0,
                 "locked": False,
                 "attributes": [],
-                "pad": [],
+                "pad": _generate_pads_for_footprint(
+                    footprint_name, comp.get("pins", [])
+                ),
             }
             pcb_footprints.append(footprint)
 
@@ -422,10 +649,10 @@ async def export_bom(project_id: str):
         # 从原理图组件生成BOM数据
         footprints = [
             {
-                "reference": comp.get("id", f"U{i+1}"),
+                "reference": comp.get("id", f"U{i + 1}"),
                 "value": comp.get("model", ""),
                 "footprint": comp.get("package", ""),
-                "layer": "F"
+                "layer": "F",
             }
             for i, comp in enumerate(components)
         ]
@@ -433,14 +660,20 @@ async def export_bom(project_id: str):
     # 调试：打印获取到的数据
     import logging
     import traceback
+
     logger = logging.getLogger(__name__)
 
     # 强制刷新日志输出
     import sys
-    print(f"DEBUG: BOM export called for {project_id}", file=sys.stderr)
-    print(f"DEBUG: _schematic_data keys: {list(_schematic_data.keys())}", file=sys.stderr)
 
-    logger.info(f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, schematic components={len(components) if 'components' in dir() else 0}")
+    print(f"DEBUG: BOM export called for {project_id}", file=sys.stderr)
+    print(
+        f"DEBUG: _schematic_data keys: {list(_schematic_data.keys())}", file=sys.stderr
+    )
+
+    logger.info(
+        f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, schematic components={len(components) if 'components' in dir() else 0}"
+    )
 
     # 生成BOM CSV - 使用固定的输出目录
     output_dir = r"C:\KiCadWebEditor\output"
@@ -454,7 +687,9 @@ async def export_bom(project_id: str):
         logger.info(f"Footprints to write: {footprints}")
 
         with open(output_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["reference", "value", "footprint", "layer", "quantity"])
+            writer = csv.DictWriter(
+                f, fieldnames=["reference", "value", "footprint", "layer", "quantity"]
+            )
             writer.writeheader()
 
             # 按元件值分组统计数量
@@ -467,7 +702,7 @@ async def export_bom(project_id: str):
                         "value": fp.get("value", ""),
                         "footprint": fp.get("footprint", ""),
                         "layer": fp.get("layer", "F"),
-                        "quantity": 0
+                        "quantity": 0,
                     }
                 component_groups[key]["quantity"] += 1
 
@@ -480,7 +715,7 @@ async def export_bom(project_id: str):
             "file": output_path,
             "components": len(footprints),
             "files": [f"{project_id}-bom.csv"],
-            "debug": f"output_path={output_path}, footprints={len(footprints)}"
+            "debug": f"output_path={output_path}, footprints={len(footprints)}",
         }
     except Exception as e:
         print(f"DEBUG: Exception in BOM export: {e}", file=sys.stderr)

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>KiCad AI E2E 测试报告</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #1a1a2e; color: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #16213e; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 36px; font-weight: bold; color: #4ade80; }
+        .stat-value.failed { color: #f87171; }
+        .stat-label { color: #888; margin-top: 5px; }
+        .category { background: #16213e; border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
+        .category-header { background: #0f3460; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .category-title { font-size: 18px; font-weight: 600; }
+        .category-stats { font-size: 14px; color: #888; }
+        .test-list { padding: 10px 0; }
+        .test-item { padding: 12px 20px; display: flex; align-items: center; border-bottom: 1px solid #0f3460; }
+        .test-item:last-child { border-bottom: none; }
+        .test-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 14px; }
+        .test-status.pass { background: #166534; }
+        .test-status.fail { background: #991b1b; }
+        .test-info { flex: 1; }
+        .test-id { color: #4ade80; font-family: monospace; font-size: 12px; }
+        .test-name { font-weight: 500; margin-top: 2px; }
+        .test-message { color: #888; font-size: 13px; margin-top: 4px; }
+        .screenshots { background: #16213e; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .screenshots h3 { margin-top: 0; }
+        .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .screenshot-item { background: #0f3460; border-radius: 8px; overflow: hidden; }
+        .screenshot-item img { width: 100%; height: auto; display: block; }
+        .screenshot-item .caption { padding: 10px; font-size: 12px; color: #888; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ KiCad AI E2E 测试报告</h1>
+            <p>测试时间: 2026-02-20 20:26:24</p>
+        </div>
+
+        <div class="summary">
+            <div class="stat-card">
+                <div class="stat-value">21</div>
+                <div class="stat-label">总测试数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">19</div>
+                <div class="stat-label">通过</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value failed">2</div>
+                <div class="stat-label">失败</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">90.5%</div>
+                <div class="stat-label">成功率</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">PRECHECK</span>
+                <span class="category-stats">✓ 1 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">PRECHECK</div>
+                        <div class="test-name">服务检查</div>
+                        <div class="test-message">后端: ✓, 前端: ✓</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">SETUP</span>
+                <span class="category-stats">✓ 1 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">SETUP</div>
+                        <div class="test-name">浏览器初始化</div>
+                        <div class="test-message">Chromium 浏览器已启动</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.1: UI 对话框测试</span>
+                <span class="category-stats">✓ 4 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T31.1</div>
+                        <div class="test-name">对话框打开测试</div>
+                        <div class="test-message">标题: 🤖 AI 智能创建项目</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T31.2</div>
+                        <div class="test-name">对话框关闭测试</div>
+                        <div class="test-message">对话框已关闭</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T31.3</div>
+                        <div class="test-name">输入区域测试</div>
+                        <div class="test-message">输入内容: 测试输入内容 123...</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T31.4</div>
+                        <div class="test-name">提交按钮状态测试</div>
+                        <div class="test-message">初始禁用: True, 输入后禁用: False</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.2: 需求提交测试</span>
+                <span class="category-stats">✓ 2 / ✗ 1</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T32.1</div>
+                        <div class="test-name">提交空输入测试</div>
+                        <div class="test-message">按钮禁用状态: True</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T32.2</div>
+                        <div class="test-name">提交有效需求测试</div>
+                        <div class="test-message">分析中</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status fail">✗</div>
+                    <div class="test-info">
+                        <div class="test-id">T32.3</div>
+                        <div class="test-name">提交后取消测试</div>
+                        <div class="test-message">无取消选项</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.3: AI 分析进度测试</span>
+                <span class="category-stats">✓ 3 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T33.2</div>
+                        <div class="test-name">分析完成测试</div>
+                        <div class="test-message">分析完成，显示预览</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T33.3</div>
+                        <div class="test-name">分析超时测试</div>
+                        <div class="test-message">分析正常完成</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T33.4</div>
+                        <div class="test-name">分析失败测试</div>
+                        <div class="test-message">空输入时按钮禁用: True</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.4: 项目方案预览测试</span>
+                <span class="category-stats">✓ 3 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T34.1</div>
+                        <div class="test-name">方案内容显示测试</div>
+                        <div class="test-message">项目名: 5V稳压电源, 参数表: True, 器件表: True</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T34.2</div>
+                        <div class="test-name">方案滚动测试</div>
+                        <div class="test-message">滚动测试完成，scrollTop: 0</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T34.3</div>
+                        <div class="test-name">方案编辑测试</div>
+                        <div class="test-message">编辑按钮: 存在</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.5: 原理图预览测试</span>
+                <span class="category-stats">✓ 3 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T35.1</div>
+                        <div class="test-name">原理图渲染测试</div>
+                        <div class="test-message">SVG: True, 器件卡片: 0</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T35.2</div>
+                        <div class="test-name">原理图缩放测试</div>
+                        <div class="test-message">缩放操作完成</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T35.3</div>
+                        <div class="test-name">原理图平移测试</div>
+                        <div class="test-message">平移操作完成</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.6: 方案确认测试</span>
+                <span class="category-stats">✓ 1 / ✗ 0</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T36.1</div>
+                        <div class="test-name">确认创建项目测试</div>
+                        <div class="test-message">对话框状态: 已关闭</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-header">
+                <span class="category-title">T3.7: 完整流程测试</span>
+                <span class="category-stats">✓ 1 / ✗ 1</span>
+            </div>
+            <div class="test-list">
+
+                <div class="test-item">
+                    <div class="test-status fail">✗</div>
+                    <div class="test-info">
+                        <div class="test-id">T37.1</div>
+                        <div class="test-name">完整创建流程测试</div>
+                        <div class="test-message">未显示预览界面</div>
+                    </div>
+                </div>
+
+                <div class="test-item">
+                    <div class="test-status pass">✓</div>
+                    <div class="test-info">
+                        <div class="test-id">T37.2</div>
+                        <div class="test-name">多次创建测试</div>
+                        <div class="test-message">多次创建流程正常执行</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="screenshots">
+            <h3>📸 测试截图</h3>
+            <div class="screenshot-grid">
+
+                <div class="screenshot-item">
+                    <img src="202355_T31_1_dialog_open.png" alt="Screenshot 1">
+                    <div class="caption">202355_T31_1_dialog_open.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202400_T31_2_dialog_close.png" alt="Screenshot 2">
+                    <div class="caption">202400_T31_2_dialog_close.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202402_T31_3_input_area.png" alt="Screenshot 3">
+                    <div class="caption">202402_T31_3_input_area.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202405_T31_4_button_state.png" alt="Screenshot 4">
+                    <div class="caption">202405_T31_4_button_state.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202408_T32_1_empty_submit.png" alt="Screenshot 5">
+                    <div class="caption">202408_T32_1_empty_submit.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202413_T32_2_valid_submit.png" alt="Screenshot 6">
+                    <div class="caption">202413_T32_2_valid_submit.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202423_T32_3_cancel.png" alt="Screenshot 7">
+                    <div class="caption">202423_T32_3_cancel.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202431_T33_2_complete.png" alt="Screenshot 8">
+                    <div class="caption">202431_T33_2_complete.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202438_T33_3_timeout.png" alt="Screenshot 9">
+                    <div class="caption">202438_T33_3_timeout.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202441_T33_4_failure.png" alt="Screenshot 10">
+                    <div class="caption">202441_T33_4_failure.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202445_T34_1_spec.png" alt="Screenshot 11">
+                    <div class="caption">202445_T34_1_spec.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202450_T34_2_scroll.png" alt="Screenshot 12">
+                    <div class="caption">202450_T34_2_scroll.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202455_T34_3_edit.png" alt="Screenshot 13">
+                    <div class="caption">202455_T34_3_edit.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202501_T35_1_schematic.png" alt="Screenshot 14">
+                    <div class="caption">202501_T35_1_schematic.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202507_T35_2_zoom.png" alt="Screenshot 15">
+                    <div class="caption">202507_T35_2_zoom.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202513_T35_3_pan.png" alt="Screenshot 16">
+                    <div class="caption">202513_T35_3_pan.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202520_T36_1_confirm.png" alt="Screenshot 17">
+                    <div class="caption">202520_T36_1_confirm.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202536_T37_1_step1.png" alt="Screenshot 18">
+                    <div class="caption">202536_T37_1_step1.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202537_T37_1_step2.png" alt="Screenshot 19">
+                    <div class="caption">202537_T37_1_step2.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202538_T37_1_step3.png" alt="Screenshot 20">
+                    <div class="caption">202538_T37_1_step3.png</div>
+                </div>
+
+                <div class="screenshot-item">
+                    <img src="202555_T37_2_multiple.png" alt="Screenshot 21">
+                    <div class="caption">202555_T37_2_multiple.png</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

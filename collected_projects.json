@@ -1,0 +1,324 @@
+{
+  "collection_info": {
+    "purpose": "Compare AI-generated circuits with professional open-source designs",
+    "source": "嘉立创EDA开源平台 (OSHWhub)",
+    "total_target": 20,
+    "last_updated": "2026-02-19"
+  },
+  "projects": [
+    {
+      "id": 1,
+      "name": "XL6008 Power Boost Module",
+      "url": "https://oshwhub.com/jixin/XL6009_JX-0b47785ca2b74a88a3ecd33d90703c4f",
+      "category": "power_supply",
+      "description": "3A max current, 20W power, 96.4% efficiency, adjustable output 5V-33V",
+      "bom": {
+        "total_components": 12,
+        "components": [
+          {"name": "100uF Capacitor", "quantity": 3, "package": "Electrolytic"},
+          {"name": "SS56 Schottky Diode", "quantity": 1, "package": "SMA"},
+          {"name": "33uH Inductor", "quantity": 1, "package": "SMD"},
+          {"name": "XL6008 IC", "quantity": 1, "package": "TO252-5"},
+          {"name": "LED Indicator", "quantity": 2, "package": "0805"},
+          {"name": "Resistors", "quantity": 4, "package": "0805"}
+        ]
+      },
+      "design_patterns": {
+        "input_filtering": true,
+        "output_filtering": true,
+        "led_indicators": true,
+        "protection_diode": true
+      },
+      "stats": {
+        "views": 0,
+        "likes": 0,
+        "favorites": 0
+      }
+    },
+    {
+      "id": 2,
+      "name": "基于LM2596S的四路电源输出模块",
+      "url": "https://oshwhub.com/qq2711185814/si-lu-dian-yuan-shu-chu",
+      "category": "power_supply",
+      "description": "Four-channel power output module with LM2596S, with reverse polarity protection diode and short circuit protection fuse",
+      "bom": {
+        "total_components": 5,
+        "components": [
+          {"name": "330uF Capacitor", "designator": "C1,C2,C5", "quantity": 3, "package": "CAP-SMD_BD10.0-L10.3-W10.3-LS11.3-FD-1", "manufacturer": "KNSCHA(科尼盛)", "supplier_part": "C5155333"},
+          {"name": "5A Fuse", "designator": "F1", "quantity": 1, "package": "F1812", "manufacturer": "JK(金科)", "supplier_part": "C2844238"},
+          {"name": "WJ500V-5.08-2P Connector", "designator": "P4,5V输出", "quantity": 2, "package": "CONN-TH_2P-P5.00", "manufacturer": "KANGNEX", "supplier_part": "C8465"},
+          {"name": "LM2596S-3.3", "designator": "U6", "quantity": 1, "package": "TO-263-5", "manufacturer": "UMW(友台半导体)", "supplier_part": "C347420"},
+          {"name": "470uH Inductor", "designator": "L1,L2,L3", "quantity": 3, "package": "IND-SMD_L7.1-W7.0", "manufacturer": "Meled(美莱)", "supplier_part": "C85276"}
+        ]
+      },
+      "design_patterns": {
+        "input_filtering": true,
+        "output_filtering": true,
+        "reverse_polarity_protection": true,
+        "fuse_protection": true,
+        "four_channel_output": true
+      },
+      "protection_features": {
+        "fuse": "5A SMD fuse",
+        "description": "二极管防反接、保险丝防短路"
+      },
+      "stats": {
+        "views": 4000,
+        "likes": 13,
+        "favorites": 54,
+        "comments": 16
+      },
+      "editor_url": "https://pro.lceda.cn/editor#id=c0c5d624481946a19cb4c84badcfe867"
+    },
+    {
+      "id": 3,
+      "name": "3.7V锂电池充电模块-TP4056",
+      "url": "https://oshwhub.com/jixin/TP4056-7402f98b29ac4c0aad9308c2e7ffcb31",
+      "category": "power_supply",
+      "description": "Li-ion battery charger with up to 1A charging current, ±1% 4.2V preset charging voltage, charging status LED indicators",
+      "features": [
+        "高达 1A 的充电电流",
+        "精度高达±1%的 4.2V 预设充电电压",
+        "充电状态、无电池状态指示",
+        "欠压锁闭、可自动再充电"
+      ],
+      "bom": {
+        "total_components": 7,
+        "components": [
+          {"name": "10μF/10V Capacitor", "designator": "C1,C3", "quantity": 2, "package": "0805"},
+          {"name": "100nF/50V Capacitor", "designator": "C2,C4", "quantity": 2, "package": "0603"},
+          {"name": "Red LED", "designator": "LED1", "quantity": 1, "package": "0603"},
+          {"name": "Green LED", "designator": "LED2", "quantity": 1, "package": "0603"},
+          {"name": "Mini-USB Connector", "designator": "P1", "quantity": 1, "package": "USB_MINI_B_FE"}
+        ]
+      },
+      "connectors": {
+        "P1": "Mini-USB 电源输入端口",
+        "P2": "XH2.54 充电端口",
+        "P3": "电源正极输入接口",
+        "P4": "电源负极输入接口"
+      },
+      "design_patterns": {
+        "input_filtering": true,
+        "output_filtering": true,
+        "led_indicators": true,
+        "usb_input": true
+      },
+      "stats": {
+        "views": 6600,
+        "likes": 150,
+        "favorites": 464,
+        "comments": 53
+      }
+    },
+    {
+      "id": 4,
+      "name": "单片机最小系统-STM32F103C8T6",
+      "url": "https://oshwhub.com/STM32EDA/dan-pian-ji-zui-xiao-ji-tong-STM",
+      "category": "mcu_board",
+      "description": "STM32F103C8T6 minimal system board with reset circuit, crystal oscillators, LDO regulator, USB connector, decoupling capacitors, and GPIO headers",
+      "bom": {
+        "total_components": 20,
+        "components": [
+          {"name": "STM32F103C8T6 MCU", "designator": "U1", "quantity": 1, "package": "LQFP-48"},
+          {"name": "RT9193-33GU5 LDO", "designator": "U2", "quantity": 1, "package": "SC-70-5", "description": "3.3V LDO regulator"},
+          {"name": "8MHz Crystal", "designator": "X1", "quantity": 1, "package": "HC-49-SMD"},
+          {"name": "32.768KHz Crystal", "designator": "X2", "quantity": 1, "package": "CRYSTAL_SMD_4PIN"},
+          {"name": "Micro USB Female", "designator": "USB1", "quantity": 1, "package": "MICRO-USB-SMD_5P"},
+          {"name": "Reset Button", "designator": "KEY1", "quantity": 1, "package": "KEY-3.0*4.0"},
+          {"name": "Red LED", "designator": "LED1,LED2", "quantity": 2, "package": "LED0805-RD"},
+          {"name": "10uF Capacitor", "designator": "C12", "quantity": 1, "package": "C0603"},
+          {"name": "100nF Decoupling Caps", "designator": "C13,C11,C8,C5,C7,C6", "quantity": 6, "package": "C0603"},
+          {"name": "22pF Crystal Caps", "designator": "C2,C3,C1,C4", "quantity": 4, "package": "C0603"},
+          {"name": "1uF Capacitor", "designator": "C9", "quantity": 1, "package": "C0603"},
+          {"name": "22nF Capacitor", "designator": "C10", "quantity": 1, "package": "C0603"},
+          {"name": "510R Resistor", "designator": "R8,R9", "quantity": 2, "package": "R0603", "purpose": "LED current limit"},
+          {"name": "1M Resistor", "designator": "R1", "quantity": 1, "package": "R0603"},
+          {"name": "10k Pull-up Resistors", "designator": "R6,R7,R5", "quantity": 3, "package": "R0603"},
+          {"name": "20R Resistors", "designator": "R2,R3", "quantity": 2, "package": "R0603"},
+          {"name": "4.7k Resistor", "designator": "R4", "quantity": 1, "package": "R0603"},
+          {"name": "Programming Header", "designator": "P1", "quantity": 1, "package": "HEADER_PRG_2X3"},
+          {"name": "GPIO Headers 20pin", "designator": "P2,P3", "quantity": 2, "package": "HDR-TH_20P-P2.54-V"},
+          {"name": "Power Header 4pin", "designator": "H1", "quantity": 1, "package": "DIP-1X4P2.54"}
+        ]
+      },
+      "design_patterns": {
+        "reset_circuit": true,
+        "crystal_oscillator": true,
+        "rtc_crystal": true,
+        "ldo_regulator": true,
+        "decoupling_capacitors": true,
+        "led_indicators": true,
+        "usb_connector": true,
+        "programming_header": true,
+        "gpio_headers": true
+      },
+      "stats": {
+        "views": 103000,
+        "likes": 238,
+        "favorites": 763,
+        "comments": 35
+      }
+    },
+    {
+      "id": 5,
+      "name": "立创·地阔星STM32F103C8T6开发板",
+      "url": "https://oshwhub.com/li-chuang-kai-fa-ban/lichuang-gekuo-star-stm32f103c8t6-development-board",
+      "category": "mcu_board",
+      "description": "Official LCSC STM32F103C8T6 development board with comprehensive peripherals",
+      "stats": {
+        "views": 129000,
+        "likes": 172,
+        "favorites": 538,
+        "comments": 94
+      }
+    },
+    {
+      "id": 6,
+      "name": "Modbus远程IO板-基于STM32F103C8T6-V1.1",
+      "url": "https://oshwhub.com/eda_vyrtoyct/yuan-cheng-io-ji-yu-stm32f103c8t6",
+      "category": "mcu_board",
+      "description": "Modbus remote IO board with DI, DO, AI, RS485, Ethernet support, TTL serial and IIC reserved",
+      "stats": {
+        "views": 21000,
+        "likes": 126,
+        "favorites": 284,
+        "comments": 136
+      }
+    },
+    {
+      "id": 7,
+      "name": "ESP32 万能遥控器",
+      "url": "https://oshwhub.com/bukaiyuan/ESP32-hang-mu-yao-kong-qi",
+      "category": "communication",
+      "description": "Universal RC controller based on ESP32-S3, supports Bluetooth connection to PC for gaming, can play custom games on the controller",
+      "stats": {"views": 116000, "likes": 813, "favorites": 1600, "comments": 189},
+      "design_patterns": {"bluetooth": true, "wifi": true, "lcd_display": true, "battery_powered": true}
+    },
+    {
+      "id": 8,
+      "name": "【ESP32-S3】1.69寸触摸屏迷你控制器",
+      "url": "https://oshwhub.com/eedadada/chappie_oshw",
+      "category": "mcu_board",
+      "description": "ESP32-S3 based mini controller with 1.69 inch LCD, buzzer, SD card slot, AXP173 power management",
+      "stats": {"views": 110000, "likes": 585, "favorites": 1500, "comments": 228},
+      "design_patterns": {"lcd_display": true, "touch_screen": true, "sd_card": true, "power_management": true}
+    },
+    {
+      "id": 9,
+      "name": "ESP32S3 86盒开发板 带触摸",
+      "url": "https://oshwhub.com/myzhazha/esp32s3_86-kai-fa-ban",
+      "category": "mcu_board",
+      "description": "ESP32S3N8R8 based 86 panel development board with touch and speaker, suitable for LVGL development",
+      "stats": {"views": 136000, "likes": 655, "favorites": 1400, "comments": 322},
+      "design_patterns": {"touch_screen": true, "speaker": true, "lvgl_support": true, "wall_mount": true}
+    },
+    {
+      "id": 10,
+      "name": "自平衡的莱洛三角_esp32",
+      "url": "https://oshwhub.com/45coll/zi-ping-heng-di-lai-luo-san-jiao_10-10-ban-ben",
+      "category": "motor_driver",
+      "description": "Self-balancing Reuleaux triangle robot with ESP32, 5V charging for 3-cell LiPo,可实现摇摆自平衡",
+      "stats": {"views": 168000, "likes": 650, "favorites": 1300, "comments": 178},
+      "design_patterns": {"imu_sensor": true, "motor_driver": true, "battery_charging": true, "self_balancing": true}
+    },
+    {
+      "id": 11,
+      "name": "Super Dial 电机旋钮屏—esp32s3—v2",
+      "url": "https://oshwhub.com/45coll/a2fff3c71f5d4de2b899c64b152d3da5",
+      "category": "motor_driver",
+      "description": "Desktop force feedback knob inspired by smart knob, achieves Surface Dial functionality",
+      "stats": {"views": 114000, "likes": 553, "favorites": 1200, "comments": 175},
+      "design_patterns": {"haptic_feedback": true, "rotary_encoder": true, "lcd_display": true, "motor_driver": true}
+    },
+    {
+      "id": 12,
+      "name": "ESP32墨水屏MP3收音机阅读器",
+      "url": "https://oshwhub.com/jie326513988/ESP32mi-ni-mo-shui-ping-MP3shou-",
+      "category": "communication",
+      "description": "E-ink display with weather, reading, images, clock, MP3, radio, WiFi config, settings",
+      "stats": {"views": 104000, "likes": 489, "favorites": 1100, "comments": 219},
+      "design_patterns": {"eink_display": true, "mp3_player": true, "radio": true, "wifi": true, "battery_powered": true}
+    },
+    {
+      "id": 13,
+      "name": "ESP32-IOT-KIT全开源物联网开发板",
+      "url": "https://oshwhub.com/mazhiliang/esp32-dev",
+      "category": "mcu_board",
+      "description": "ESP32 IoT development board supporting WiFi, Bluetooth, Ethernet, RS485, CAN, with Easyio driver library",
+      "stats": {"views": 100000, "likes": 500, "favorites": 1000, "comments": 144},
+      "design_patterns": {"wifi": true, "bluetooth": true, "ethernet": true, "rs485": true, "can_bus": true}
+    },
+    {
+      "id": 14,
+      "name": "ESP-Hi：ESP32-C3 AI对话机器狗",
+      "url": "https://oshwhub.com/esp-college/esp-hi",
+      "category": "motor_driver",
+      "description": "Ultra-low cost AI dialogue robot dog based on ESP32-C3, supports multiple LLM AI dialogue, motion wake-up, color expression display",
+      "stats": {"views": 128000, "likes": 331, "favorites": 868, "comments": 197},
+      "design_patterns": {"ai_integration": true, "servo_driver": true, "led_display": true, "voice_interaction": true}
+    },
+    {
+      "id": 15,
+      "name": "立创·实战派ESP32-S3开发板",
+      "url": "https://oshwhub.com/li-chuang-kai-fa-ban/li-chuang-shi-zhan-pai-esp32-s3-kai-fa-ban",
+      "category": "mcu_board",
+      "description": "ESP32-S3 development board with 16MB FLASH, 8MB PSRAM, GC0308 camera, 2 inch IPS screen, capacitive touch, dual audio chips, 6D sensor",
+      "stats": {"views": 175000, "likes": 171, "favorites": 507, "comments": 201},
+      "design_patterns": {"camera": true, "lcd_display": true, "touch_screen": true, "audio": true, "imu_sensor": true}
+    },
+    {
+      "id": 16,
+      "name": "ESP32麦克纳姆轮图传小车",
+      "url": "https://oshwhub.com/leesophia_bilibili/ESP32CAMRoverLite",
+      "category": "motor_driver",
+      "description": "Mecanum wheel rover with ESP32-Pico-D4, OV2640 camera, dual DRV8833 drivers, Type-C, 4M PSRAM",
+      "stats": {"views": 36000, "likes": 245, "favorites": 557, "comments": 98},
+      "design_patterns": {"camera": true, "motor_driver": true, "wifi_streaming": true, "usb_c": true}
+    },
+    {
+      "id": 17,
+      "name": "迷你四足机器人ESP32",
+      "url": "https://oshwhub.com/shukkkk/xin-xiao-si-zu-_esp32c3-ban",
+      "category": "motor_driver",
+      "description": "Mini quadruped robot using ESP32C3, Bluetooth remote control, flexible posture",
+      "stats": {"views": 67000, "likes": 322, "favorites": 766, "comments": 218},
+      "design_patterns": {"bluetooth": true, "servo_driver": true, "battery_powered": true, "imu_sensor": true}
+    },
+    {
+      "id": 18,
+      "name": "基于ESP32和STM32的智能鱼缸系统控制板",
+      "url": "https://oshwhub.com/eda_pzlyhdkiv/ji-yu-ESP32-STM32de-zhi-neng-yu-",
+      "category": "sensor",
+      "description": "Smart fish tank control board with water monitoring, real-time display, auto feeding, auto filtering, auto oxygen supply, limit recording, auto/manual switching, lighting system",
+      "stats": {"views": 59000, "likes": 206, "favorites": 558, "comments": 70},
+      "design_patterns": {"water_sensors": true, "lcd_display": true, "relay_control": true, "wifi": true, "auto_feeding": true}
+    },
+    {
+      "id": 19,
+      "name": "ESP32迷你无人机",
+      "url": "https://oshwhub.com/malagis/esp32-mini-plane",
+      "category": "motor_driver",
+      "description": "Mini drone based on ESP32, only needs 1 development board, MPU6500 module, 4 AO3416 motor chips, 4 8520 motors, supports QGC phone APP or SBUS receiver",
+      "stats": {"views": 40000, "likes": 186, "favorites": 545, "comments": 138},
+      "design_patterns": {"imu_sensor": true, "motor_driver": true, "wifi": true, "flight_controller": true}
+    },
+    {
+      "id": 20,
+      "name": "基于STM32F103C6T6和光耦可控硅的可控温加热台",
+      "url": "https://oshwhub.com/666edaer/220v300w-heating-board",
+      "category": "sensor",
+      "description": "220V temperature-controlled heating platform with LCD display, button-set target temperature, optocoupler and TRIAC control",
+      "stats": {"views": 13000, "likes": 78, "favorites": 195, "comments": 40},
+      "design_patterns": {"temperature_sensor": true, "triac_control": true, "optocoupler": true, "lcd_display": true, "high_voltage": true}
+    }
+  ],
+  "analysis_summary": {
+    "power_supply_projects": 3,
+    "mcu_projects": 6,
+    "motor_driver_projects": 6,
+    "sensor_projects": 2,
+    "communication_projects": 2,
+    "total_collected": 20
+  }
+}

@@ -1,0 +1,350 @@
+{
+  "version": "1.0",
+  "description": "元件知识库 - 包含常用元件的符号、引脚定义、封装和典型电路",
+  "components": {
+    "STM32F103C8T6": {
+      "symbol_library": "MCU_ST_STM32",
+      "symbol_name": "STM32F103C8T6",
+      "pins": [
+        {"number": "1", "name": "VBAT", "type": "power_in", "description": "Backup power supply"},
+        {"number": "2", "name": "PC13", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "3", "name": "PC14", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "4", "name": "PC15", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "5", "name": "PD0", "type": "bidirectional", "description": "GPIO or OSC_IN"},
+        {"number": "6", "name": "PD1", "type": "bidirectional", "description": "GPIO or OSC_OUT"},
+        {"number": "7", "name": "NRST", "type": "input", "description": "Reset pin"},
+        {"number": "8", "name": "VSSA", "type": "power_in", "description": "Analog ground"},
+        {"number": "9", "name": "VDDA", "type": "power_in", "description": "Analog power"},
+        {"number": "10", "name": "PA0", "type": "bidirectional", "description": "GPIO or WKUP"},
+        {"number": "11", "name": "PA1", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "12", "name": "PA2", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "13", "name": "PA3", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "14", "name": "PA4", "type": "bidirectional", "description": "GPIO or DAC"},
+        {"number": "15", "name": "PA5", "type": "bidirectional", "description": "GPIO or SPI1_SCK"},
+        {"number": "16", "name": "PA6", "type": "bidirectional", "description": "GPIO or SPI1_MISO"},
+        {"number": "17", "name": "PA7", "type": "bidirectional", "description": "GPIO or SPI1_MOSI"},
+        {"number": "18", "name": "PB0", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "19", "name": "PB1", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "20", "name": "PB2", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "21", "name": "PB10", "type": "bidirectional", "description": "GPIO or I2C2_SCL"},
+        {"number": "22", "name": "PB11", "type": "bidirectional", "description": "GPIO or I2C2_SDA"},
+        {"number": "23", "name": "PB12", "type": "bidirectional", "description": "GPIO or SPI2_NSS"},
+        {"number": "24", "name": "PB13", "type": "bidirectional", "description": "GPIO or SPI2_SCK"},
+        {"number": "25", "name": "PB14", "type": "bidirectional", "description": "GPIO or SPI2_MISO"},
+        {"number": "26", "name": "PB15", "type": "bidirectional", "description": "GPIO or SPI2_MOSI"},
+        {"number": "27", "name": "PA8", "type": "bidirectional", "description": "GPIO or USART1_CK"},
+        {"number": "28", "name": "PA9", "type": "bidirectional", "description": "GPIO or USART1_TX"},
+        {"number": "29", "name": "PA10", "type": "bidirectional", "description": "GPIO or USART1_RX"},
+        {"number": "30", "name": "PA11", "type": "bidirectional", "description": "GPIO or USART1_CTS"},
+        {"number": "31", "name": "PA12", "type": "bidirectional", "description": "GPIO or USART1_RTS"},
+        {"number": "32", "name": "PA13", "type": "bidirectional", "description": "GPIO or SWDIO"},
+        {"number": "33", "name": "PA14", "type": "bidirectional", "description": "GPIO or SWCLK"},
+        {"number": "34", "name": "PA15", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "35", "name": "PB3", "type": "bidirectional", "description": "GPIO or TRACESWO"},
+        {"number": "36", "name": "PB4", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "37", "name": "PB5", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "38", "name": "PB6", "type": "bidirectional", "description": "GPIO or I2C1_SCL"},
+        {"number": "39", "name": "PB7", "type": "bidirectional", "description": "GPIO or I2C1_SDA"},
+        {"number": "40", "name": "PB8", "type": "bidirectional", "description": "GPIO or I2C1_SCL"},
+        {"number": "41", "name": "PB9", "type": "bidirectional", "description": "GPIO or I2C1_SDA"},
+        {"number": "42", "name": "VSS", "type": "power_in", "description": "Ground"},
+        {"number": "43", "name": "VDD", "type": "power_in", "description": "Power supply"},
+        {"number": "44", "name": "BOOT0", "type": "input", "description": "Boot pin"}
+      ],
+      "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+      "power_pins": ["VDD", "VSS", "VDDA", "VSSA", "VBAT"],
+      "typical_circuits": ["crystal_oscillator", "decoupling", "reset_circuit", "boot_selector"]
+    },
+    "AMS1117-3.3": {
+      "symbol_library": "Regulator_Linear",
+      "symbol_name": "AMS1117-3.3",
+      "pins": [
+        {"number": "1", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "2", "name": "VOUT", "type": "power_out", "description": "3.3V output"},
+        {"number": "3", "name": "VIN", "type": "power_in", "description": "Input voltage (5V)"}
+      ],
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2",
+      "power_pins": ["VIN", "VOUT", "GND"],
+      "typical_circuits": ["power_regulator"]
+    },
+    "ESP32-WROOM": {
+      "symbol_library": "MCU_Espressif",
+      "symbol_name": "ESP32-WROOM-32",
+      "pins": [
+        {"number": "1", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "2", "name": "3V3", "type": "power_in", "description": "3.3V power"},
+        {"number": "3", "name": "EN", "type": "input", "description": "Enable pin"},
+        {"number": "4", "name": "TXD0", "type": "output", "description": "UART TX"},
+        {"number": "5", "name": "RXD0", "type": "input", "description": "UART RX"},
+        {"number": "6", "name": "GPIO0", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "7", "name": "GPIO1", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "8", "name": "GPIO2", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "9", "name": "GPIO3", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "10", "name": "GPIO4", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "11", "name": "GPIO5", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "12", "name": "GPIO12", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "13", "name": "GPIO13", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "14", "name": "GPIO14", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "15", "name": "GPIO15", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "16", "name": "GPIO16", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "17", "name": "GPIO17", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "18", "name": "GPIO18", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "19", "name": "GPIO19", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "20", "name": "GPIO21", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "21", "name": "GPIO22", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "22", "name": "GPIO23", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "23", "name": "CLK", "type": "input", "description": "Crystal clock"},
+        {"number": "24", "name": "GPIO25", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "25", "name": "GPIO26", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "26", "name": "GPIO27", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "27", "name": "GPIO32", "type": "bidirectional", "description": "GPIO pin"},
+        {"number": "28", "name": "GPIO33", "type": "bidirectional", "description": "GPIO pin"}
+      ],
+      "footprint": "Module:ESP32-WROOM-32",
+      "power_pins": ["3V3", "GND", "EN"],
+      "typical_circuits": ["crystal_oscillator", "decoupling", "antenna"]
+    },
+    "CH340G": {
+      "symbol_library": "Interface_USB",
+      "symbol_name": "CH340G",
+      "pins": [
+        {"number": "1", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "2", "name": "TXD", "type": "output", "description": "UART TX"},
+        {"number": "3", "name": "RXD", "type": "input", "description": "UART RX"},
+        {"number": "4", "name": "VCC", "type": "power_in", "description": "5V or 3.3V"},
+        {"number": "5", "name": "DTR", "type": "output", "description": "DTR signal"},
+        {"number": "6", "name": "DSR", "type": "input", "description": "DSR signal"},
+        {"number": "7", "name": "DCD", "type": "input", "description": "DCD signal"},
+        {"number": "8", "name": "RI", "type": "input", "description": "RI signal"}
+      ],
+      "footprint": "Package_SO:MSOP-10",
+      "power_pins": ["VCC", "GND"],
+      "typical_circuits": ["usb_uart"]
+    },
+    "CP2102": {
+      "symbol_library": "Interface_USB",
+      "symbol_name": "CP2102",
+      "pins": [
+        {"number": "1", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "2", "name": "TXD", "type": "output", "description": "UART TX"},
+        {"number": "3", "name": "RXD", "type": "input", "description": "UART RX"},
+        {"number": "4", "name": "VIO", "type": "power_in", "description": "I/O voltage"},
+        {"number": "5", "name": "VREG", "type": "power_out", "description": "3.3V output"},
+        {"number": "6", "name": "VDD", "type": "power_in", "description": "5V input"},
+        {"number": "7", "name": "RST", "type": "input", "description": "Reset pin"},
+        {"number": "8", "name": "SUSPEND", "type": "output", "description": "Suspend signal"}
+      ],
+      "footprint": "Package_QFN:QFN-24_4x4mm_P0.5mm",
+      "power_pins": ["VDD", "VIO", "GND"],
+      "typical_circuits": ["usb_uart"]
+    },
+    "NE555": {
+      "symbol_library": "Timer",
+      "symbol_name": "NE555",
+      "pins": [
+        {"number": "1", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "2", "name": "TRIG", "type": "input", "description": "Trigger input"},
+        {"number": "3", "name": "OUT", "type": "output", "description": "Output"},
+        {"number": "4", "name": "RESET", "type": "input", "description": "Reset pin"},
+        {"number": "5", "name": "CONT", "type": "input", "description": "Control voltage"},
+        {"number": "6", "name": "THRES", "type": "input", "description": "Threshold"},
+        {"number": "7", "name": "DISCH", "type": "open_collector", "description": "Discharge"},
+        {"number": "8", "name": "VCC", "type": "power_in", "description": "5-15V supply"}
+      ],
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+      "power_pins": ["VCC", "GND"],
+      "typical_circuits": ["timer", "oscillator"]
+    },
+    "LM7805": {
+      "symbol_library": "Regulator_Linear",
+      "symbol_name": "LM7805",
+      "pins": [
+        {"number": "1", "name": "VIN", "type": "power_in", "description": "Input (7-35V)"},
+        {"number": "2", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "3", "name": "VOUT", "type": "power_out", "description": "5V output"}
+      ],
+      "footprint": "Package_TO_SOT_SMD:TO-263-3",
+      "power_pins": ["VIN", "VOUT", "GND"],
+      "typical_circuits": ["power_regulator"]
+    },
+    "ATmega328P": {
+      "symbol_library": "MCU_Microchip_AVR",
+      "symbol_name": "ATmega328P",
+      "pins": [
+        {"number": "1", "name": "PC6", "type": "bidirectional", "description": "RESET pin"},
+        {"number": "2", "name": "PD0", "type": "bidirectional", "description": "GPIO or USART RX"},
+        {"number": "3", "name": "PD1", "type": "bidirectional", "description": "GPIO or USART TX"},
+        {"number": "4", "name": "PD2", "type": "bidirectional", "description": "GPIO or INT0"},
+        {"number": "5", "name": "PD3", "type": "bidirectional", "description": "GPIO or INT1 or PWM"},
+        {"number": "6", "name": "PD4", "type": "bidirectional", "description": "GPIO or T0 or XCK"},
+        {"number": "7", "name": "VCC", "type": "power_in", "description": "5V power"},
+        {"number": "8", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "9", "name": "PB6", "type": "bidirectional", "description": "XTAL1 or TOSC1"},
+        {"number": "10", "name": "PB7", "type": "bidirectional", "description": "XTAL2 or TOSC2"},
+        {"number": "11", "name": "PD5", "type": "bidirectional", "description": "GPIO or T1 or OC0B"},
+        {"number": "12", "name": "PD6", "type": "bidirectional", "description": "GPIO or AIN0 or OC0A"},
+        {"number": "13", "name": "PD7", "type": "bidirectional", "description": "GPIO or AIN1"},
+        {"number": "14", "name": "PB0", "type": "bidirectional", "description": "GPIO or ICP1 or CLKO"},
+        {"number": "15", "name": "PB1", "type": "bidirectional", "description": "GPIO or OC1A"},
+        {"number": "16", "name": "PB2", "type": "bidirectional", "description": "GPIO or OC1B or SS"},
+        {"number": "17", "name": "PB3", "type": "bidirectional", "description": "GPIO or MOSI or OC2"},
+        {"number": "18", "name": "PB4", "type": "bidirectional", "description": "GPIO or MISO"},
+        {"number": "19", "name": "PB5", "type": "bidirectional", "description": "GPIO or SCK"},
+        {"number": "20", "name": "AVCC", "type": "power_in", "description": "ADC power"},
+        {"number": "21", "name": "AREF", "type": "input", "description": "ADC reference"},
+        {"number": "22", "name": "GND", "type": "power_in", "description": "ADC ground"},
+        {"number": "23", "name": "PC0", "type": "bidirectional", "description": "GPIO or ADC0"},
+        {"number": "24", "name": "PC1", "type": "bidirectional", "description": "GPIO or ADC1"},
+        {"number": "25", "name": "PC2", "type": "bidirectional", "description": "GPIO or ADC2"},
+        {"number": "26", "name": "PC3", "type": "bidirectional", "description": "GPIO or ADC3"},
+        {"number": "27", "name": "PC4", "type": "bidirectional", "description": "GPIO or ADC4 or SDA"},
+        {"number": "28", "name": "PC5", "type": "bidirectional", "description": "GPIO or ADC5 or SCL"}
+      ],
+      "footprint": "Package_DIP:DIP-28_W7.62mm",
+      "power_pins": ["VCC", "GND", "AVCC", "AREF"],
+      "typical_circuits": ["crystal_oscillator", "decoupling", "reset_circuit"]
+    },
+    "ATtiny85": {
+      "symbol_library": "MCU_Microchip_AVR",
+      "symbol_name": "ATtiny85",
+      "pins": [
+        {"number": "1", "name": "PB5", "type": "bidirectional", "description": "RESET or ADC0 or SCK"},
+        {"number": "2", "name": "PB3", "type": "bidirectional", "description": "GPIO or XTAL1 or ADC3"},
+        {"number": "3", "name": "PB4", "type": "bidirectional", "description": "GPIO or XTAL2 or ADC2"},
+        {"number": "4", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "5", "name": "PB0", "type": "bidirectional", "description": "GPIO or MOSI or OC0A or AIN0"},
+        {"number": "6", "name": "PB1", "type": "bidirectional", "description": "GPIO or MISO or OC0B or AIN1"},
+        {"number": "7", "name": "PB2", "type": "bidirectional", "description": "GPIO or SCK or INT0 or ADC1"},
+        {"number": "8", "name": "VCC", "type": "power_in", "description": "5V power"}
+      ],
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+      "power_pins": ["VCC", "GND"],
+      "typical_circuits": ["crystal_oscillator", "decoupling"]
+    },
+    "FT232RL": {
+      "symbol_library": "Interface_USB",
+      "symbol_name": "FT232RL",
+      "pins": [
+        {"number": "1", "name": "TXD", "type": "output", "description": "UART TX"},
+        {"number": "2", "name": "RXD", "type": "input", "description": "UART RX"},
+        {"number": "3", "name": "RTS#", "type": "output", "description": "RTS signal"},
+        {"number": "4", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "5", "name": "VCC", "type": "power_in", "description": "5V power"},
+        {"number": "6", "name": "CTS#", "type": "input", "description": "CTS signal"},
+        {"number": "7", "name": "CBUS0", "type": "bidirectional", "description": "CBUS pin"},
+        {"number": "8", "name": "CBUS1", "type": "bidirectional", "description": "CBUS pin"},
+        {"number": "9", "name": "CBUS2", "type": "bidirectional", "description": "CBUS pin"},
+        {"number": "10", "name": "CBUS3", "type": "bidirectional", "description": "CBUS pin"},
+        {"number": "11", "name": "USBDP", "type": "bidirectional", "description": "USB D+"},
+        {"number": "12", "name": "USBDM", "type": "bidirectional", "description": "USB D-"},
+        {"number": "13", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "14", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "15", "name": "NC", "type": "no_connect", "description": "No connect"},
+        {"number": "16", "name": "3V3OUT", "type": "power_out", "description": "3.3V output"},
+        {"number": "17", "name": "GND", "type": "power_in", "description": "Ground"},
+        {"number": "18", "name": "SI/WU", "type": "bidirectional", "description": "Slave input or wakeup"},
+        {"number": "19", "name": "CS#", "type": "input", "description": "Chip select"},
+        {"number": "20", "name": "RDY#", "type": "output", "description": "Ready signal"},
+        {"number": "21", "name": "WR#", "type": "input", "description": "Write enable"},
+        {"number": "22", "name": "RD#", "type": "input", "description": "Read enable"},
+        {"number": "23", "name": "DB0", "type": "bidirectional", "description": "Data bus"},
+        {"number": "24", "name": "DB1", "type": "bidirectional", "description": "Data bus"},
+        {"number": "25", "name": "DB2", "type": "bidirectional", "description": "Data bus"},
+        {"number": "26", "name": "DB3", "type": "bidirectional", "description": "Data bus"},
+        {"number": "27", "name": "DB4", "type": "bidirectional", "description": "Data bus"},
+        {"number": "28", "name": "DB5", "type": "bidirectional", "description": "Data bus"}
+      ],
+      "footprint": "Package_SO:SSOP-28_5.3x7.2mm_P0.65mm",
+      "power_pins": ["VCC", "GND"],
+      "typical_circuits": ["usb_uart"]
+    }
+  },
+  "templates": {
+    "decoupling": {
+      "description": "电源去耦电路 - 每个电源引脚都需要",
+      "components": [
+        {"ref": "C1", "value": "100nF", "placement": "靠近电源引脚"}
+      ],
+      "connections": [
+        {"net": "VDD", "pins": ["U1.VDD", "C1.1"]},
+        {"net": "GND", "pins": ["U1.GND", "C1.2"]}
+      ]
+    },
+    "crystal_oscillator": {
+      "description": "晶振电路 - MCU时钟",
+      "components": [
+        {"ref": "Y1", "value": "8MHz", "type": "Crystal"},
+        {"ref": "C1", "value": "22pF", "type": "Capacitor"},
+        {"ref": "C2", "value": "22pF", "type": "Capacitor"}
+      ],
+      "connections": [
+        {"net": "XTAL1", "pins": ["U1.XTAL1", "C1.1", "Y1.1"]},
+        {"net": "XTAL2", "pins": ["U1.XTAL2", "C2.1", "Y1.2"]},
+        {"net": "GND", "pins": ["C1.2", "C2.2"]}
+      ]
+    },
+    "reset_circuit": {
+      "description": "复位电路",
+      "components": [
+        {"ref": "R1", "value": "10kΩ", "type": "Resistor"},
+        {"ref": "C1", "value": "100nF", "type": "Capacitor"}
+      ],
+      "connections": [
+        {"net": "RST", "pins": ["U1.RST", "R1.1"]},
+        {"net": "VCC", "pins": ["R1.2"]},
+        {"net": "GND", "pins": ["C1.2"]},
+        {"net": "RST_RC", "pins": ["R1.1", "C1.1"]}
+      ]
+    },
+    "power_regulator": {
+      "description": "线性稳压电源电路",
+      "components": [
+        {"ref": "U1", "type": "AMS1117-3.3"},
+        {"ref": "C1", "value": "10uF", "type": "Capacitor"},
+        {"ref": "C2", "value": "22uF", "type": "Capacitor"},
+        {"ref": "C3", "value": "100nF", "type": "Capacitor"}
+      ],
+      "connections": [
+        {"net": "VIN", "pins": ["U1.VIN", "C1.1", "C3.1"]},
+        {"net": "VOUT", "pins": ["U1.VOUT", "C2.1", "C3.2"]},
+        {"net": "GND", "pins": ["U1.GND", "C1.2", "C2.2"]}
+      ]
+    },
+    "usb_uart": {
+      "description": "USB转UART电路",
+      "components": [
+        {"ref": "U1", "type": "CH340G or CP2102 or FT232RL"},
+        {"ref": "C1", "value": "100nF", "type": "Capacitor"},
+        {"ref": "R1", "value": "10kΩ", "type": "Resistor"}
+      ],
+      "connections": [
+        {"net": "VCC", "pins": ["U1.VCC", "C1.1"]},
+        {"net": "GND", "pins": ["U1.GND", "C1.2"]}
+      ]
+    },
+    "led_indicator": {
+      "description": "LED指示灯电路",
+      "components": [
+        {"ref": "LED1", "type": "LED"},
+        {"ref": "R1", "value": "330Ω", "type": "Resistor"}
+      ],
+      "connections": [
+        {"net": "VCC", "pins": ["R1.1"]},
+        {"net": "LED_SIGNAL", "pins": ["LED1.1", "R1.2"]},
+        {"net": "GND", "pins": ["LED1.2"]}
+      ]
+    },
+    "button_input": {
+      "description": "按键输入电路",
+      "components": [
+        {"ref": "S1", "type": "Switch"},
+        {"ref": "R1", "value": "10kΩ", "type": "Resistor"}
+      ],
+      "connections": [
+        {"net": "VCC", "pins": ["R1.1"]},
+        {"net": "BUTTON_INPUT", "pins": ["R1.2", "S1.1"]},
+        {"net": "GND", "pins": ["S1.2"]}
+      ]
+    }
+  }
+}

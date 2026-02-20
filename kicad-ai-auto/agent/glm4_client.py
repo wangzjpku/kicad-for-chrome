@@ -100,7 +100,7 @@ class GLM4Client:
 1. 理解用户的需求描述
 2. 分析需要哪些电子元器件
 3. 确定电路的技术参数
-4. 生成合理的原理图布局
+4. 生成合理的原理图布局和连线
 5. 输出结构化的项目方案
 
 请严格按照以下JSON格式输出，不要输出其他内容：
@@ -115,21 +115,48 @@ class GLM4Client:
   ],
   "schematic": {
     "components": [
-      {"id": "元件ID", "name": "元件名", "model": "型号", "position": {"x": X坐标, "y": Y坐标}, "pins": [{"number": "引脚号", "name": "引脚名"}]}
+      {
+        "id": "元件ID(如U1,R1,C1)", 
+        "name": "元件名", 
+        "model": "型号", 
+        "footprint": "KiCad封装名称(如Resistor_SMD:R_0603_1608Metric)",
+        "symbol_library": "符号库名(如Device)",
+        "position": {"x": X坐标, "y": Y坐标}, 
+        "pins": [{"number": "引脚号", "name": "引脚名", "type": "输入类型(input/output/power/passive)"}],
+        "reference": "位号(如U1,R1,C1,D1)"
+      }
     ],
     "wires": [
-      {"id": "导线ID", "points": [{"x": X, "y": Y}, {"x": X, "y": Y}], "net": "网络名"}
+      {
+        "id": "导线ID", 
+        "start_component": "起始元件ID",
+        "start_pin": "起始引脚号",
+        "end_component": "终点元件ID",
+        "end_pin": "终点引脚号",
+        "points": [{"x": X, "y": Y}, {"x": X, "y": Y}], 
+        "net": "网络名"
+      }
     ],
     "nets": [
-      {"id": "网络ID", "name": "网络名"}
+      {"id": "网络ID", "name": "网络名", "type": "power/signal/ground"}
     ]
   }
 }
 
 重要提示：
 - components中的封装请使用标准的KiCad封装格式，如0805, SOT-223, TO-220等
-- schematic中的坐标请使用合理的布局，让原理图清晰易读
-- 电源网络用VCC，地网络用GND
+- schematic.components中必须包含footprint字段，格式为"库名:封装名"，例如：
+  - 电阻: Resistor_SMD:R_0603_1608Metric 或 Resistor_SMD:R_0805_2012Metric
+  - 电容: Capacitor_SMD:C_0603_1608Metric 或 Capacitor_SMD:C_0805_2012Metric
+  - LED: LED_SMD:LED_0603_1608Metric 或 LED_THT:LED_D5.0mm
+  - 三极管: Package_TO_SOT_SMD:SOT-23
+  - IC: Package_SO:SOIC-8_3.9x4.9mm_P1.27mm
+  - 稳压器: Package_TO_SOT_SMD:SOT-223-3
+  - 连接器: Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical
+- schematic中的坐标请使用合理的布局，让原理图清晰易读，元件间距至少100单位
+- 电源网络用VCC/3V3/5V，地网络用GND
+- wires必须连接实际的元件引脚，不能是示意性的连接
+- 每个元件的pins要列出所有引脚，包括电源(VCC/VDD)、地(GND/VSS)、信号引脚
 - 只需要输出JSON，不要输出任何解释或额外内容"""
 
         user_prompt = f"""请为以下电路项目生成方案：

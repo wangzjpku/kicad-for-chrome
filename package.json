@@ -1,0 +1,29 @@
+{
+  "name": "kicad-web-editor",
+  "version": "0.2.0",
+  "description": "KiCad Web Editor - Windows本地完整版",
+  "main": "main.py",
+  "scripts": {
+    "start": "cd kicad-ai-auto/backend && python main.py",
+    "dev": "cd kicad-ai-auto/web && npm run dev",
+    "build": "cd kicad-ai-auto/web && npm run build",
+    "test": "pytest && cd web && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/kicad-web-editor"
+  },
+  "keywords": [
+    "kicad",
+    "pcb",
+    "eda",
+    "editor",
+    "electron"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.11"
+  }
+}

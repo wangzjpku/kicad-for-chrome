@@ -1,0 +1,401 @@
+{
+  "summary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0,
+    "success_rate": "100.0%",
+    "duration_seconds": 159.93
+  },
+  "categories": {
+    "PRECHECK": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "PRECHECK",
+          "name": "服务检查",
+          "success": true,
+          "message": "后端: ✓, 前端: ✓"
+        }
+      ]
+    },
+    "SETUP": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "SETUP",
+          "name": "浏览器初始化",
+          "success": true,
+          "message": "Chromium 浏览器已启动"
+        }
+      ]
+    },
+    "T31": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T31.1",
+          "name": "对话框打开测试",
+          "success": true,
+          "message": "标题: 🤖 AI 智能创建项目"
+        },
+        {
+          "id": "T31.2",
+          "name": "对话框关闭测试",
+          "success": true,
+          "message": "对话框已关闭"
+        },
+        {
+          "id": "T31.3",
+          "name": "输入区域测试",
+          "success": true,
+          "message": "输入内容: 测试输入内容 123..."
+        },
+        {
+          "id": "T31.4",
+          "name": "提交按钮状态测试",
+          "success": true,
+          "message": "初始禁用: True, 输入后禁用: False"
+        }
+      ]
+    },
+    "T32": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T32.1",
+          "name": "提交空输入测试",
+          "success": true,
+          "message": "按钮禁用状态: True"
+        },
+        {
+          "id": "T32.2",
+          "name": "提交有效需求测试",
+          "success": true,
+          "message": "分析中"
+        },
+        {
+          "id": "T32.3",
+          "name": "提交后取消测试",
+          "success": true,
+          "message": "已取消"
+        }
+      ]
+    },
+    "T33": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T33.1",
+          "name": "进度显示测试",
+          "success": true,
+          "message": "直接进入预览"
+        },
+        {
+          "id": "T33.2",
+          "name": "分析完成测试",
+          "success": true,
+          "message": "分析完成，显示预览"
+        },
+        {
+          "id": "T33.3",
+          "name": "分析超时测试",
+          "success": true,
+          "message": "分析正常完成"
+        },
+        {
+          "id": "T33.4",
+          "name": "分析失败测试",
+          "success": true,
+          "message": "空输入时按钮禁用: True"
+        }
+      ]
+    },
+    "T34": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T34.1",
+          "name": "方案内容显示测试",
+          "success": true,
+          "message": "项目名: 5V稳压电源, 参数表: True, 器件表: True"
+        },
+        {
+          "id": "T34.2",
+          "name": "方案滚动测试",
+          "success": true,
+          "message": "滚动测试完成，scrollTop: 0"
+        },
+        {
+          "id": "T34.3",
+          "name": "方案编辑测试",
+          "success": true,
+          "message": "编辑按钮: 存在"
+        }
+      ]
+    },
+    "T35": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T35.1",
+          "name": "原理图渲染测试",
+          "success": true,
+          "message": "SVG: True, 器件卡片: 0"
+        },
+        {
+          "id": "T35.2",
+          "name": "原理图缩放测试",
+          "success": true,
+          "message": "缩放操作完成"
+        },
+        {
+          "id": "T35.3",
+          "name": "原理图平移测试",
+          "success": true,
+          "message": "平移操作完成"
+        }
+      ]
+    },
+    "T36": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T36.1",
+          "name": "确认创建项目测试",
+          "success": true,
+          "message": "对话框状态: 已关闭"
+        }
+      ]
+    },
+    "T37": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T37.1",
+          "name": "完整创建流程测试",
+          "success": true,
+          "message": "URL: http://localhost:3000/, 对话框关闭: True"
+        },
+        {
+          "id": "T37.2",
+          "name": "多次创建测试",
+          "success": true,
+          "message": "多次创建流程正常执行"
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "test_id": "PRECHECK",
+      "name": "服务检查",
+      "success": true,
+      "message": "后端: ✓, 前端: ✓",
+      "timestamp": "2026-02-20T20:02:10.171357",
+      "screenshot": ""
+    },
+    {
+      "test_id": "SETUP",
+      "name": "浏览器初始化",
+      "success": true,
+      "message": "Chromium 浏览器已启动",
+      "timestamp": "2026-02-20T20:02:12.798763",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T31.1",
+      "name": "对话框打开测试",
+      "success": true,
+      "message": "标题: 🤖 AI 智能创建项目",
+      "timestamp": "2026-02-20T20:02:16.625781",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200216_T31_1_dialog_open.png"
+    },
+    {
+      "test_id": "T31.2",
+      "name": "对话框关闭测试",
+      "success": true,
+      "message": "对话框已关闭",
+      "timestamp": "2026-02-20T20:02:21.906298",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200221_T31_2_dialog_close.png"
+    },
+    {
+      "test_id": "T31.3",
+      "name": "输入区域测试",
+      "success": true,
+      "message": "输入内容: 测试输入内容 123...",
+      "timestamp": "2026-02-20T20:02:23.619217",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200223_T31_3_input_area.png"
+    },
+    {
+      "test_id": "T31.4",
+      "name": "提交按钮状态测试",
+      "success": true,
+      "message": "初始禁用: True, 输入后禁用: False",
+      "timestamp": "2026-02-20T20:02:26.302147",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200226_T31_4_button_state.png"
+    },
+    {
+      "test_id": "T32.1",
+      "name": "提交空输入测试",
+      "success": true,
+      "message": "按钮禁用状态: True",
+      "timestamp": "2026-02-20T20:02:28.836540",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200228_T32_1_empty_submit.png"
+    },
+    {
+      "test_id": "T32.2",
+      "name": "提交有效需求测试",
+      "success": true,
+      "message": "分析中",
+      "timestamp": "2026-02-20T20:02:33.519285",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200233_T32_2_valid_submit.png"
+    },
+    {
+      "test_id": "T32.3",
+      "name": "提交后取消测试",
+      "success": true,
+      "message": "已取消",
+      "timestamp": "2026-02-20T20:02:44.692732",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200244_T32_3_cancel.png"
+    },
+    {
+      "test_id": "T33.1",
+      "name": "进度显示测试",
+      "success": true,
+      "message": "直接进入预览",
+      "timestamp": "2026-02-20T20:02:47.744320",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200247_T33_1_progress.png"
+    },
+    {
+      "test_id": "T33.2",
+      "name": "分析完成测试",
+      "success": true,
+      "message": "分析完成，显示预览",
+      "timestamp": "2026-02-20T20:02:53.321508",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200253_T33_2_complete.png"
+    },
+    {
+      "test_id": "T33.3",
+      "name": "分析超时测试",
+      "success": true,
+      "message": "分析正常完成",
+      "timestamp": "2026-02-20T20:03:00.895114",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200300_T33_3_timeout.png"
+    },
+    {
+      "test_id": "T33.4",
+      "name": "分析失败测试",
+      "success": true,
+      "message": "空输入时按钮禁用: True",
+      "timestamp": "2026-02-20T20:03:03.418511",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200303_T33_4_failure.png"
+    },
+    {
+      "test_id": "T34.1",
+      "name": "方案内容显示测试",
+      "success": true,
+      "message": "项目名: 5V稳压电源, 参数表: True, 器件表: True",
+      "timestamp": "2026-02-20T20:03:07.517670",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200307_T34_1_spec.png"
+    },
+    {
+      "test_id": "T34.2",
+      "name": "方案滚动测试",
+      "success": true,
+      "message": "滚动测试完成，scrollTop: 0",
+      "timestamp": "2026-02-20T20:03:12.404613",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200312_T34_2_scroll.png"
+    },
+    {
+      "test_id": "T34.3",
+      "name": "方案编辑测试",
+      "success": true,
+      "message": "编辑按钮: 存在",
+      "timestamp": "2026-02-20T20:03:17.820288",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200317_T34_3_edit.png"
+    },
+    {
+      "test_id": "T35.1",
+      "name": "原理图渲染测试",
+      "success": true,
+      "message": "SVG: True, 器件卡片: 0",
+      "timestamp": "2026-02-20T20:03:23.454286",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200323_T35_1_schematic.png"
+    },
+    {
+      "test_id": "T35.2",
+      "name": "原理图缩放测试",
+      "success": true,
+      "message": "缩放操作完成",
+      "timestamp": "2026-02-20T20:03:29.534318",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200329_T35_2_zoom.png"
+    },
+    {
+      "test_id": "T35.3",
+      "name": "原理图平移测试",
+      "success": true,
+      "message": "平移操作完成",
+      "timestamp": "2026-02-20T20:03:35.277756",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200335_T35_3_pan.png"
+    },
+    {
+      "test_id": "T36.1",
+      "name": "确认创建项目测试",
+      "success": true,
+      "message": "对话框状态: 已关闭",
+      "timestamp": "2026-02-20T20:03:42.374105",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200342_T36_1_confirm.png"
+    },
+    {
+      "test_id": "T37.1",
+      "name": "完整创建流程测试",
+      "success": true,
+      "message": "URL: http://localhost:3000/, 对话框关闭: True",
+      "timestamp": "2026-02-20T20:04:04.229907",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200404_T37_1_step5.png"
+    },
+    {
+      "test_id": "T37.2",
+      "name": "多次创建测试",
+      "success": true,
+      "message": "多次创建流程正常执行",
+      "timestamp": "2026-02-20T20:04:18.967601",
+      "screenshot": "e2e_test_results\\20260220_200207_complete\\200418_T37_2_multiple.png"
+    }
+  ],
+  "screenshots": [
+    "e2e_test_results\\20260220_200207_complete\\200216_T31_1_dialog_open.png",
+    "e2e_test_results\\20260220_200207_complete\\200221_T31_2_dialog_close.png",
+    "e2e_test_results\\20260220_200207_complete\\200223_T31_3_input_area.png",
+    "e2e_test_results\\20260220_200207_complete\\200226_T31_4_button_state.png",
+    "e2e_test_results\\20260220_200207_complete\\200228_T32_1_empty_submit.png",
+    "e2e_test_results\\20260220_200207_complete\\200233_T32_2_valid_submit.png",
+    "e2e_test_results\\20260220_200207_complete\\200244_T32_3_cancel.png",
+    "e2e_test_results\\20260220_200207_complete\\200247_T33_1_progress.png",
+    "e2e_test_results\\20260220_200207_complete\\200253_T33_2_complete.png",
+    "e2e_test_results\\20260220_200207_complete\\200300_T33_3_timeout.png",
+    "e2e_test_results\\20260220_200207_complete\\200303_T33_4_failure.png",
+    "e2e_test_results\\20260220_200207_complete\\200307_T34_1_spec.png",
+    "e2e_test_results\\20260220_200207_complete\\200312_T34_2_scroll.png",
+    "e2e_test_results\\20260220_200207_complete\\200317_T34_3_edit.png",
+    "e2e_test_results\\20260220_200207_complete\\200323_T35_1_schematic.png",
+    "e2e_test_results\\20260220_200207_complete\\200329_T35_2_zoom.png",
+    "e2e_test_results\\20260220_200207_complete\\200335_T35_3_pan.png",
+    "e2e_test_results\\20260220_200207_complete\\200342_T36_1_confirm.png",
+    "e2e_test_results\\20260220_200207_complete\\200358_T37_1_step1.png",
+    "e2e_test_results\\20260220_200207_complete\\200359_T37_1_step2.png",
+    "e2e_test_results\\20260220_200207_complete\\200400_T37_1_step3.png",
+    "e2e_test_results\\20260220_200207_complete\\200401_T37_1_step4.png",
+    "e2e_test_results\\20260220_200207_complete\\200404_T37_1_step5.png",
+    "e2e_test_results\\20260220_200207_complete\\200418_T37_2_multiple.png"
+  ]
+}
