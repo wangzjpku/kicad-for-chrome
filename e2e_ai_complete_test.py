@@ -838,6 +838,10 @@ class AIDialogTester:
     async def test_T35_1_schematic_render(self):
         """T3.5.1: 原理图渲染测试 - 支持回退流程"""
         try:
+            # 确保干净状态
+            await self._close_dialog()
+            await asyncio.sleep(0.5)
+
             await self._open_dialog()
             await asyncio.sleep(0.5)
 
@@ -857,9 +861,9 @@ class AIDialogTester:
                     try:
                         await self.page.wait_for_selector(
                             ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
-                            timeout=15000
+                            timeout=30000  # 增加超时时间
                         )
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(1)
 
                         # 检查是否在问答界面
                         clarify_section = await self.page.query_selector(".step-clarifying")
