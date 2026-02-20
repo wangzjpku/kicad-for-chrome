@@ -972,7 +972,7 @@ class AIDialogTester:
             self.report.record("T36.1", "确认创建项目测试", False, str(e))
 
     async def test_T36_2_abandon_create(self):
-        """T3.6.2: 放弃创建测试"""
+        """T3.6.2: 放弃创建测试 - 支持回退流程"""
         try:
             await self._open_dialog()
             await asyncio.sleep(0.5)
@@ -982,40 +982,68 @@ class AIDialogTester:
                 await textarea.fill("设计一个智能家居控制器")
                 await asyncio.sleep(0.2)
 
-                submit_btn = await self.page.query_selector("button:has-text('开始分析'), .submit-btn")
+                submit_btn = await self.page.query_selector(
+                    "button:has-text('下一步'), button:has-text('开始分析'), .submit-btn"
+                )
                 if submit_btn:
                     await submit_btn.click(force=True)
 
-                    await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
-                    await asyncio.sleep(1)
-
-                    # 点击放弃按钮
-                    abandon_btn = await self.page.query_selector("button:has-text('放弃'), .abandon-btn")
-
-                    if abandon_btn:
-                        await abandon_btn.click(force=True)
-                        await asyncio.sleep(1)
-
-                        screenshot = await self.report.screenshot_page(self.page, "T36_2_abandon")
-
-                        # 验证对话框关闭
-                        dialog = await self.page.query_selector(".dialog-overlay")
-                        dialog_visible = dialog and await dialog.is_visible()
-
-                        self.report.record(
-                            "T36.2", "放弃创建测试",
-                            not dialog_visible,
-                            f"对话框已关闭: {not dialog_visible}",
-                            screenshot=screenshot
+                    # 等待任何状态
+                    try:
+                        await self.page.wait_for_selector(
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section",
+                            timeout=15000
                         )
-                    else:
-                        self.report.record("T36.2", "放弃创建测试", False, "未找到放弃按钮")
+                        await asyncio.sleep(0.5)
+
+                        # 检查是否在问答界面
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        if clarify_section and not preview:
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
+                            )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+
+                        await asyncio.sleep(1)
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        if preview:
+                            # 点击放弃按钮
+                            abandon_btn = await self.page.query_selector(
+                                "button:has-text('放弃'), .abandon-btn"
+                            )
+
+                            if abandon_btn:
+                                await abandon_btn.click(force=True)
+                                await asyncio.sleep(1)
+
+                                screenshot = await self.report.screenshot_page(self.page, "T36_2_abandon")
+
+                                dialog = await self.page.query_selector(".dialog-overlay")
+                                dialog_visible = dialog and await dialog.is_visible()
+
+                                self.report.record(
+                                    "T36.2", "放弃创建测试",
+                                    not dialog_visible,
+                                    f"对话框已关闭: {not dialog_visible}",
+                                    screenshot=screenshot
+                                )
+                            else:
+                                self.report.record("T36.2", "放弃创建测试", False, "未找到放弃按钮")
+                        else:
+                            self.report.record("T36.2", "放弃创建测试", False, "未显示预览界面")
+                    except Exception as wait_err:
+                        self.report.record("T36.2", "放弃创建测试", False, f"等待超时: {str(wait_err)}")
 
         except Exception as e:
             self.report.record("T36.2", "放弃创建测试", False, str(e))
 
     async def test_T36_3_back_to_edit(self):
-        """T3.6.3: 返回修改测试"""
+        """T3.6.3: 返回修改测试 - 支持回退流程"""
         try:
             await self._open_dialog()
             await asyncio.sleep(0.5)
@@ -1027,34 +1055,60 @@ class AIDialogTester:
                 await textarea.fill(original_text)
                 await asyncio.sleep(0.2)
 
-                submit_btn = await self.page.query_selector("button:has-text('开始分析'), .submit-btn")
+                submit_btn = await self.page.query_selector(
+                    "button:has-text('下一步'), button:has-text('开始分析'), .submit-btn"
+                )
                 if submit_btn:
                     await submit_btn.click(force=True)
 
-                    await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
-                    await asyncio.sleep(1)
-
-                    # 点击返回修改
-                    back_btn = await self.page.query_selector("button:has-text('返回'), .back-btn")
-
-                    if back_btn:
-                        await back_btn.click(force=True)
+                    try:
+                        await self.page.wait_for_selector(
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section",
+                            timeout=15000
+                        )
                         await asyncio.sleep(0.5)
 
-                        # 检查是否返回输入界面
-                        input_step = await self.page.query_selector(".step-input")
-                        textarea_visible = await textarea.is_visible()
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                        screenshot = await self.report.screenshot_page(self.page, "T36_3_back")
+                        if clarify_section and not preview:
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
+                            )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
 
-                        self.report.record(
-                            "T36.3", "返回修改测试",
-                            input_step is not None and textarea_visible,
-                            f"输入界面可见: {textarea_visible}",
-                            screenshot=screenshot
-                        )
-                    else:
-                        self.report.record("T36.3", "返回修改测试", False, "未找到返回按钮")
+                        await asyncio.sleep(1)
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        if preview:
+                            # 点击返回修改按钮
+                            back_btn = await self.page.query_selector(
+                                "button:has-text('返回'), .back-btn, button:has-text('修改')"
+                            )
+
+                            if back_btn:
+                                await back_btn.click(force=True)
+                                await asyncio.sleep(0.5)
+
+                                input_step = await self.page.query_selector(".step-input")
+                                textarea_visible = await textarea.is_visible() if textarea else False
+
+                                screenshot = await self.report.screenshot_page(self.page, "T36_3_back")
+
+                                self.report.record(
+                                    "T36.3", "返回修改测试",
+                                    input_step is not None and textarea_visible,
+                                    f"输入界面可见: {textarea_visible}",
+                                    screenshot=screenshot
+                                )
+                            else:
+                                self.report.record("T36.3", "返回修改测试", False, "未找到返回按钮")
+                        else:
+                            self.report.record("T36.3", "返回修改测试", False, "未显示预览界面")
+                    except Exception as wait_err:
+                        self.report.record("T36.3", "返回修改测试", False, f"等待超时: {str(wait_err)}")
 
             await self._close_dialog()
 
@@ -1313,22 +1367,22 @@ class AIDialogTester:
     async def test_T32_3_cancel_submit(self):
         """T3.2.3: 提交后取消测试"""
         try:
-            # 确保先关闭任何现有对话框
+            # 先刷新页面确保干净状态
+            await self.page.reload(wait_until="networkidle")
+            await asyncio.sleep(2)
+
+            # 关闭任何现有对话框
             await self._close_dialog()
             await asyncio.sleep(0.5)
 
-            # 刷新页面确保干净状态
-            await self.page.reload()
-            await asyncio.sleep(1)
-
             await self._open_dialog()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
 
             textarea = await self.page.query_selector("textarea#requirements, textarea")
 
             if textarea:
                 await textarea.fill("设计一个测试取消功能的电路")
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.3)
 
                 # 点击提交
                 submit_btn = await self.page.query_selector(
