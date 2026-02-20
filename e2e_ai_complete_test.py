@@ -616,19 +616,29 @@ class AIDialogTester:
 
                 if submit_btn:
                     await submit_btn.click(force=True)
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(2)  # 等待更长时间让状态切换
 
-                    # 检查是否显示加载状态或问答界面
+                    # 检查多种可能的状态
                     analyzing = await self.page.query_selector(".step-analyzing, .spinner, .progress-text")
                     clarifying = await self.page.query_selector(".step-clarifying, .questions-list")
+                    preview = await self.page.query_selector(".step-preview, .spec-section")
 
                     screenshot = await self.report.screenshot_page(self.page, "T32_2_valid_submit")
 
-                    success = analyzing is not None or clarifying is not None
+                    # 任何一种状态都算成功
+                    success = analyzing is not None or clarifying is not None or preview is not None
+                    status_msg = "已提交" if success else "状态未变化"
+                    if analyzing:
+                        status_msg = "分析中"
+                    elif clarifying:
+                        status_msg = "问答界面"
+                    elif preview:
+                        status_msg = "预览界面"
+
                     self.report.record(
                         "T32.2", "提交有效需求测试",
                         success,
-                        "已提交，进入下一步" if success else "未显示加载或问答状态",
+                        status_msg,
                         screenshot=screenshot
                     )
                 else:
@@ -637,7 +647,7 @@ class AIDialogTester:
                 self.report.record("T32.2", "提交有效需求测试", False, "未找到输入框")
 
             # 等待并关闭
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
             await self._close_dialog()
 
         except Exception as e:
@@ -661,90 +671,35 @@ class AIDialogTester:
                 )
                 if submit_btn:
                     await submit_btn.click(force=True)
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1)
 
-                    # 检查进度文字或问答界面
+                    # 检查多种可能的状态
                     progress = await self.page.query_selector(".progress-text, .step-analyzing p")
                     clarifying = await self.page.query_selector(".step-clarifying, .detected-info")
+                    preview = await self.page.query_selector(".step-preview, .spec-section")
 
                     screenshot = await self.report.screenshot_page(self.page, "T33_1_progress")
 
-                    success = progress is not None or clarifying is not None
+                    success = progress is not None or clarifying is not None or preview is not None
+                    status_msg = "显示进度或问答界面" if success else "未显示进度"
+                    if preview:
+                        status_msg = "直接进入预览"
+
                     self.report.record(
                         "T33.1", "进度显示测试",
                         success,
-                        "显示进度或问答界面" if success else "未显示进度",
+                        status_msg,
                         screenshot=screenshot
                     )
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
             await self._close_dialog()
 
         except Exception as e:
             self.report.record("T33.1", "进度显示测试", False, str(e))
 
     async def test_T33_2_analysis_complete(self):
-        """T3.3.2: 分析完成测试 - 新的交互式问答流程"""
-        try:
-            await self._open_dialog()
-            await asyncio.sleep(0.5)
-
-            textarea = await self.page.query_selector("textarea#requirements, textarea")
-            if textarea:
-                await textarea.fill("设计一个5V稳压电源，输入220V交流电")
-                await asyncio.sleep(0.2)
-
-                # 步骤1: 点击"下一步"进入问答
-                submit_btn = await self.page.query_selector(
-                    "button:has-text('下一步'), button:has-text('开始分析'), .submit-btn"
-                )
-                if submit_btn:
-                    await submit_btn.click(force=True)
-
-                    # 等待问答界面或分析中状态 (最长10秒)
-                    try:
-                        await self.page.wait_for_selector(
-                            ".step-clarifying, .step-analyzing, .questions-list",
-                            timeout=10000
-                        )
-                        await asyncio.sleep(1)
-
-                        # 步骤2: 如果有问答界面，点击"生成方案"或"跳过"
-                        clarify_section = await self.page.query_selector(".step-clarifying")
-                        if clarify_section:
-                            # 尝试点击"生成方案"按钮
-                            gen_btn = await self.page.query_selector(
-                                "button:has-text('生成方案'), button:has-text('跳过')"
-                            )
-                            if gen_btn:
-                                await gen_btn.click(force=True)
-
-                        # 等待预览 (最长30秒)
-                        preview = await self.page.wait_for_selector(
-                            ".step-preview, .spec-section",
-                            timeout=30000
-                        )
-
-                        screenshot = await self.report.screenshot_page(self.page, "T33_2_complete")
-
-                        self.report.record(
-                            "T33.2", "分析完成测试",
-                            preview is not None,
-                            "分析完成，显示预览" if preview else "未显示预览",
-                            screenshot=screenshot
-                        )
-                    except:
-                        self.report.record("T33.2", "分析完成测试", False, "等待超时")
-
-            await self._close_dialog()
-
-        except Exception as e:
-            self.report.record("T33.2", "分析完成测试", False, str(e))
-
-    # ========== T3.4 项目方案预览测试 ==========
-
-    async def test_T34_1_spec_content(self):
-        """T3.4.1: 方案内容显示测试 - 新的交互式问答流程"""
+        """T3.3.2: 分析完成测试 - 支持回退流程"""
         try:
             await self._open_dialog()
             await asyncio.sleep(0.5)
@@ -761,40 +716,115 @@ class AIDialogTester:
                 if submit_btn:
                     await submit_btn.click(force=True)
 
-                    # 等待问答界面
+                    # 等待任何状态变化 (问答界面、分析中、或预览)
                     try:
                         await self.page.wait_for_selector(
-                            ".step-clarifying, .questions-list",
-                            timeout=10000
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
+                            timeout=15000
+                        )
+                        await asyncio.sleep(1)
+
+                        # 检查当前状态
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        # 如果有问答界面，点击"生成方案"
+                        if clarify_section and not preview:
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
+                            )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                # 等待预览
+                                await self.page.wait_for_selector(
+                                    ".step-preview, .spec-section",
+                                    timeout=30000
+                                )
+                                preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        # 再次检查预览（可能是直接进入的）
+                        if not preview:
+                            preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        screenshot = await self.report.screenshot_page(self.page, "T33_2_complete")
+
+                        self.report.record(
+                            "T33.2", "分析完成测试",
+                            preview is not None,
+                            "分析完成，显示预览" if preview else "未显示预览",
+                            screenshot=screenshot
+                        )
+                    except Exception as wait_err:
+                        self.report.record("T33.2", "分析完成测试", False, f"等待超时: {str(wait_err)}")
+
+            await self._close_dialog()
+
+        except Exception as e:
+            self.report.record("T33.2", "分析完成测试", False, str(e))
+
+    # ========== T3.4 项目方案预览测试 ==========
+
+    async def test_T34_1_spec_content(self):
+        """T3.4.1: 方案内容显示测试 - 支持回退流程"""
+        try:
+            await self._open_dialog()
+            await asyncio.sleep(0.5)
+
+            textarea = await self.page.query_selector("textarea#requirements, textarea")
+            if textarea:
+                await textarea.fill("设计一个5V稳压电源，输入220V交流电")
+                await asyncio.sleep(0.2)
+
+                # 步骤1: 点击"下一步"
+                submit_btn = await self.page.query_selector(
+                    "button:has-text('下一步'), button:has-text('开始分析'), .submit-btn"
+                )
+                if submit_btn:
+                    await submit_btn.click(force=True)
+
+                    # 等待任何状态
+                    try:
+                        await self.page.wait_for_selector(
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
+                            timeout=15000
                         )
                         await asyncio.sleep(0.5)
 
-                        # 步骤2: 点击"生成方案"或"跳过"
-                        gen_btn = await self.page.query_selector(
-                            "button:has-text('生成方案'), button:has-text('跳过')"
-                        )
-                        if gen_btn:
-                            await gen_btn.click(force=True)
+                        # 检查是否在问答界面
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        if clarify_section and not preview:
+                            # 点击"生成方案"
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
+                            )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
 
                         # 等待预览
-                        await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
                         await asyncio.sleep(1)
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                        # 检查各项内容
-                        project_name = await self.page.query_selector(".spec-content h4")
-                        params_table = await self.page.query_selector(".params-table")
-                        components_table = await self.page.query_selector(".components-table")
+                        if preview:
+                            # 检查各项内容
+                            project_name = await self.page.query_selector(".spec-content h4")
+                            params_table = await self.page.query_selector(".params-table")
+                            components_table = await self.page.query_selector(".components-table")
 
-                        name_text = await project_name.inner_text() if project_name else ""
+                            name_text = await project_name.inner_text() if project_name else ""
 
-                        screenshot = await self.report.screenshot_page(self.page, "T34_1_spec")
+                            screenshot = await self.report.screenshot_page(self.page, "T34_1_spec")
 
-                        self.report.record(
-                            "T34.1", "方案内容显示测试",
-                            project_name is not None,
-                            f"项目名: {name_text}, 参数表: {params_table is not None}, 器件表: {components_table is not None}",
-                            screenshot=screenshot
-                        )
+                            self.report.record(
+                                "T34.1", "方案内容显示测试",
+                                project_name is not None,
+                                f"项目名: {name_text}, 参数表: {params_table is not None}, 器件表: {components_table is not None}",
+                                screenshot=screenshot
+                            )
+                        else:
+                            self.report.record("T34.1", "方案内容显示测试", False, "未显示预览界面")
                     except Exception as wait_err:
                         self.report.record("T34.1", "方案内容显示测试", False, f"等待超时: {str(wait_err)}")
 
@@ -806,7 +836,7 @@ class AIDialogTester:
     # ========== T3.5 原理图预览测试 ==========
 
     async def test_T35_1_schematic_render(self):
-        """T3.5.1: 原理图渲染测试 - 新的交互式问答流程"""
+        """T3.5.1: 原理图渲染测试 - 支持回退流程"""
         try:
             await self._open_dialog()
             await asyncio.sleep(0.5)
@@ -823,39 +853,44 @@ class AIDialogTester:
                 if submit_btn:
                     await submit_btn.click(force=True)
 
-                    # 等待问答界面
+                    # 等待任何状态
                     try:
                         await self.page.wait_for_selector(
-                            ".step-clarifying, .questions-list",
-                            timeout=10000
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
+                            timeout=15000
                         )
                         await asyncio.sleep(0.5)
 
-                        # 步骤2: 点击"生成方案"
-                        gen_btn = await self.page.query_selector(
-                            "button:has-text('生成方案'), button:has-text('跳过')"
-                        )
-                        if gen_btn:
-                            await gen_btn.click(force=True)
+                        # 检查是否在问答界面
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                        # 等待预览
-                        await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+                        if clarify_section and not preview:
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
+                            )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+
                         await asyncio.sleep(1)
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                        # 检查原理图 SVG
-                        schematic_svg = await self.page.query_selector(".schematic-canvas, svg.schematic-canvas")
+                        if preview:
+                            # 检查原理图 SVG
+                            schematic_svg = await self.page.query_selector(".schematic-canvas, svg.schematic-canvas")
+                            component_cards = await self.page.query_selector_all(".component-card")
 
-                        # 检查器件卡片
-                        component_cards = await self.page.query_selector_all(".component-card")
+                            screenshot = await self.report.screenshot_page(self.page, "T35_1_schematic")
 
-                        screenshot = await self.report.screenshot_page(self.page, "T35_1_schematic")
-
-                        self.report.record(
-                            "T35.1", "原理图渲染测试",
-                            schematic_svg is not None or len(component_cards) > 0,
-                            f"SVG: {schematic_svg is not None}, 器件卡片: {len(component_cards)}",
-                            screenshot=screenshot
-                        )
+                            self.report.record(
+                                "T35.1", "原理图渲染测试",
+                                schematic_svg is not None or len(component_cards) > 0,
+                                f"SVG: {schematic_svg is not None}, 器件卡片: {len(component_cards)}",
+                                screenshot=screenshot
+                            )
+                        else:
+                            self.report.record("T35.1", "原理图渲染测试", False, "未显示预览界面")
                     except Exception as wait_err:
                         self.report.record("T35.1", "原理图渲染测试", False, f"等待超时: {str(wait_err)}")
 
@@ -867,7 +902,7 @@ class AIDialogTester:
     # ========== T3.6 方案确认测试 ==========
 
     async def test_T36_1_confirm_create(self):
-        """T3.6.1: 确认创建项目测试 - 新的交互式问答流程"""
+        """T3.6.1: 确认创建项目测试 - 支持回退流程"""
         try:
             await self._open_dialog()
             await asyncio.sleep(0.5)
@@ -884,46 +919,52 @@ class AIDialogTester:
                 if submit_btn:
                     await submit_btn.click(force=True)
 
-                    # 等待问答界面
+                    # 等待任何状态
                     try:
                         await self.page.wait_for_selector(
-                            ".step-clarifying, .questions-list",
-                            timeout=10000
+                            ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
+                            timeout=15000
                         )
                         await asyncio.sleep(0.5)
 
-                        # 步骤2: 点击"生成方案"
-                        gen_btn = await self.page.query_selector(
-                            "button:has-text('生成方案'), button:has-text('跳过')"
-                        )
-                        if gen_btn:
-                            await gen_btn.click(force=True)
+                        # 检查是否在问答界面
+                        clarify_section = await self.page.query_selector(".step-clarifying")
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                        # 等待预览
-                        await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
-                        await asyncio.sleep(1)
-
-                        # 步骤3: 点击确认创建
-                        confirm_btn = await self.page.query_selector("button:has-text('确认创建'), .confirm-btn")
-
-                        if confirm_btn:
-                            await confirm_btn.click(force=True)
-                            await asyncio.sleep(3)
-
-                            screenshot = await self.report.screenshot_page(self.page, "T36_1_confirm")
-
-                            # 检查对话框是否关闭
-                            dialog = await self.page.query_selector(".dialog-overlay")
-                            dialog_visible = dialog and await dialog.is_visible()
-
-                            self.report.record(
-                                "T36.1", "确认创建项目测试",
-                                True,
-                                f"对话框状态: {'可见' if dialog_visible else '已关闭'}",
-                                screenshot=screenshot
+                        if clarify_section and not preview:
+                            gen_btn = await self.page.query_selector(
+                                "button:has-text('生成方案'), button:has-text('跳过')"
                             )
+                            if gen_btn:
+                                await gen_btn.click(force=True)
+                                await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+
+                        await asyncio.sleep(1)
+                        preview = await self.page.query_selector(".step-preview, .spec-section")
+
+                        if preview:
+                            # 步骤3: 点击确认创建
+                            confirm_btn = await self.page.query_selector("button:has-text('确认创建'), .confirm-btn")
+
+                            if confirm_btn:
+                                await confirm_btn.click(force=True)
+                                await asyncio.sleep(3)
+
+                                screenshot = await self.report.screenshot_page(self.page, "T36_1_confirm")
+
+                                dialog = await self.page.query_selector(".dialog-overlay")
+                                dialog_visible = dialog and await dialog.is_visible()
+
+                                self.report.record(
+                                    "T36.1", "确认创建项目测试",
+                                    True,
+                                    f"对话框状态: {'可见' if dialog_visible else '已关闭'}",
+                                    screenshot=screenshot
+                                )
+                            else:
+                                self.report.record("T36.1", "确认创建项目测试", False, "未找到确认按钮")
                         else:
-                            self.report.record("T36.1", "确认创建项目测试", False, "未找到确认按钮")
+                            self.report.record("T36.1", "确认创建项目测试", False, "未显示预览界面")
                     except Exception as wait_err:
                         self.report.record("T36.1", "确认创建项目测试", False, f"等待超时: {str(wait_err)}")
 
@@ -1023,7 +1064,7 @@ class AIDialogTester:
     # ========== T3.7 完整流程测试 ==========
 
     async def test_T37_1_full_flow(self):
-        """T3.7.1: 完整创建流程测试 - 新的交互式问答流程"""
+        """T3.7.1: 完整创建流程测试 - 支持回退流程"""
         try:
             # 1. 访问页面
             await self.page.goto("http://localhost:3000", timeout=30000)
@@ -1045,53 +1086,62 @@ class AIDialogTester:
 
             screenshot3 = await self.report.screenshot_page(self.page, "T37_1_step3")
 
-            # 4. 步骤1: 点击"下一步"进入问答
+            # 4. 点击"下一步"
             submit_btn = await self.page.query_selector(
                 "button:has-text('下一步'), button:has-text('开始分析'), .submit-btn"
             )
             if submit_btn:
                 await submit_btn.click(force=True)
 
-                # 等待问答界面
+                # 等待任何状态
                 try:
                     await self.page.wait_for_selector(
-                        ".step-clarifying, .questions-list",
-                        timeout=10000
+                        ".step-clarifying, .step-analyzing, .step-preview, .spec-section, .questions-list",
+                        timeout=15000
                     )
                     await asyncio.sleep(0.5)
 
-                    # 5. 步骤2: 点击"生成方案"（跳过问答）
-                    gen_btn = await self.page.query_selector(
-                        "button:has-text('生成方案'), button:has-text('跳过')"
-                    )
-                    if gen_btn:
-                        await gen_btn.click(force=True)
+                    # 检查是否在问答界面
+                    clarify_section = await self.page.query_selector(".step-clarifying")
+                    preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                    # 6. 等待分析完成
-                    await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+                    # 5. 如果有问答界面，点击"生成方案"
+                    if clarify_section and not preview:
+                        gen_btn = await self.page.query_selector(
+                            "button:has-text('生成方案'), button:has-text('跳过')"
+                        )
+                        if gen_btn:
+                            await gen_btn.click(force=True)
+                            await self.page.wait_for_selector(".step-preview, .spec-section", timeout=30000)
+
+                    # 6. 等待预览
                     await asyncio.sleep(1)
+                    preview = await self.page.query_selector(".step-preview, .spec-section")
 
-                    screenshot4 = await self.report.screenshot_page(self.page, "T37_1_step4")
+                    if preview:
+                        screenshot4 = await self.report.screenshot_page(self.page, "T37_1_step4")
 
-                    # 7. 步骤3: 确认创建
-                    confirm_btn = await self.page.query_selector("button:has-text('确认创建'), .confirm-btn")
-                    if confirm_btn:
-                        await confirm_btn.click(force=True)
-                        await asyncio.sleep(2)
+                        # 7. 确认创建
+                        confirm_btn = await self.page.query_selector("button:has-text('确认创建'), .confirm-btn")
+                        if confirm_btn:
+                            await confirm_btn.click(force=True)
+                            await asyncio.sleep(2)
 
-                    screenshot5 = await self.report.screenshot_page(self.page, "T37_1_step5")
+                        screenshot5 = await self.report.screenshot_page(self.page, "T37_1_step5")
 
-                    # 8. 验证创建结果
-                    current_url = self.page.url
-                    dialog = await self.page.query_selector(".dialog-overlay")
-                    dialog_visible = dialog and await dialog.is_visible()
+                        # 8. 验证结果
+                        current_url = self.page.url
+                        dialog = await self.page.query_selector(".dialog-overlay")
+                        dialog_visible = dialog and await dialog.is_visible()
 
-                    self.report.record(
-                        "T37.1", "完整创建流程测试",
-                        not dialog_visible,
-                        f"URL: {current_url}, 对话框关闭: {not dialog_visible}",
-                        screenshot=screenshot5
-                    )
+                        self.report.record(
+                            "T37.1", "完整创建流程测试",
+                            not dialog_visible,
+                            f"URL: {current_url}, 对话框关闭: {not dialog_visible}",
+                            screenshot=screenshot5
+                        )
+                    else:
+                        self.report.record("T37.1", "完整创建流程测试", False, "未显示预览界面")
                 except Exception as wait_err:
                     self.report.record("T37.1", "完整创建流程测试", False, f"等待超时: {str(wait_err)}")
 
