@@ -313,6 +313,10 @@ class SchematicGenerator:
         layout = {}
         y = self.MARGIN_TOP
 
+        # 始终创建 main 区域
+        layout["main"] = (self.MARGIN_LEFT, y, 800, y + 400)
+        y += 150
+
         # 电源在最上方
         if ComponentCategory.POWER in categorized:
             layout["power"] = (self.MARGIN_LEFT, y, 700, y + 100)
@@ -738,51 +742,60 @@ class SchematicGenerator:
 
     def _connect_signal_pins(self):
         """连接信号引脚 - 使用网络标签避免长距离走线"""
-        # 按网络分组引脚
+        # 简化连接：按顺序连接相邻元件
+        components = self.sheet.components
+        if len(components) < 2:
+            return
+
+        # 为每个元件创建简单的左右引脚连接
+        for i in range(len(components) - 1):
+            comp1 = components[i]
+            comp2 = components[i + 1]
+
+            # 计算连接点
+            x1 = comp1.position[0] + comp1.size[0] / 2  # 元件1右侧中心
+            y1 = comp1.position[1]
+            x2 = comp2.position[0] - comp2.size[0] / 2  # 元件2左侧中心
+            y2 = comp2.position[1]
+
+            # 创建网络名
+            net_name = f"NET_{comp1.reference}_{comp2.reference}"
+
+            # 确保网络存在
+            if not any(n.name == net_name for n in self.sheet.nets):
+                self._add_net(net_name, "signal")
+
+            # 使用 L 型走线
+            mid_x = (x1 + x2) / 2
+            self._add_wire([(x1, y1), (mid_x, y1), (mid_x, y2), (x2, y2)], net_name)
+
+        # 额外：检测并连接特殊引脚
         net_pins: Dict[str, List[Tuple[SchematicComponent, SchematicPin]]] = {}
 
         for comp in self.sheet.components:
             for pin in comp.pins:
                 if pin.pin_type in [PinType.INPUT, PinType.OUTPUT, PinType.BIDIRECTIONAL]:
-                    # 尝试从引脚名称推断网络
                     net_name = self._infer_signal_net(pin.name, comp.reference)
                     if net_name not in net_pins:
                         net_pins[net_name] = []
                     net_pins[net_name].append((comp, pin))
 
-        # 对于每个网络，如果引脚距离近则连线，否则使用标签
+        # 对于每个网络，如果引脚距离近则连线
         for net_name, pins in net_pins.items():
             if len(pins) < 2:
                 continue
 
-            # 检查引脚间距
             for i, (comp1, pin1) in enumerate(pins):
                 for comp2, pin2 in pins[i+1:]:
                     dist = self._calculate_pin_distance(comp1, pin1, comp2, pin2)
 
-                    if dist < 300:  # 近距离：直接连线
+                    if dist < 300:
                         x1 = comp1.position[0] + pin1.position[0]
                         y1 = comp1.position[1] + pin1.position[1]
                         x2 = comp2.position[0] + pin2.position[0]
                         y2 = comp2.position[1] + pin2.position[1]
 
                         self._add_wire([(x1, y1), (x2, y2)], net_name)
-                    else:  # 远距离：使用网络标签
-                        # 在每个引脚处添加标签
-                        for comp, pin in [(comp1, pin1), (comp2, pin2)]:
-                            x = comp.position[0] + pin.position[0]
-                            y = comp.position[1] + pin.position[1]
-
-                            # 检查是否已有此标签
-                            label_exists = any(
-                                l.name == net_name and
-                                abs(l.position[0] - x) < 20 and
-                                abs(l.position[1] - y) < 20
-                                for l in self.sheet.net_labels
-                            )
-
-                            if not label_exists:
-                                self._add_net_label(net_name, (x, y))
 
     def _infer_signal_net(self, pin_name: str, comp_ref: str) -> str:
         """推断信号网络名"""
