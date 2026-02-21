@@ -1,0 +1,190 @@
+{
+  "summary": {
+    "total": 10,
+    "passed": 4,
+    "failed": 6,
+    "success_rate": "40.0%",
+    "duration_seconds": 214.27
+  },
+  "categories": {
+    "PRECHECK": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "PRECHECK",
+          "name": "服务检查",
+          "success": true,
+          "message": "后端: ✓, 前端: ✓"
+        }
+      ]
+    },
+    "SETUP": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "SETUP",
+          "name": "浏览器初始化",
+          "success": true,
+          "message": "Chromium 浏览器已启动"
+        }
+      ]
+    },
+    "T31": {
+      "passed": 1,
+      "failed": 3,
+      "tests": [
+        {
+          "id": "T31.1",
+          "name": "对话框打开测试",
+          "success": false,
+          "message": "无法打开对话框"
+        },
+        {
+          "id": "T31.2",
+          "name": "对话框关闭测试",
+          "success": true,
+          "message": "对话框已关闭"
+        },
+        {
+          "id": "T31.3",
+          "name": "输入区域测试",
+          "success": false,
+          "message": "未找到输入框"
+        },
+        {
+          "id": "T31.4",
+          "name": "提交按钮状态测试",
+          "success": false,
+          "message": "未找到按钮或输入框"
+        }
+      ]
+    },
+    "T32": {
+      "passed": 0,
+      "failed": 3,
+      "tests": [
+        {
+          "id": "T32.1",
+          "name": "提交空输入测试",
+          "success": false,
+          "message": "未找到输入框"
+        },
+        {
+          "id": "T32.2",
+          "name": "提交有效需求测试",
+          "success": false,
+          "message": "未找到输入框"
+        },
+        {
+          "id": "T32.3",
+          "name": "提交后取消测试",
+          "success": false,
+          "message": "未找到输入框"
+        }
+      ]
+    },
+    "T37": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "id": "T37.2",
+          "name": "多次创建测试",
+          "success": true,
+          "message": "多次创建流程正常执行"
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "test_id": "PRECHECK",
+      "name": "服务检查",
+      "success": true,
+      "message": "后端: ✓, 前端: ✓",
+      "timestamp": "2026-02-21T09:42:55.839645",
+      "screenshot": ""
+    },
+    {
+      "test_id": "SETUP",
+      "name": "浏览器初始化",
+      "success": true,
+      "message": "Chromium 浏览器已启动",
+      "timestamp": "2026-02-21T09:43:00.005709",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T31.1",
+      "name": "对话框打开测试",
+      "success": false,
+      "message": "无法打开对话框",
+      "timestamp": "2026-02-21T09:43:08.311700",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T31.2",
+      "name": "对话框关闭测试",
+      "success": true,
+      "message": "对话框已关闭",
+      "timestamp": "2026-02-21T09:43:15.675784",
+      "screenshot": "e2e_test_results\\20260221_094253_complete\\094315_T31_2_dialog_close.png"
+    },
+    {
+      "test_id": "T31.3",
+      "name": "输入区域测试",
+      "success": false,
+      "message": "未找到输入框",
+      "timestamp": "2026-02-21T09:43:22.205293",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T31.4",
+      "name": "提交按钮状态测试",
+      "success": false,
+      "message": "未找到按钮或输入框",
+      "timestamp": "2026-02-21T09:43:29.271045",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T32.1",
+      "name": "提交空输入测试",
+      "success": false,
+      "message": "未找到输入框",
+      "timestamp": "2026-02-21T09:43:36.331254",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T32.2",
+      "name": "提交有效需求测试",
+      "success": false,
+      "message": "未找到输入框",
+      "timestamp": "2026-02-21T09:43:43.393927",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T32.3",
+      "name": "提交后取消测试",
+      "success": false,
+      "message": "未找到输入框",
+      "timestamp": "2026-02-21T09:43:56.647245",
+      "screenshot": ""
+    },
+    {
+      "test_id": "T37.2",
+      "name": "多次创建测试",
+      "success": true,
+      "message": "多次创建流程正常执行",
+      "timestamp": "2026-02-21T09:45:58.798762",
+      "screenshot": "e2e_test_results\\20260221_094253_complete\\094558_T37_2_multiple.png"
+    }
+  ],
+  "screenshots": [
+    "e2e_test_results\\20260221_094253_complete\\094315_T31_2_dialog_close.png",
+    "e2e_test_results\\20260221_094253_complete\\094536_T37_1_step1.png",
+    "e2e_test_results\\20260221_094253_complete\\094542_T37_1_step2.png",
+    "e2e_test_results\\20260221_094253_complete\\094542_T37_1_step3.png",
+    "e2e_test_results\\20260221_094253_complete\\094558_T37_2_multiple.png"
+  ]
+}

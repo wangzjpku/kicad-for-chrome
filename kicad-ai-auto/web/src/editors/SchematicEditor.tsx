@@ -390,7 +390,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
         {/* 画布区域 */}
         <div style={{ flex: 1, position: 'relative' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
           <Stage
             width={width}
             height={height}
@@ -428,10 +427,11 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             Zoom: {(zoom * 100).toFixed(0)}% | {schematicData.components.length} 元件 | {schematicData.wires.length} 导线
           </div>
         </div>
+      </div>
 
-        {/* 属性编辑面板 */}
-        {selectedIds.length > 0 && selectedElement && (
-          <div style={{
+      {/* 属性编辑面板 - 移到主编辑区域外 */}
+      {selectedIds.length > 0 && selectedElement && (
+        <div style={{
             width: 280,
             backgroundColor: '#2d2d2d',
             borderLeft: '1px solid #4d4d4d',
