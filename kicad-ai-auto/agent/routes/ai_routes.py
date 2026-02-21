@@ -1685,3 +1685,193 @@ async def search_footprints(keyword: str, limit: int = 20):
     except Exception as e:
         logger.error(f"搜索封装失败: {e}")
         return {"success": False, "error": str(e)}
+
+
+# ========== AI 聊天助手 API ==========
+
+class ChatMessage(BaseModel):
+    role: str = "user"
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    context: Optional[Dict[str, Any]] = None
+    history: Optional[List[ChatMessage]] = []
+
+class ChatResponse(BaseModel):
+    response: str
+    actions: Optional[List[Dict[str, str]]] = None
+    modifications: Optional[Dict[str, Any]] = None
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat_with_ai(request: ChatRequest):
+    """
+    AI 聊天助手 - 对话式修改原理图
+
+    用户可以通过对话指出原理图问题，AI 会帮助修改。
+    使用与 AI 分析相同的 API Token。
+
+    Args:
+        message: 用户消息
+        context: 当前原理图上下文
+        history: 对话历史
+    """
+    logger.info(f"AI 聊天请求: {request.message[:50]}...")
+
+    try:
+        # 优先使用 GLM-4
+        if is_glm4_available():
+            try:
+                client = get_glm4_client()
+
+                # 构建系统提示
+                system_prompt = """你是一个专业的电路设计助手。用户会告诉你原理图中存在的问题，
+你需要理解问题并给出修改建议或直接执行修改。
+
+常见的修改请求包括：
+1. 封装问题：如"这个电阻封装不对，应该是0805"
+2. 布局问题：如"元件太挤了，调整布局"
+3. 连接问题：如"这根线连接错误"
+4. 添加元件：如"这里需要加一个去耦电容"
+5. 删除元件：如"删除多余的LED"
+
+回复格式：
+- 首先确认理解用户的问题
+- 然后给出具体的修改建议
+- 如果需要修改，说明修改内容"""
+
+                # 构建上下文描述
+                context_desc = ""
+                if request.context:
+                    context_desc = f"\n\n当前原理图信息：\n"
+                    context_desc += f"项目：{request.context.get('projectName', '未知')}\n"
+                    if request.context.get('components'):
+                        context_desc += f"元件数量：{len(request.context['components'])}\n"
+                        for i, comp in enumerate(request.context['components'][:5]):
+                            context_desc += f"  - {comp.get('name', '?')} ({comp.get('model', '?')})\n"
+                    if request.context.get('nets'):
+                        context_desc += f"网络：{', '.join(request.context['nets'][:10])}\n"
+
+                # 调用 GLM-4
+                response = client.chat(
+                    messages=[
+                        {"role": "system", "content": system_prompt + context_desc},
+                        *[{"role": m.role, "content": m.content} for m in (request.history or [])],
+                        {"role": "user", "content": request.message}
+                    ]
+                )
+
+                ai_response = response.get("content", "我理解了您的问题，正在处理...")
+
+                # 解析修改动作
+                modifications = None
+                actions = []
+
+                # 检查是否包含修改关键词
+                if any(kw in request.message for kw in ["修改", "改", "换成", "替换", "删除", "添加", "加"]):
+                    actions.append({
+                        "type": "modify",
+                        "target": "schematic",
+                        "description": "需要修改原理图"
+                    })
+
+                return ChatResponse(
+                    response=ai_response,
+                    actions=actions if actions else None,
+                    modifications=modifications
+                )
+
+            except Exception as glm_error:
+                logger.warning(f"GLM-4 聊天失败: {glm_error}")
+                # 回退到模拟响应
+                return mock_chat_response(request)
+
+        else:
+            # 使用模拟响应
+            return mock_chat_response(request)
+
+    except Exception as e:
+        logger.error(f"AI 聊天失败: {e}")
+        return ChatResponse(
+            response=f"抱歉，处理您的请求时出错：{str(e)}",
+            actions=None,
+            modifications=None
+        )
+
+
+def mock_chat_response(request: ChatRequest) -> ChatResponse:
+    """模拟聊天响应 - 当 AI 不可用时使用"""
+
+    message = request.message.lower()
+    response = ""
+    actions = []
+    modifications = None
+
+    # 简单的关键词匹配
+    if "封装" in message:
+        response = "我理解您对封装有疑问。让我检查一下当前元件的封装配置。\n\n"
+        response += "建议：检查封装库中是否有更合适的封装，或者根据数据手册选择正确的封装。"
+        actions.append({
+            "type": "check",
+            "target": "footprints",
+            "description": "检查元件封装"
+        })
+
+    elif "布局" in message or "排列" in message:
+        response = "布局优化建议：\n"
+        response += "1. 电源部分放在左上方\n"
+        response += "2. 信号流向从左到右\n"
+        response += "3. 地线在底部\n"
+        response += "4. 避免长距离走线"
+        actions.append({
+            "type": "optimize",
+            "target": "layout",
+            "description": "优化布局"
+        })
+
+    elif "电源" in message or "vcc" in message or "gnd" in message:
+        response = "电源符号建议：\n"
+        response += "• VCC 应该在元件上方，使用向上箭头符号\n"
+        response += "• GND 应该在元件下方，使用标准地符号\n"
+        response += "需要我帮您添加或调整电源符号吗？"
+        actions.append({
+            "type": "modify",
+            "target": "power_symbols",
+            "description": "调整电源符号"
+        })
+
+    elif "电容" in message:
+        response = "关于电容的建议：\n"
+        response += "• 去耦电容应靠近芯片电源引脚\n"
+        response += "• 滤波电容应放在整流后\n"
+        response += "• 注意电容的耐压值"
+        actions.append({
+            "type": "modify",
+            "target": "capacitors",
+            "description": "调整电容位置"
+        })
+
+    elif "线" in message or "连接" in message:
+        response = "导线连接建议：\n"
+        response += "• 使用网络标签减少交叉\n"
+        response += "• 避免90度拐角\n"
+        response += "• 信号线尽量短且直"
+        actions.append({
+            "type": "modify",
+            "target": "wires",
+            "description": "优化导线连接"
+        })
+
+    else:
+        response = f"我理解您提到：\"{request.message}\"\n\n"
+        response += "请告诉我具体需要修改什么，我会帮您处理。例如：\n"
+        response += "• \"把电阻R1的封装改成0805\"\n"
+        response += "• \"删除电容C3\"\n"
+        response += "• \"在电源处添加一个100uF电容\""
+
+    return ChatResponse(
+        response=response,
+        actions=actions if actions else None,
+        modifications=modifications
+    )
