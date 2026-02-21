@@ -406,6 +406,24 @@ class SchematicGenerator:
         # 确定元件尺寸
         size = self._get_component_size(category, len(pins))
 
+        # 智能获取封装
+        model = comp.get("model", "")
+        package = comp.get("package", "")
+        existing_footprint = comp.get("footprint", "")
+
+        # 如果已有完整封装路径，使用它
+        if existing_footprint and ":" in existing_footprint:
+            footprint = existing_footprint
+        else:
+            # 使用智能封装查找器
+            from smart_footprint_finder import find_footprint
+            lib_name, fp_name = find_footprint(
+                model=model,
+                component_type=category.value,
+                package_hint=package
+            )
+            footprint = f"{lib_name}:{fp_name}"
+
         return SchematicComponent(
             id=f"comp-{len(self.sheet.components) + 1}",
             name=comp.get("name", "Unknown"),
@@ -416,7 +434,7 @@ class SchematicGenerator:
             pins=pins,
             category=category,
             symbol_library=comp.get("symbol_library", ""),
-            footprint=comp.get("footprint", comp.get("package", ""))
+            footprint=footprint
         )
 
     def _get_reference_prefix(self, category: ComponentCategory) -> str:

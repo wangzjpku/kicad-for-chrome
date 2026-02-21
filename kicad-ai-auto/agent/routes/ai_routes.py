@@ -24,6 +24,9 @@ from glm4_client import get_glm4_client, is_glm4_available
 # 导入新的原理图生成器
 from schematic_generator import generate_standard_schematic, SchematicGenerator
 
+# 导入智能封装查找器
+from smart_footprint_finder import find_footprint, get_footprint_finder
+
 logger = logging.getLogger(__name__)
 
 # ========== 加载本地知识库 ==========
