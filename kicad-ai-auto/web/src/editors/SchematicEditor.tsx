@@ -1,8 +1,6 @@
 /**
  * 原理图编辑器 (SchematicEditor)
  * 基于 Konva 的原理图编辑画布
- *
- * 新增功能：左侧 AI 聊天助手
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -13,7 +11,6 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useSchematicStore } from '../stores/schematicStore';
 import { SchematicComponent, Wire, Label, Point2D } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import AIChatAssistant from '../components/AIChatAssistant';
 
 // 原理图使用1:1像素坐标（AI生成的是像素坐标）
 const MM_TO_PX = 1;
@@ -304,91 +301,79 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   }
   
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', backgroundColor: '#1a1a1a' }}>
-      {/* 左侧 AI 聊天助手 */}
-      <AIChatAssistant
-        schematicData={schematicData}
-        projectSpec={null}
-        onModifySchematic={(modifications) => {
-          console.log('AI modifications:', modifications);
-          // TODO: 应用 AI 的修改
-        }}
-        defaultExpanded={true}
-      />
-
-      {/* 主编辑区域 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* 工具栏 */}
-        <div style={{ height: 40, backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid #3d3d3d' }}>
-          <span style={{ color: '#fff', marginRight: 16 }}>原理图编辑器</span>
-
-          <button
-            onClick={() => setCurrentTool('select')}
-            style={{
-              marginRight: 8,
-              padding: '4px 12px',
-              backgroundColor: currentTool === 'select' ? '#4a9eff' : '#3d3d3d',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            选择
-          </button>
-
-          <button
-            onClick={() => setCurrentTool('place_symbol')}
-            style={{
-              marginRight: 8,
-              padding: '4px 12px',
-              backgroundColor: currentTool === 'place_symbol' ? '#4a9eff' : '#3d3d3d',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            放置元件
-          </button>
-
-          <button
-            onClick={() => setCurrentTool('place_wire')}
-            style={{
-              marginRight: 8,
-              padding: '4px 12px',
-              backgroundColor: currentTool === 'place_wire' ? '#4a9eff' : '#3d3d3d',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            绘制导线
-          </button>
-
-          <button
-            onClick={() => setCurrentTool('place_label')}
-            style={{
-              marginRight: 8,
-              padding: '4px 12px',
-              backgroundColor: currentTool === 'place_label' ? '#4a9eff' : '#3d3d3d',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer'
-            }}
-          >
-            添加标签
-          </button>
-
-          <div style={{ flex: 1 }} />
-
-          <button onClick={undo} disabled={!canUndo} style={{ marginRight: 8, opacity: canUndo ? 1 : 0.5 }}>↩ 撤销</button>
-          <button onClick={redo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.5 }}>↪ 重做</button>
-        </div>
-
-        {/* 画布区域 */}
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a' }}>
+      {/* 工具栏 */}
+      <div style={{ height: 40, backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid #3d3d3d' }}>
+        <span style={{ color: '#fff', marginRight: 16 }}>原理图编辑器</span>
+        
+        <button
+          onClick={() => setCurrentTool('select')}
+          style={{
+            marginRight: 8,
+            padding: '4px 12px',
+            backgroundColor: currentTool === 'select' ? '#4a9eff' : '#3d3d3d',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          选择
+        </button>
+        
+        <button
+          onClick={() => setCurrentTool('place_symbol')}
+          style={{
+            marginRight: 8,
+            padding: '4px 12px',
+            backgroundColor: currentTool === 'place_symbol' ? '#4a9eff' : '#3d3d3d',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          放置元件
+        </button>
+        
+        <button
+          onClick={() => setCurrentTool('place_wire')}
+          style={{
+            marginRight: 8,
+            padding: '4px 12px',
+            backgroundColor: currentTool === 'place_wire' ? '#4a9eff' : '#3d3d3d',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          绘制导线
+        </button>
+        
+        <button
+          onClick={() => setCurrentTool('place_label')}
+          style={{
+            marginRight: 8,
+            padding: '4px 12px',
+            backgroundColor: currentTool === 'place_label' ? '#4a9eff' : '#3d3d3d',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          添加标签
+        </button>
+        
+        <div style={{ flex: 1 }} />
+        
+        <button onClick={undo} disabled={!canUndo} style={{ marginRight: 8, opacity: canUndo ? 1 : 0.5 }}>↩ 撤销</button>
+        <button onClick={redo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.5 }}>↪ 重做</button>
+      </div>
+      
+      {/* 画布区域 */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <Stage
             width={width}
@@ -427,11 +412,10 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             Zoom: {(zoom * 100).toFixed(0)}% | {schematicData.components.length} 元件 | {schematicData.wires.length} 导线
           </div>
         </div>
-      </div>
 
-      {/* 属性编辑面板 - 移到主编辑区域外 */}
-      {selectedIds.length > 0 && selectedElement && (
-        <div style={{
+        {/* 属性编辑面板 */}
+        {selectedIds.length > 0 && selectedElement && (
+          <div style={{
             width: 280,
             backgroundColor: '#2d2d2d',
             borderLeft: '1px solid #4d4d4d',
