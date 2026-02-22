@@ -54,6 +54,37 @@
   font-weight: 600;
 }
 
+/* 连接状态 */
+.connection-status {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.connection-status.connected {
+  color: #4ade80;
+}
+
+.connection-status.disconnected {
+  color: #6b7280;
+}
+
+/* 执行中动画 */
+.executing-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  color: #fbbf24;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .toggle-btn {
   background: transparent;
   border: none;

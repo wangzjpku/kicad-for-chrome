@@ -583,6 +583,20 @@
   background: rgba(74, 158, 255, 0.1);
 }
 
+.option-item.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4a9eff;
+  font-weight: bold;
+}
+
+.option-item {
+  position: relative;
+}
+
 .option-item input {
   display: none;
 }

@@ -1701,7 +1701,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     actions: Optional[List[Dict[str, str]]] = None
-    modifications: Optional[Dict[str, Any]] = None
+    modifications: Optional[List[Dict[str, Any]]] = None
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -1718,6 +1718,7 @@ async def chat_with_ai(request: ChatRequest):
         history: 对话历史
     """
     logger.info(f"AI 聊天请求: {request.message[:50]}...")
+    logger.info(f"GLM-4 可用: {is_glm4_available()}")
 
     try:
         # 优先使用 GLM-4
@@ -1802,21 +1803,64 @@ async def chat_with_ai(request: ChatRequest):
 
 def mock_chat_response(request: ChatRequest) -> ChatResponse:
     """模拟聊天响应 - 当 AI 不可用时使用"""
+    logger.info(f"使用 mock_chat_response 处理: {request.message[:50]}")
+    import re
+    import random
 
     message = request.message.lower()
+    original_message = request.message  # 保存原始消息用于解析中文坐标
     response = ""
     actions = []
     modifications = None
 
+    # 解析位置信息
+    def parse_position(text: str) -> dict:
+        """尝试从文本中解析位置"""
+        # 匹配坐标格式: (100, 200) 或 (100，200) - 更灵活
+        coord_match = re.search(r'[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', text)
+        if coord_match:
+            return {"x": int(coord_match.group(1)), "y": int(coord_match.group(2))}
+        # 匹配 x=100 y=200 格式
+        x_match = re.search(r'x\s*[=:]\s*(\d+)', text)
+        y_match = re.search(r'y\s*[=:]\s*(\d+)', text)
+        if x_match and y_match:
+            return {"x": int(x_match.group(1)), "y": int(y_match.group(1))}
+        # 随机位置作为默认
+        return {"x": random.randint(50, 200), "y": random.randint(50, 200)}
+
+    # 解析元件引用（如 R1, C3, U1）
+    def parse_reference(text: str) -> str:
+        """尝试从文本中解析元件引用"""
+        ref_match = re.search(r'([RCUQJD])\s*[-_]?\s*(\d+)', text, re.IGNORECASE)
+        if ref_match:
+            return f"{ref_match.group(1).upper()}{ref_match.group(2)}"
+        return None
+
     # 简单的关键词匹配
     if "封装" in message:
-        response = "我理解您对封装有疑问。让我检查一下当前元件的封装配置。\n\n"
-        response += "建议：检查封装库中是否有更合适的封装，或者根据数据手册选择正确的封装。"
-        actions.append({
-            "type": "check",
-            "target": "footprints",
-            "description": "检查元件封装"
-        })
+        # 检查是否包含具体的封装值
+        package_match = re.search(r'(\d{4})', message)
+        if package_match:
+            package = package_match.group(1)
+            ref = parse_reference(original_message)
+            if ref:
+                response = f"好的，我已将元件 {ref} 的封装修改为 {package}。"
+                modifications = [
+                    {"action": "update_property", "id": ref, "property": "footprint", "value": f"R_{package}_Metric"}
+                ]
+            else:
+                response = f"好的，我已将选中的元件封装修改为 {package}。"
+                modifications = [
+                    {"action": "update_property", "property": "footprint", "value": f"R_{package}_Metric"}
+                ]
+        else:
+            response = "我理解您对封装有疑问。让我检查一下当前元件的封装配置。\n\n"
+            response += "建议：检查封装库中是否有更合适的封装，或者根据数据手册选择正确的封装。"
+            actions.append({
+                "type": "check",
+                "target": "footprints",
+                "description": "检查元件封装"
+            })
 
     elif "布局" in message or "排列" in message:
         response = "布局优化建议：\n"
@@ -1842,26 +1886,117 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
         })
 
     elif "电容" in message:
-        response = "关于电容的建议：\n"
-        response += "• 去耦电容应靠近芯片电源引脚\n"
-        response += "• 滤波电容应放在整流后\n"
-        response += "• 注意电容的耐压值"
-        actions.append({
-            "type": "modify",
-            "target": "capacitors",
-            "description": "调整电容位置"
-        })
+        # 优先处理添加电容的请求
+        if "添加" in message or "加一个" in message:
+            position = parse_position(original_message)
+            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            modifications = [
+                {"action": "add_component", "type": "capacitor", "value": "100nF", "position": position}
+            ]
+        else:
+            response = "关于电容的建议：\n"
+            response += "• 去耦电容应靠近芯片电源引脚\n"
+            response += "• 滤波电容应放在整流后\n"
+            response += "• 注意电容的耐压值"
+            actions.append({
+                "type": "modify",
+                "target": "capacitors",
+                "description": "调整电容位置"
+            })
 
     elif "线" in message or "连接" in message:
-        response = "导线连接建议：\n"
-        response += "• 使用网络标签减少交叉\n"
-        response += "• 避免90度拐角\n"
-        response += "• 信号线尽量短且直"
-        actions.append({
-            "type": "modify",
-            "target": "wires",
-            "description": "优化导线连接"
-        })
+        # 尝试解析坐标
+        logger.info(f"处理走线请求: {original_message}")
+        start_match = re.search(r'从\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', original_message)
+        end_match = re.search(r'到\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', original_message)
+
+        logger.info(f"Start match: {start_match}, End match: {end_match}")
+
+        if start_match and end_match:
+            start = {"x": int(start_match.group(1)), "y": int(start_match.group(2))}
+            end = {"x": int(end_match.group(1)), "y": int(end_match.group(2))}
+            response = f"好的，我已添加了一条走线从 ({start['x']}, {start['y']}) 到 ({end['x']}, {end['y']})。"
+            modifications = [
+                {"action": "add_track", "start": start, "end": end}
+            ]
+            logger.info(f"返回 modifications: {modifications}")
+        else:
+            # 尝试解析 "连接 XX 到 YY" 格式（元件名称）
+            logger.info(f"尝试解析连接请求，原始消息: {original_message}")
+            connect_pattern = r'连接\s*([A-Za-z]+\d*)\s*到\s*([A-Za-z]+\d*)'
+            connect_match = re.search(connect_pattern, original_message)
+            logger.info(f"连接正则匹配结果: {connect_match}")
+
+            if connect_match:
+                from_ref = connect_match.group(1).upper()
+                to_ref = connect_match.group(2).upper()
+                logger.info(f"解析到连接请求: {from_ref} -> {to_ref}")
+
+                response = f"好的，我已添加了从 {from_ref} 到 {to_ref} 的走线。"
+                modifications = [
+                    {"action": "connect_components", "from": from_ref, "to": to_ref}
+                ]
+                logger.info(f"返回 connect_components modifications: {modifications}")
+            else:
+                response = "好的，我已优化了导线连接。"
+                modifications = [
+                    {"action": "optimize_wires"}
+                ]
+                actions.append({
+                    "type": "modify",
+                    "target": "wires",
+                    "description": "优化导线连接"
+                })
+
+    elif "删除" in message or "去掉" in message:
+        ref = parse_reference(original_message)
+        if ref:
+            response = f"好的，我已删除元件 {ref}。"
+            modifications = [
+                {"action": "delete_component", "id": ref}
+            ]
+        else:
+            response = "好的，我已删除选中的元件。"
+            modifications = [
+                {"action": "delete_component"}
+            ]
+
+    elif "移动" in message or "移到" in message or "移动到" in message:
+        ref = parse_reference(original_message)
+        position = parse_position(original_message)
+        if ref and position:
+            response = f"好的，我已将元件 {ref} 移动到位置 ({position['x']}, {position['y']})。"
+            modifications = [
+                {"action": "move_component", "id": ref, "position": position}
+            ]
+        else:
+            response = "好的，我已移动了元件。"
+            modifications = [
+                {"action": "move_component", "position": position}
+            ]
+
+    elif "添加" in message or "加一个" in message or "添加一个" in message:
+        position = parse_position(original_message)
+        if "电容" in message or "cap" in message:
+            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            modifications = [
+                {"action": "add_component", "type": "capacitor", "value": "100nF", "position": position}
+            ]
+        elif "电阻" in message or "res" in message:
+            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电阻。"
+            modifications = [
+                {"action": "add_component", "type": "resistor", "value": "10k", "position": position}
+            ]
+        elif "过孔" in message or "via" in message:
+            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个过孔。"
+            modifications = [
+                {"action": "add_via", "position": position}
+            ]
+        else:
+            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了元件。"
+            modifications = [
+                {"action": "add_component", "position": position}
+            ]
 
     else:
         response = f"我理解您提到：\"{request.message}\"\n\n"

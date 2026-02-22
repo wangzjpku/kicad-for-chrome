@@ -76,14 +76,14 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
   // 只有选择工具或移动工具时可以拖拽
   const draggable = selected && (currentTool === 'select' || currentTool === 'move');
 
-  // 如果没有焊盘，渲染一个默认的封装形状
+  // 如果没有焊盘，渲染一个默认的封装形状（放大以便可见）
   const renderDefaultFootprint = () => {
     return (
       <Rect
-        x={-10}
-        y={-10}
-        width={20}
-        height={20}
+        x={-15}
+        y={-15}
+        width={30}
+        height={30}
         fill={highlightColor}
         stroke={selected ? '#FFFF00' : color}
         strokeWidth={selected ? 2 : 1}
@@ -105,18 +105,24 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
     >
       {/* 绘制焊盘 */}
       {padList.length > 0 ? (
-        padList.map((pad) => (
-          <Rect
-            key={pad.id}
-            x={pad.position.x * MM_TO_PX - (pad.size.x * MM_TO_PX) / 2}
-            y={pad.position.y * MM_TO_PX - (pad.size.y * MM_TO_PX) / 2}
-            width={pad.size.x * MM_TO_PX}
-            height={pad.size.y * MM_TO_PX}
-            fill={highlightColor}
-            stroke={selected ? '#FFFF00' : '#FFFFFF'}
-            strokeWidth={selected ? 2 : 1}
-          />
-        ))
+        padList.map((pad) => {
+          // 确保焊盘有最小可见尺寸（放大显示以便调试）
+          const minSize = 8; // 最小8像素
+          const padWidth = Math.max(pad.size.x * MM_TO_PX, minSize);
+          const padHeight = Math.max(pad.size.y * MM_TO_PX, minSize);
+          return (
+            <Rect
+              key={pad.id}
+              x={pad.position.x * MM_TO_PX - padWidth / 2}
+              y={pad.position.y * MM_TO_PX - padHeight / 2}
+              width={padWidth}
+              height={padHeight}
+              fill={highlightColor}
+              stroke={selected ? '#FFFF00' : '#FFFFFF'}
+              strokeWidth={selected ? 2 : 1}
+            />
+          );
+        })
       ) : (
         // 没有焊盘时渲染默认形状
         renderDefaultFootprint()

@@ -201,8 +201,12 @@ export const usePCBStore = create<PCBStoreState>()(
       
       addFootprint: (footprint) => {
         const { pcbData } = get();
-        if (!pcbData) return;
-        
+        if (!pcbData) {
+          console.warn('[PCBStore] addFootprint failed: pcbData is null');
+          return;
+        }
+
+        console.log('[PCBStore] addFootprint called, current footprints:', pcbData.footprints.length);
         get().pushHistory();
         set({
           pcbData: {
@@ -210,6 +214,7 @@ export const usePCBStore = create<PCBStoreState>()(
             footprints: [...pcbData.footprints, footprint]
           }
         });
+        console.log('[PCBStore] addFootprint completed, new footprints:', pcbData.footprints.length + 1);
       },
       
       removeFootprint: (id) => {

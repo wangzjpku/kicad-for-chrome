@@ -11,6 +11,8 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useSchematicStore } from '../stores/schematicStore';
 import { SchematicComponent, Wire, Label, Point2D } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import AIChatAssistant from '../components/AIChatAssistant';
+import SchematicSymbol from '../components/SchematicSymbol';
 
 // 原理图使用1:1像素坐标（AI生成的是像素坐标）
 const MM_TO_PX = 1;
@@ -43,11 +45,12 @@ const createEmptySchematic = () => ({
 });
 
 const SchematicEditor: React.FC<SchematicEditorProps> = ({
-  width = 1000,
-  height = 800
+  width = 800,
+  height = 600
 }) => {
   const stageRef = useRef<StageType>(null);
   const [stageRef2, setStageRef] = useState<StageType | null>(null);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const {
     schematicData,
@@ -185,11 +188,9 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     return lines;
   };
   
-  // 渲染元件
+  // 渲染元件 - 使用新的符号渲染器
   const renderComponent = (comp: SchematicComponent) => {
     // 安全检查：确保 position 存在
-    const x = (comp.position?.x ?? 0) * MM_TO_PX;
-    const y = (comp.position?.y ?? 0) * MM_TO_PX;
     const selected = selectedIds.includes(comp.id);
     
     // 拖拽结束处理
@@ -204,56 +205,32 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     };
     
     return (
-      <Group
+      <SchematicSymbol
         key={comp.id}
-        x={x}
-        y={y}
-        rotation={comp.rotation}
+        component={{
+          id: comp.id,
+          name: comp.value || comp.symbolName || '',
+          model: comp.value || '',
+          reference: comp.reference,
+          value: comp.value,
+          position: { x: (comp.position?.x ?? 0) * MM_TO_PX, y: (comp.position?.y ?? 0) * MM_TO_PX },
+          rotation: comp.rotation,
+          pins: comp.pins?.map(p => ({
+            id: p.id,
+            number: p.number,
+            name: p.name,
+            position: p.position || { x: 0, y: 0 },
+            electricalType: p.electricalType
+          })),
+          footprint: comp.footprint,
+          category: comp.libraryName,
+          symbolName: comp.symbolName
+        }}
+        selected={selected}
         onClick={() => toggleSelection(comp.id)}
-        draggable={currentTool === 'select'}
         onDragEnd={handleDragEnd}
-      >
-        {/* 元件主体 - 简化为矩形 */}
-        {/* 尺寸 60x40，与后端 _get_pin_offset 匹配 */}
-        <Rect
-          x={-30}
-          y={-20}
-          width={60}
-          height={40}
-          fill={selected ? '#4a9eff' : '#2d5a87'}
-          stroke={selected ? '#ffffff' : '#4a9eff'}
-          strokeWidth={selected ? 2 : 1}
-        />
-        
-        {/* 引脚 */}
-        {comp.pins?.map((pin, i) => (
-          <Circle
-            key={pin.id || `pin-${i}`}
-            x={(pin.position?.x ?? 0) * MM_TO_PX}
-            y={(pin.position?.y ?? 0) * MM_TO_PX}
-            radius={2}
-            fill="#ffffff"
-          />
-        ))}
-        
-        {/* 位号 */}
-        <Text
-          text={comp.reference}
-          x={-30}
-          y={-32}
-          fontSize={10}
-          fill="#ffffff"
-        />
-        
-        {/* 值 */}
-        <Text
-          text={comp.value}
-          x={-30}
-          y={22}
-          fontSize={8}
-          fill="#aaaaaa"
-        />
-      </Group>
+        draggable={currentTool === 'select'}
+      />
     );
   };
   
@@ -301,76 +278,51 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   }
   
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a' }}>
-      {/* 工具栏 */}
-      <div style={{ height: 40, backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid #3d3d3d' }}>
-        <span style={{ color: '#fff', marginRight: 16 }}>原理图编辑器</span>
-        
-        <button
-          onClick={() => setCurrentTool('select')}
-          style={{
-            marginRight: 8,
-            padding: '4px 12px',
-            backgroundColor: currentTool === 'select' ? '#4a9eff' : '#3d3d3d',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}
-        >
-          选择
-        </button>
-        
-        <button
-          onClick={() => setCurrentTool('place_symbol')}
-          style={{
-            marginRight: 8,
-            padding: '4px 12px',
-            backgroundColor: currentTool === 'place_symbol' ? '#4a9eff' : '#3d3d3d',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}
-        >
-          放置元件
-        </button>
-        
-        <button
-          onClick={() => setCurrentTool('place_wire')}
-          style={{
-            marginRight: 8,
-            padding: '4px 12px',
-            backgroundColor: currentTool === 'place_wire' ? '#4a9eff' : '#3d3d3d',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}
-        >
-          绘制导线
-        </button>
-        
-        <button
-          onClick={() => setCurrentTool('place_label')}
-          style={{
-            marginRight: 8,
-            padding: '4px 12px',
-            backgroundColor: currentTool === 'place_label' ? '#4a9eff' : '#3d3d3d',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}
-        >
-          添加标签
-        </button>
-        
-        <div style={{ flex: 1 }} />
-        
-        <button onClick={undo} disabled={!canUndo} style={{ marginRight: 8, opacity: canUndo ? 1 : 0.5 }}>↩ 撤销</button>
-        <button onClick={redo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.5 }}>↪ 重做</button>
-      </div>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a', position: 'relative' }}>
+      {/* AI 聊天助手浮窗按钮 - 固定在右下角 */}
+      <button
+        onClick={() => setShowAIChat(!showAIChat)}
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          zIndex: 100,
+          padding: '10px 20px',
+          backgroundColor: showAIChat ? '#4a9eff' : '#2d2d2d',
+          border: '1px solid #4a4a4a',
+          borderRadius: 8,
+          color: '#fff',
+          cursor: 'pointer',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        }}
+      >
+        🤖 AI助手
+      </button>
+
+      {/* AI 聊天助手面板 - 右下角浮窗 */}
+      {showAIChat && (
+        <div style={{
+          position: 'absolute',
+          bottom: 70,
+          right: 20,
+          zIndex: 99,
+          width: 380,
+          height: 500,
+        }}>
+          <AIChatAssistant
+            schematicData={schematicData}
+            projectSpec={{ name: projectId || '未命名项目' }}
+            onModifySchematic={(modifications) => {
+              console.log('AI modifications:', modifications);
+            }}
+            defaultExpanded={true}
+          />
+        </div>
+      )}
       
       {/* 画布区域 */}
       <div style={{ flex: 1, position: 'relative', display: 'flex' }}>

@@ -9,7 +9,6 @@ import type { Stage as StageType } from 'konva/lib/Stage';
 import { usePCBStore } from '../stores/pcbStore';
 import { samplePCB } from '../data/samplePCB';
 
-import MenuBar from '../components/MenuBar';
 import SimpleToolbar from '../components/SimpleToolbar';
 import PropertyPanel from '../panels/PropertyPanel';
 import LayerPanel from '../panels/LayerPanel';
@@ -17,6 +16,7 @@ import DRCPanel from '../panels/DRCPanel';
 import ExportPanel from '../panels/ExportPanel';
 import RoutingTool from '../canvas/RoutingTool';
 import PCBViewer3D from '../components/PCBViewer3D';
+import AIChatAssistant from '../components/AIChatAssistant';
 
 import BoardOutlineRenderer from '../canvas/BoardOutlineRenderer';
 import FootprintRenderer from '../canvas/FootprintRenderer';
@@ -36,6 +36,7 @@ const PCBEditor: React.FC = () => {
   const [activeLayer, setActiveLayer] = useState('F.Cu');
   const [drcReport, setDrcReport] = useState<DRCReport | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [showAIChat, setShowAIChat] = useState(false);
   
   const {
     pcbData,
@@ -165,35 +166,60 @@ const PCBEditor: React.FC = () => {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a' }}>
-      {/* 菜单栏 */}
-      <MenuBar />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a', position: 'relative' }}>
+      {/* AI 聊天助手浮窗按钮 - 固定在右下角 */}
+      <button
+        onClick={() => setShowAIChat(!showAIChat)}
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          zIndex: 100,
+          padding: '10px 20px',
+          backgroundColor: showAIChat ? '#4a9eff' : '#2d2d2d',
+          border: '1px solid #4a4a4a',
+          borderRadius: 8,
+          color: '#fff',
+          cursor: 'pointer',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        }}
+      >
+        🤖 AI助手
+      </button>
 
-      {/* 工具栏 */}
-      <div style={{ height: 40, backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid #3d3d3d' }}>
-        <span style={{ color: '#fff', marginRight: 16 }}>KiCad Web Editor</span>
-        <span style={{ color: '#888', fontSize: 12 }}>Tool: {currentTool}</span>
-        <div style={{ flex: 1 }} />
-        
-        {/* 撤销/重做按钮 */}
-        <button onClick={undo} disabled={!canUndo} style={{ marginRight: 8, opacity: canUndo ? 1 : 0.5 }}>↩ Undo</button>
-        <button onClick={redo} disabled={!canRedo} style={{ marginRight: 16, opacity: canRedo ? 1 : 0.5 }}>↪ Redo</button>
-        
-        {/* 保存状态 */}
-        {isSaving && <span style={{ color: '#4a9eff', fontSize: 12 }}>Saving...</span>}
-        {lastSaved && !isSaving && (
-          <span style={{ color: '#666', fontSize: 11 }}>
-            Saved {lastSaved.toLocaleTimeString()}
-          </span>
-        )}
-      </div>
+      {/* AI 聊天助手面板 - 右下角浮窗 */}
+      {showAIChat && (
+        <div style={{
+          position: 'absolute',
+          bottom: 70,
+          right: 20,
+          zIndex: 99,
+          width: 380,
+          height: 500,
+        }}>
+          <AIChatAssistant
+            schematicData={pcbData}
+            projectSpec={{ name: projectId || '未命名项目' }}
+            onModifySchematic={(modifications) => {
+              console.log('AI modifications received:', modifications);
+              // 注意：AIChatAssistant 内部会在执行完修改后自动保存 PCB 数据
+              // 这里不需要额外调用 savePCBData，避免时序问题
+            }}
+            defaultExpanded={true}
+          />
+        </div>
+      )}
 
       {/* 主内容区 */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* 左侧工具栏 */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#2d2d2d', borderRight: '1px solid #3d3d3d' }}>
           <SimpleToolbar />
-          
+
           {/* 2D/3D 视图切换 */}
           <div style={{ display: 'flex', padding: 8, gap: 4, backgroundColor: '#2d2d2d', borderTop: '1px solid #3d3d3d' }}>
             <button
@@ -230,11 +256,11 @@ const PCBEditor: React.FC = () => {
         </div>
 
         {/* 画布区域 */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative' }} id="pcb-canvas-container">
           {viewMode === '2d' ? (
             <Stage
-              width={window.innerWidth - 470}
-              height={window.innerHeight - 70}
+              width={800}
+              height={600}
               onWheel={handleWheel}
               onClick={handleStageClick}
               draggable
@@ -278,9 +304,9 @@ const PCBEditor: React.FC = () => {
           </Stage>
           ) : (
             /* 3D 视图 */
-            <PCBViewer3D 
-              width={window.innerWidth - 470} 
-              height={window.innerHeight - 70} 
+            <PCBViewer3D
+              width={800}
+              height={600}
             />
           )}
 
@@ -329,18 +355,6 @@ const PCBEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* 底部状态栏 */}
-      <div style={{ height: 30, backgroundColor: '#2d2d2d', borderTop: '1px solid #3d3d3d', display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span style={{ color: '#888', fontSize: 12 }}>{pcbData.footprints.length} Footprints</span>
-          <span style={{ color: '#888', fontSize: 12 }}>{pcbData.tracks.length} Tracks</span>
-          <span style={{ color: '#888', fontSize: 12 }}>{pcbData.vias.length} Vias</span>
-          {selectedIds.length > 0 && (
-            <span style={{ color: '#4a9eff', fontSize: 12 }}>{selectedIds.length} Selected</span>
-          )}
-        </div>
-        <span style={{ color: '#4a9eff', fontSize: 12 }}>Active: {activeLayer}</span>
-      </div>
     </div>
   );
 };

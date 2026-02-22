@@ -23,33 +23,36 @@ logger = logging.getLogger(__name__)
 
 class ComponentCategory(Enum):
     """元件类别"""
-    POWER = "power"           # 电源类：变压器、整流器、稳压器
-    MCU = "mcu"               # 微控制器
-    INTERFACE = "interface"   # 接口类：USB、串口
-    PASSIVE = "passive"       # 无源器件：电阻、电容
-    ACTIVE = "active"         # 有源器件：二极管、晶体管
-    CONNECTOR = "connector"   # 连接器
-    CRYSTAL = "crystal"       # 晶振
-    LED = "led"               # LED
-    SENSOR = "sensor"         # 传感器
-    OTHER = "other"           # 其他
+
+    POWER = "power"  # 电源类：变压器、整流器、稳压器
+    MCU = "mcu"  # 微控制器
+    INTERFACE = "interface"  # 接口类：USB、串口
+    PASSIVE = "passive"  # 无源器件：电阻、电容
+    ACTIVE = "active"  # 有源器件：二极管、晶体管
+    CONNECTOR = "connector"  # 连接器
+    CRYSTAL = "crystal"  # 晶振
+    LED = "led"  # LED
+    SENSOR = "sensor"  # 传感器
+    OTHER = "other"  # 其他
 
 
 class PinType(Enum):
     """引脚类型"""
-    POWER_IN = "power_in"       # 电源输入
-    POWER_OUT = "power_out"     # 电源输出
-    GND = "gnd"                 # 地
-    INPUT = "input"             # 信号输入
-    OUTPUT = "output"           # 信号输出
+
+    POWER_IN = "power_in"  # 电源输入
+    POWER_OUT = "power_out"  # 电源输出
+    GND = "gnd"  # 地
+    INPUT = "input"  # 信号输入
+    OUTPUT = "output"  # 信号输出
     BIDIRECTIONAL = "bidirectional"  # 双向
-    PASSIVE = "passive"         # 无源
+    PASSIVE = "passive"  # 无源
     UNSPECIFIED = "unspecified"  # 未指定
 
 
 @dataclass
 class SchematicPin:
     """原理图引脚"""
+
     number: str
     name: str
     pin_type: PinType = PinType.UNSPECIFIED
@@ -60,6 +63,7 @@ class SchematicPin:
 @dataclass
 class SchematicComponent:
     """原理图元件"""
+
     id: str
     name: str
     model: str
@@ -75,6 +79,7 @@ class SchematicComponent:
 @dataclass
 class SchematicNet:
     """原理图网络"""
+
     id: str
     name: str
     net_class: str = "default"  # default, power, signal
@@ -83,6 +88,7 @@ class SchematicNet:
 @dataclass
 class SchematicWire:
     """原理图导线"""
+
     id: str
     points: List[Tuple[float, float]]
     net: str
@@ -91,16 +97,18 @@ class SchematicWire:
 @dataclass
 class SchematicNetLabel:
     """网络标签"""
+
     id: str
     name: str
     position: Tuple[float, float]
     direction: str = "right"  # 标签方向
-    is_global: bool = False   # 是否为全局标签
+    is_global: bool = False  # 是否为全局标签
 
 
 @dataclass
 class PowerSymbol:
     """电源符号"""
+
     id: str
     net_name: str  # VCC, GND, +5V 等
     position: Tuple[float, float]
@@ -110,6 +118,7 @@ class PowerSymbol:
 @dataclass
 class SchematicSheet:
     """原理图纸"""
+
     components: List[SchematicComponent] = field(default_factory=list)
     nets: List[SchematicNet] = field(default_factory=list)
     wires: List[SchematicWire] = field(default_factory=list)
@@ -124,14 +133,14 @@ class SchematicGenerator:
     GRID_SIZE = 50  # 网格大小 (0.5 inch = 12.7mm)
     COMPONENT_SPACING_X = 200  # 元件水平间距
     COMPONENT_SPACING_Y = 150  # 元件垂直间距
-    POWER_RAIL_OFFSET = 100   # 电源轨道偏移
-    GND_RAIL_OFFSET = 100     # 地轨道偏移
+    POWER_RAIL_OFFSET = 100  # 电源轨道偏移
+    GND_RAIL_OFFSET = 100  # 地轨道偏移
 
     # 区域划分
-    MARGIN_TOP = 150      # 顶部边距（电源区）
-    MARGIN_BOTTOM = 150   # 底部边距（地区）
-    MARGIN_LEFT = 100     # 左边距
-    MARGIN_RIGHT = 100    # 右边距
+    MARGIN_TOP = 150  # 顶部边距（电源区）
+    MARGIN_BOTTOM = 150  # 底部边距（地区）
+    MARGIN_LEFT = 100  # 左边距
+    MARGIN_RIGHT = 100  # 右边距
 
     def __init__(self):
         self.sheet = SchematicSheet()
@@ -140,7 +149,9 @@ class SchematicGenerator:
         self._net_counter = 0
         self._label_counter = 0
 
-    def generate(self, components: List[Dict], circuit_type: str = "general") -> SchematicSheet:
+    def generate(
+        self, components: List[Dict], circuit_type: str = "general"
+    ) -> SchematicSheet:
         """
         生成符合标准的原理图
 
@@ -151,11 +162,15 @@ class SchematicGenerator:
         Returns:
             SchematicSheet: 生成的原理图
         """
-        logger.info(f"开始生成原理图，电路类型: {circuit_type}, 元件数: {len(components)}")
+        logger.info(
+            f"开始生成原理图，电路类型: {circuit_type}, 元件数: {len(components)}"
+        )
 
         # 1. 分析元件并分类
         categorized = self._categorize_components(components)
-        logger.info(f"元件分类完成: {[(cat.name, len(comps)) for cat, comps in categorized.items()]}")
+        logger.info(
+            f"元件分类完成: {[(cat.name, len(comps)) for cat, comps in categorized.items()]}"
+        )
 
         # 2. 规划布局
         layout = self._plan_layout(categorized, circuit_type)
@@ -190,7 +205,9 @@ class SchematicGenerator:
 
         return self.sheet
 
-    def _categorize_components(self, components: List[Dict]) -> Dict[ComponentCategory, List[Dict]]:
+    def _categorize_components(
+        self, components: List[Dict]
+    ) -> Dict[ComponentCategory, List[Dict]]:
         """分类元件"""
         categorized = {cat: [] for cat in ComponentCategory}
 
@@ -200,17 +217,56 @@ class SchematicGenerator:
             combined = name_lower + " " + model_lower
 
             # 电源类
-            if any(kw in combined for kw in ["电源", "power", "变压器", "transformer",
-                                             "整流", "rectifier", "稳压", "regulator",
-                                             "lm78", "ldo", "dcdc", "buck", "boost"]):
+            if any(
+                kw in combined
+                for kw in [
+                    "电源",
+                    "power",
+                    "变压器",
+                    "transformer",
+                    "整流",
+                    "rectifier",
+                    "稳压",
+                    "regulator",
+                    "lm78",
+                    "ldo",
+                    "dcdc",
+                    "buck",
+                    "boost",
+                ]
+            ):
                 categorized[ComponentCategory.POWER].append(comp)
             # MCU
-            elif any(kw in combined for kw in ["mcu", "单片机", "esp32", "stm32",
-                                               "arduino", "atmega", "nrf52", "rp2040"]):
+            elif any(
+                kw in combined
+                for kw in [
+                    "mcu",
+                    "单片机",
+                    "esp32",
+                    "stm32",
+                    "arduino",
+                    "atmega",
+                    "nrf52",
+                    "rp2040",
+                    "attiny",
+                ]
+            ):
                 categorized[ComponentCategory.MCU].append(comp)
             # 接口类
-            elif any(kw in combined for kw in ["usb", "uart", "串口", "spi", "i2c",
-                                               "can", "rs485", "ch340", "cp210"]):
+            elif any(
+                kw in combined
+                for kw in [
+                    "usb",
+                    "uart",
+                    "串口",
+                    "spi",
+                    "i2c",
+                    "can",
+                    "rs485",
+                    "ch340",
+                    "cp210",
+                ]
+            ):
                 categorized[ComponentCategory.INTERFACE].append(comp)
             # 晶振
             elif any(kw in combined for kw in ["晶振", "crystal", "oscillator", "mhz"]):
@@ -219,15 +275,39 @@ class SchematicGenerator:
             elif any(kw in combined for kw in ["led", "发光", "灯"]):
                 categorized[ComponentCategory.LED].append(comp)
             # 连接器
-            elif any(kw in combined for kw in ["connector", "连接器", "header", "插座", "pin"]):
+            elif any(
+                kw in combined
+                for kw in [
+                    "connector",
+                    "连接器",
+                    "header",
+                    "插座",
+                    "pin",
+                    "接口",
+                    "usb接口",
+                ]
+            ):
                 categorized[ComponentCategory.CONNECTOR].append(comp)
             # 无源器件
-            elif any(kw in combined for kw in ["电阻", "resistor", "电容", "capacitor",
-                                               "电感", "inductor"]):
+            elif any(
+                kw in combined
+                for kw in [
+                    "电阻",
+                    "resistor",
+                    "电容",
+                    "capacitor",
+                    "电感",
+                    "inductor",
+                    "去耦",
+                    "滤波",
+                ]
+            ):
                 categorized[ComponentCategory.PASSIVE].append(comp)
             # 有源器件
-            elif any(kw in combined for kw in ["二极管", "diode", "晶体管", "transistor",
-                                               "mosfet", "bjt"]):
+            elif any(
+                kw in combined
+                for kw in ["二极管", "diode", "晶体管", "transistor", "mosfet", "bjt"]
+            ):
                 categorized[ComponentCategory.ACTIVE].append(comp)
             else:
                 categorized[ComponentCategory.OTHER].append(comp)
@@ -235,8 +315,9 @@ class SchematicGenerator:
         # 移除空类别
         return {k: v for k, v in categorized.items() if v}
 
-    def _plan_layout(self, categorized: Dict[ComponentCategory, List[Dict]],
-                      circuit_type: str) -> Dict[str, Tuple[float, float, float, float]]:
+    def _plan_layout(
+        self, categorized: Dict[ComponentCategory, List[Dict]], circuit_type: str
+    ) -> Dict[str, Tuple[float, float, float, float]]:
         """
         规划布局区域
 
@@ -298,7 +379,12 @@ class SchematicGenerator:
         layout["power"] = (100, 50, 300, 150)
 
         # 晶振在 MCU 旁边
-        layout["crystal"] = (center_x + 150, center_y - 50, center_x + 250, center_y + 50)
+        layout["crystal"] = (
+            center_x + 150,
+            center_y - 50,
+            center_x + 250,
+            center_y + 50,
+        )
 
         # 接口在下
         layout["interface"] = (100, 400, 300, 500)
@@ -323,7 +409,10 @@ class SchematicGenerator:
             y += 150
 
         # 主动器件
-        if ComponentCategory.MCU in categorized or ComponentCategory.ACTIVE in categorized:
+        if (
+            ComponentCategory.MCU in categorized
+            or ComponentCategory.ACTIVE in categorized
+        ):
             layout["main"] = (self.MARGIN_LEFT, y, 700, y + 200)
             y += 250
 
@@ -333,13 +422,17 @@ class SchematicGenerator:
             y += 200
 
         # 接口和连接器
-        if ComponentCategory.INTERFACE in categorized or ComponentCategory.CONNECTOR in categorized:
+        if (
+            ComponentCategory.INTERFACE in categorized
+            or ComponentCategory.CONNECTOR in categorized
+        ):
             layout["interface"] = (self.MARGIN_LEFT, y, 700, y + 100)
 
         return layout
 
-    def _place_components(self, categorized: Dict[ComponentCategory, List[Dict]],
-                          layout: Dict[str, Tuple]):
+    def _place_components(
+        self, categorized: Dict[ComponentCategory, List[Dict]], layout: Dict[str, Tuple]
+    ):
         """放置元件到布局区域"""
 
         # 类别到布局区域的映射
@@ -353,14 +446,20 @@ class SchematicGenerator:
             ComponentCategory.PASSIVE: "passive",
             ComponentCategory.ACTIVE: "main",
             ComponentCategory.SENSOR: "main",
-            ComponentCategory.OTHER: "main"
+            ComponentCategory.OTHER: "main",
         }
 
         for category, comps in categorized.items():
             zone_name = category_to_zone.get(category, "main")
 
             if zone_name not in layout:
-                zone_name = "main" if "main" in layout else list(layout.keys())[0] if layout else None
+                zone_name = (
+                    "main"
+                    if "main" in layout
+                    else list(layout.keys())[0]
+                    if layout
+                    else None
+                )
 
             if zone_name is None:
                 continue
@@ -386,11 +485,14 @@ class SchematicGenerator:
                 y = y_start + row * self.COMPONENT_SPACING_Y + 30
 
                 # 创建原理图元件
-                schematic_comp = self._create_schematic_component(comp, (x, y), category)
+                schematic_comp = self._create_schematic_component(
+                    comp, (x, y), category
+                )
                 self.sheet.components.append(schematic_comp)
 
-    def _create_schematic_component(self, comp: Dict, position: Tuple[float, float],
-                                     category: ComponentCategory) -> SchematicComponent:
+    def _create_schematic_component(
+        self, comp: Dict, position: Tuple[float, float], category: ComponentCategory
+    ) -> SchematicComponent:
         """创建原理图元件"""
 
         # 生成参考编号
@@ -400,6 +502,50 @@ class SchematicGenerator:
         self._comp_counter[ref_prefix] += 1
         reference = f"{ref_prefix}{self._comp_counter[ref_prefix]}"
 
+        # 获取元件名称和型号
+        comp_name = comp.get("name", "Unknown")
+        model = comp.get("model", "")
+        package = comp.get("package", "")
+
+        # ======== 集成符号库查找 ========
+        symbol_library = comp.get("symbol_library", "")
+        symbol_name = ""
+
+        try:
+            from symbol_lib_parser import get_symbol_parser, symbol_to_dict
+
+            parser = get_symbol_parser()
+            symbol = parser.find_symbol_for_component(comp_name, model)
+
+            if symbol:
+                symbol_library = f"{symbol.library}:{symbol.name}"
+                symbol_name = symbol.name
+                logger.info(f"找到符号: {symbol_library} 用于 {comp_name}")
+
+                # 使用符号库的引脚信息（如果有）
+                if symbol.pins and not comp.get("pins"):
+                    comp["pins"] = [
+                        {
+                            "number": p.number,
+                            "name": p.name,
+                            "position": p.position,
+                            "direction": p.direction,
+                        }
+                        for p in symbol.pins
+                    ]
+
+                # 使用符号库的参考编号前缀
+                if symbol.reference:
+                    ref_prefix = symbol.reference
+                    if ref_prefix not in self._comp_counter:
+                        self._comp_counter[ref_prefix] = 0
+                    self._comp_counter[ref_prefix] += 1
+                    reference = f"{ref_prefix}{self._comp_counter[ref_prefix]}"
+            else:
+                logger.warning(f"未找到符号: {comp_name} ({model})，使用默认")
+        except Exception as e:
+            logger.warning(f"符号库查找失败: {e}")
+
         # 创建引脚
         pins = self._create_pins(comp, category)
 
@@ -407,8 +553,6 @@ class SchematicGenerator:
         size = self._get_component_size(category, len(pins))
 
         # 智能获取封装
-        model = comp.get("model", "")
-        package = comp.get("package", "")
         existing_footprint = comp.get("footprint", "")
 
         # 如果已有完整封装路径，使用它
@@ -417,43 +561,44 @@ class SchematicGenerator:
         else:
             # 使用智能封装查找器
             from smart_footprint_finder import find_footprint
+
             lib_name, fp_name = find_footprint(
-                model=model,
-                component_type=category.value,
-                package_hint=package
+                model=model, component_type=category.value, package_hint=package
             )
             footprint = f"{lib_name}:{fp_name}"
 
         return SchematicComponent(
             id=f"comp-{len(self.sheet.components) + 1}",
-            name=comp.get("name", "Unknown"),
-            model=comp.get("model", ""),
+            name=comp_name,
+            model=model,
             reference=reference,
             position=position,
             size=size,
             pins=pins,
             category=category,
-            symbol_library=comp.get("symbol_library", ""),
-            footprint=footprint
+            symbol_library=symbol_library,
+            footprint=footprint,
         )
 
     def _get_reference_prefix(self, category: ComponentCategory) -> str:
         """获取元件参考编号前缀"""
         prefixes = {
-            ComponentCategory.POWER: "U",      # 稳压器等
+            ComponentCategory.POWER: "U",  # 稳压器等
             ComponentCategory.MCU: "U",
             ComponentCategory.INTERFACE: "U",
-            ComponentCategory.PASSIVE: "R",    # 默认电阻，会被覆盖
-            ComponentCategory.ACTIVE: "D",     # 二极管
+            ComponentCategory.PASSIVE: "R",  # 默认电阻，会被覆盖
+            ComponentCategory.ACTIVE: "D",  # 二极管
             ComponentCategory.CONNECTOR: "J",
             ComponentCategory.CRYSTAL: "Y",
             ComponentCategory.LED: "D",
             ComponentCategory.SENSOR: "U",
-            ComponentCategory.OTHER: "U"
+            ComponentCategory.OTHER: "U",
         }
         return prefixes.get(category, "U")
 
-    def _create_pins(self, comp: Dict, category: ComponentCategory) -> List[SchematicPin]:
+    def _create_pins(
+        self, comp: Dict, category: ComponentCategory
+    ) -> List[SchematicPin]:
         """创建元件引脚"""
         pins = []
 
@@ -466,15 +611,23 @@ class SchematicGenerator:
                         number=str(pin_data.get("number", i + 1)),
                         name=pin_data.get("name", f"P{i + 1}"),
                         pin_type=self._determine_pin_type(pin_data.get("name", "")),
-                        position=self._calculate_pin_position(i, len(comp_pins), category),
-                        direction=self._calculate_pin_direction(i, len(comp_pins), category)
+                        position=self._calculate_pin_position(
+                            i, len(comp_pins), category
+                        ),
+                        direction=self._calculate_pin_direction(
+                            i, len(comp_pins), category
+                        ),
                     )
                 else:
                     pin = SchematicPin(
                         number=str(pin_data),
                         name=f"P{pin_data}",
-                        position=self._calculate_pin_position(i, len(comp_pins), category),
-                        direction=self._calculate_pin_direction(i, len(comp_pins), category)
+                        position=self._calculate_pin_position(
+                            i, len(comp_pins), category
+                        ),
+                        direction=self._calculate_pin_direction(
+                            i, len(comp_pins), category
+                        ),
                     )
                 pins.append(pin)
         else:
@@ -485,8 +638,12 @@ class SchematicGenerator:
                     number=str(pin_data.get("number", i + 1)),
                     name=pin_data.get("name", f"P{i + 1}"),
                     pin_type=self._determine_pin_type(pin_data.get("name", "")),
-                    position=self._calculate_pin_position(i, len(default_pins), category),
-                    direction=self._calculate_pin_direction(i, len(default_pins), category)
+                    position=self._calculate_pin_position(
+                        i, len(default_pins), category
+                    ),
+                    direction=self._calculate_pin_direction(
+                        i, len(default_pins), category
+                    ),
                 )
                 pins.append(pin)
 
@@ -502,7 +659,7 @@ class SchematicGenerator:
             return [
                 {"number": 1, "name": "VIN", "type": "power_in"},
                 {"number": 2, "name": "GND", "type": "gnd"},
-                {"number": 3, "name": "VOUT", "type": "power_out"}
+                {"number": 3, "name": "VOUT", "type": "power_out"},
             ]
 
         # 二极管/整流桥
@@ -511,48 +668,51 @@ class SchematicGenerator:
                 {"number": 1, "name": "AC1", "type": "input"},
                 {"number": 2, "name": "AC2", "type": "input"},
                 {"number": 3, "name": "+", "type": "output"},
-                {"number": 4, "name": "-", "type": "gnd"}
+                {"number": 4, "name": "-", "type": "gnd"},
             ]
 
         # 电容
         if "cap" in name_lower or "电容" in name_lower:
             return [
                 {"number": 1, "name": "+", "type": "passive"},
-                {"number": 2, "name": "-", "type": "passive"}
+                {"number": 2, "name": "-", "type": "passive"},
             ]
 
         # 电阻
         if "res" in name_lower or "电阻" in name_lower:
             return [
                 {"number": 1, "name": "1", "type": "passive"},
-                {"number": 2, "name": "2", "type": "passive"}
+                {"number": 2, "name": "2", "type": "passive"},
             ]
 
         # LED
         if "led" in name_lower:
             return [
                 {"number": 1, "name": "A", "type": "passive"},
-                {"number": 2, "name": "K", "type": "passive"}
+                {"number": 2, "name": "K", "type": "passive"},
             ]
 
         # 晶振
         if "crystal" in name_lower or "晶振" in name_lower:
             return [
                 {"number": 1, "name": "X1", "type": "passive"},
-                {"number": 2, "name": "X2", "type": "passive"}
+                {"number": 2, "name": "X2", "type": "passive"},
             ]
 
         # 默认两引脚
         return [
             {"number": 1, "name": "P1", "type": "passive"},
-            {"number": 2, "name": "P2", "type": "passive"}
+            {"number": 2, "name": "P2", "type": "passive"},
         ]
 
     def _determine_pin_type(self, pin_name: str) -> PinType:
         """根据引脚名称确定引脚类型"""
         name_upper = pin_name.upper()
 
-        if any(kw in name_upper for kw in ["VCC", "VDD", "VIN", "+5V", "+3V3", "5V", "3V3", "V+"]):
+        if any(
+            kw in name_upper
+            for kw in ["VCC", "VDD", "VIN", "+5V", "+3V3", "5V", "3V3", "V+"]
+        ):
             return PinType.POWER_IN
         if any(kw in name_upper for kw in ["GND", "VSS", "V-", "GROUND", "COM"]):
             return PinType.GND
@@ -563,8 +723,9 @@ class SchematicGenerator:
 
         return PinType.PASSIVE
 
-    def _calculate_pin_position(self, pin_index: int, total_pins: int,
-                                 category: ComponentCategory) -> Tuple[float, float]:
+    def _calculate_pin_position(
+        self, pin_index: int, total_pins: int, category: ComponentCategory
+    ) -> Tuple[float, float]:
         """计算引脚相对于元件的位置"""
         # 简单的引脚分布：左右两侧
         half = (total_pins + 1) // 2
@@ -580,8 +741,9 @@ class SchematicGenerator:
 
         return (x, y)
 
-    def _calculate_pin_direction(self, pin_index: int, total_pins: int,
-                                   category: ComponentCategory) -> str:
+    def _calculate_pin_direction(
+        self, pin_index: int, total_pins: int, category: ComponentCategory
+    ) -> str:
         """计算引脚方向"""
         half = (total_pins + 1) // 2
 
@@ -590,7 +752,9 @@ class SchematicGenerator:
         else:
             return "right"
 
-    def _get_component_size(self, category: ComponentCategory, pin_count: int) -> Tuple[float, float]:
+    def _get_component_size(
+        self, category: ComponentCategory, pin_count: int
+    ) -> Tuple[float, float]:
         """获取元件尺寸"""
         # 根据引脚数量调整尺寸
         base_sizes = {
@@ -603,7 +767,7 @@ class SchematicGenerator:
             ComponentCategory.CRYSTAL: (60, 40),
             ComponentCategory.LED: (40, 40),
             ComponentCategory.SENSOR: (80, 60),
-            ComponentCategory.OTHER: (80, 60)
+            ComponentCategory.OTHER: (80, 60),
         }
 
         base = base_sizes.get(category, (80, 60))
@@ -615,7 +779,15 @@ class SchematicGenerator:
         return base
 
     def _create_power_symbols(self):
-        """创建电源符号"""
+        """创建电源符号 - 确保生成VCC和GND"""
+        # 首先，确保 VCC 网络存在
+        if not any(n.name in ["VCC", "+5V", "+3V3"] for n in self.sheet.nets):
+            self._add_net("VCC", "power")
+
+        # 确保 GND 网络存在
+        if not any(n.name == "GND" for n in self.sheet.nets):
+            self._add_net("GND", "power")
+
         # 收集所有电源网络
         power_nets = set()
         gnd_nets = set()
@@ -629,20 +801,34 @@ class SchematicGenerator:
                 elif pin.pin_type == PinType.GND:
                     gnd_nets.add("GND")
 
-        # 创建 VCC 符号 (在顶部)
+        # 创建 VCC 符号 (在顶部) - 始终创建至少一个 VCC 符号
         vcc_y = 50
+        vcc_created = False
+
         for i, net_name in enumerate(sorted(power_nets)):
             x = 100 + i * 150
             symbol = PowerSymbol(
                 id=f"power-{i + 1}",
                 net_name=net_name,
                 position=(x, vcc_y),
-                symbol_type="vcc"
+                symbol_type="vcc",
+            )
+            self.sheet.power_symbols.append(symbol)
+            vcc_created = True
+
+        # 如果没有电源引脚，至少创建一个默认的 VCC 符号
+        if not vcc_created:
+            symbol = PowerSymbol(
+                id="power-vcc", net_name="VCC", position=(100, vcc_y), symbol_type="vcc"
             )
             self.sheet.power_symbols.append(symbol)
 
         # 创建 GND 符号 (在底部)
-        max_y = max([c.position[1] + c.size[1] for c in self.sheet.components]) if self.sheet.components else 400
+        max_y = (
+            max([c.position[1] + c.size[1] for c in self.sheet.components])
+            if self.sheet.components
+            else 400
+        )
         gnd_y = max_y + 80
 
         # 为每个有 GND 引脚的元件创建 GND 符号
@@ -650,7 +836,13 @@ class SchematicGenerator:
         for comp in self.sheet.components:
             for pin in comp.pins:
                 if pin.pin_type == PinType.GND:
-                    gnd_positions.append((comp.position[0], comp.position[1] + comp.size[1]/2 + 30))
+                    gnd_positions.append(
+                        (comp.position[0], comp.position[1] + comp.size[1] / 2 + 30)
+                    )
+
+        # 始终创建至少一个 GND 符号
+        if not gnd_positions:
+            gnd_positions = [(100, gnd_y)]
 
         # 去重并创建符号
         unique_gnd_x = sorted(set([p[0] for p in gnd_positions]))
@@ -659,7 +851,35 @@ class SchematicGenerator:
                 id=f"gnd-{i + 1}",
                 net_name="GND",
                 position=(x, gnd_y),
-                symbol_type="gnd"
+                symbol_type="gnd",
+            )
+            self.sheet.power_symbols.append(symbol)
+
+        # 创建 GND 符号 (在底部)
+        max_y = (
+            max([c.position[1] + c.size[1] for c in self.sheet.components])
+            if self.sheet.components
+            else 400
+        )
+        gnd_y = max_y + 80
+
+        # 为每个有 GND 引脚的元件创建 GND 符号
+        gnd_positions = []
+        for comp in self.sheet.components:
+            for pin in comp.pins:
+                if pin.pin_type == PinType.GND:
+                    gnd_positions.append(
+                        (comp.position[0], comp.position[1] + comp.size[1] / 2 + 30)
+                    )
+
+        # 去重并创建符号
+        unique_gnd_x = sorted(set([p[0] for p in gnd_positions]))
+        for i, x in enumerate(unique_gnd_x):
+            symbol = PowerSymbol(
+                id=f"gnd-{i + 1}",
+                net_name="GND",
+                position=(x, gnd_y),
+                symbol_type="gnd",
             )
             self.sheet.power_symbols.append(symbol)
 
@@ -701,9 +921,7 @@ class SchematicGenerator:
         """添加网络"""
         self._net_counter += 1
         net = SchematicNet(
-            id=f"net-{self._net_counter}",
-            name=name,
-            net_class=net_class
+            id=f"net-{self._net_counter}", name=name, net_class=net_class
         )
         self.sheet.nets.append(net)
         return net
@@ -729,9 +947,12 @@ class SchematicGenerator:
                     # 找到对应的电源符号
                     net_name = self._infer_power_net_name(pin.name)
                     power_sym = next(
-                        (s for s in self.sheet.power_symbols
-                         if s.net_name == net_name and s.symbol_type == "vcc"),
-                        None
+                        (
+                            s
+                            for s in self.sheet.power_symbols
+                            if s.net_name == net_name and s.symbol_type == "vcc"
+                        ),
+                        None,
                     )
 
                     if power_sym:
@@ -739,7 +960,7 @@ class SchematicGenerator:
                         self._add_l_wire(
                             (power_sym.position[0], power_sym.position[1] + 20),
                             (pin_x, pin_y),
-                            net_name
+                            net_name,
                         )
 
                 elif pin.pin_type == PinType.GND:
@@ -747,7 +968,7 @@ class SchematicGenerator:
                     gnd_sym = min(
                         [s for s in self.sheet.power_symbols if s.symbol_type == "gnd"],
                         key=lambda s: abs(s.position[0] - pin_x),
-                        default=None
+                        default=None,
                     )
 
                     if gnd_sym:
@@ -755,7 +976,7 @@ class SchematicGenerator:
                         self._add_l_wire(
                             (pin_x, pin_y),
                             (gnd_sym.position[0], gnd_sym.position[1] - 20),
-                            "GND"
+                            "GND",
                         )
 
     def _connect_signal_pins(self):
@@ -792,7 +1013,11 @@ class SchematicGenerator:
 
         for comp in self.sheet.components:
             for pin in comp.pins:
-                if pin.pin_type in [PinType.INPUT, PinType.OUTPUT, PinType.BIDIRECTIONAL]:
+                if pin.pin_type in [
+                    PinType.INPUT,
+                    PinType.OUTPUT,
+                    PinType.BIDIRECTIONAL,
+                ]:
                     net_name = self._infer_signal_net(pin.name, comp.reference)
                     if net_name not in net_pins:
                         net_pins[net_name] = []
@@ -804,7 +1029,7 @@ class SchematicGenerator:
                 continue
 
             for i, (comp1, pin1) in enumerate(pins):
-                for comp2, pin2 in pins[i+1:]:
+                for comp2, pin2 in pins[i + 1 :]:
                     dist = self._calculate_pin_distance(comp1, pin1, comp2, pin2)
 
                     if dist < 300:
@@ -838,8 +1063,13 @@ class SchematicGenerator:
         # 默认使用元件+引脚作为网络名
         return f"{comp_ref}_{pin_name}"
 
-    def _calculate_pin_distance(self, comp1: SchematicComponent, pin1: SchematicPin,
-                                 comp2: SchematicComponent, pin2: SchematicPin) -> float:
+    def _calculate_pin_distance(
+        self,
+        comp1: SchematicComponent,
+        pin1: SchematicPin,
+        comp2: SchematicComponent,
+        pin2: SchematicPin,
+    ) -> float:
         """计算两个引脚之间的距离"""
         x1 = comp1.position[0] + pin1.position[0]
         y1 = comp1.position[1] + pin1.position[1]
@@ -851,27 +1081,64 @@ class SchematicGenerator:
     def _add_wire(self, points: List[Tuple[float, float]], net: str):
         """添加导线"""
         self._wire_counter += 1
-        wire = SchematicWire(
-            id=f"wire-{self._wire_counter}",
-            points=points,
-            net=net
-        )
+        wire = SchematicWire(id=f"wire-{self._wire_counter}", points=points, net=net)
         self.sheet.wires.append(wire)
         return wire
 
-    def _add_l_wire(self, start: Tuple[float, float], end: Tuple[float, float], net: str):
-        """添加 L 型走线（避免对角线）"""
-        # 确定转角点
-        mid_y = (start[1] + end[1]) / 2
+    def _add_l_wire(
+        self, start: Tuple[float, float], end: Tuple[float, float], net: str
+    ):
+        """添加优化的 L 型走线（避免交叉）"""
+        x1, y1 = start
+        x2, y2 = end
 
-        points = [
-            start,
-            (start[0], mid_y),
-            (end[0], mid_y),
-            end
-        ]
+        # 计算距离和方向
+        dx = x2 - x1
+        dy = y2 - y1
 
-        self._add_wire(points, net)
+        # 选择最佳走线方案
+        if abs(dx) < 50 or abs(dy) < 50:
+            # 距离很近，直线连接
+            self._add_wire([(x1, y1), (x2, y2)], net)
+            return
+
+        # 根据相对位置选择走线方式
+        # 方案1: 水平优先 (先水平后垂直)
+        # 方案2: 垂直优先 (先垂直后水平)
+        # 方案3: Z型走线 (中间段水平，两端垂直)
+
+        # 计算网格对齐
+        grid_size = 50
+        mid_x = ((x1 + x2) // (grid_size * 2)) * (grid_size * 2)
+
+        # 水平优先方案
+        if abs(dx) > abs(dy):
+            # 水平距离更大，优先水平走线
+            points = [
+                (x1, y1),
+                (x2, y1),  # 先水平
+                (x2, y2),  # 再垂直
+                (x2, y2),
+            ]
+            # 简化：如果y方向变化不大，直接用两点
+            if abs(dy) < 100:
+                points = [(x1, y1), (x2, y2)]
+            else:
+                # 使用中间点避免交叉
+                points = [(x1, y1), (mid_x, y1), (mid_x, y2), (x2, y2)]
+        else:
+            # 垂直距离更大，优先垂直走线
+            mid_y = ((y1 + y2) // (grid_size * 2)) * (grid_size * 2)
+            points = [(x1, y1), (x1, mid_y), (x2, mid_y), (x2, y2)]
+
+        # 网格对齐所有点
+        aligned_points = []
+        for px, py in points:
+            aligned_points.append(
+                (round(px / grid_size) * grid_size, round(py / grid_size) * grid_size)
+            )
+
+        self._add_wire(aligned_points, net)
 
     def _add_net_label(self, name: str, position: Tuple[float, float]):
         """添加网络标签"""
@@ -886,7 +1153,7 @@ class SchematicGenerator:
             name=name,
             position=position,
             direction="right",
-            is_global=False
+            is_global=False,
         )
         self.sheet.net_labels.append(label)
         return label
@@ -944,12 +1211,13 @@ class SchematicGenerator:
                             "name": p.name,
                             "type": p.pin_type.value,
                             "position": {"x": p.position[0], "y": p.position[1]},
-                            "direction": p.direction
+                            "direction": p.direction,
                         }
                         for p in c.pins
                     ],
                     "category": c.category.value,
-                    "footprint": c.footprint
+                    "symbol_library": c.symbol_library,
+                    "footprint": c.footprint,
                 }
                 for c in self.sheet.components
             ],
@@ -961,7 +1229,7 @@ class SchematicGenerator:
                 {
                     "id": w.id,
                     "points": [{"x": p[0], "y": p[1]} for p in w.points],
-                    "net": w.net
+                    "net": w.net,
                 }
                 for w in self.sheet.wires
             ],
@@ -970,7 +1238,7 @@ class SchematicGenerator:
                     "id": l.id,
                     "name": l.name,
                     "position": {"x": l.position[0], "y": l.position[1]},
-                    "direction": l.direction
+                    "direction": l.direction,
                 }
                 for l in self.sheet.net_labels
             ],
@@ -979,14 +1247,16 @@ class SchematicGenerator:
                     "id": s.id,
                     "netName": s.net_name,
                     "position": {"x": s.position[0], "y": s.position[1]},
-                    "type": s.symbol_type
+                    "type": s.symbol_type,
                 }
                 for s in self.sheet.power_symbols
-            ]
+            ],
         }
 
 
-def generate_standard_schematic(components: List[Dict], circuit_type: str = "general") -> Dict[str, Any]:
+def generate_standard_schematic(
+    components: List[Dict], circuit_type: str = "general"
+) -> Dict[str, Any]:
     """
     生成符合标准的原理图（便捷函数）
 

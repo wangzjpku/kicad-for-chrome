@@ -2,7 +2,7 @@
  * 项目列表页面 (Task 4.6-4.7)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Project } from '../types';
 import { projectApi } from '../services/api';
 import AIProjectDialog from '../components/AIProjectDialog';
@@ -18,10 +18,14 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
   const [newProjectName, setNewProjectName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const isLoadingRef = useRef(false);
 
   // 加载项目列表
   useEffect(() => {
-    loadProjects();
+    if (!isLoadingRef.current) {
+      isLoadingRef.current = true;
+      loadProjects();
+    }
   }, []);
 
   const loadProjects = async () => {
@@ -29,18 +33,25 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
       setLoading(true);
       const response = await projectApi.listProjects();
       // 支持两种格式: { success: true, data: [...] } 或直接 [...]
+      let projectList: Project[] = [];
       if (Array.isArray(response)) {
-        setProjects(response);
+        projectList = response;
       } else if (response.success && response.data) {
-        setProjects(response.data);
-      } else {
-        setProjects([]);
+        projectList = response.data;
       }
+
+      // 去重：根据 project.id 去重
+      const uniqueProjects = projectList.filter((project, index, self) =>
+        index === self.findIndex((p) => p.id === project.id)
+      );
+
+      setProjects(uniqueProjects);
     } catch (err) {
       setError('Failed to load projects');
       console.error(err);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
