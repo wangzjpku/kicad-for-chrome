@@ -7,9 +7,18 @@ FastAPI backend for controlling KiCad through browser
 from dotenv import load_dotenv
 import os
 
-# 加载项目根目录的.env文件
-env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", ".env")
-load_dotenv(env_path)
+# 加载当前目录和上级目录的 .env 文件
+agent_dir = os.path.dirname(__file__)
+project_root = os.path.dirname(agent_dir)
+
+# 优先加载 agent/.env，然后是 backend/.env
+env_paths = [
+    os.path.join(agent_dir, ".env"),
+    os.path.join(project_root, "backend", ".env"),
+]
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(env_path, override=True)
 
 from fastapi import (
     FastAPI,
@@ -145,6 +154,15 @@ logger.info("Project API routes registered")
 # 注册 AI API 路由
 app.include_router(ai_router)
 logger.info("AI API routes registered")
+
+# 注册符号库 API 路由
+try:
+    from routes.symbol_routes import router as symbol_router
+
+    app.include_router(symbol_router)
+    logger.info("Symbol Library API routes registered")
+except ImportError as e:
+    logger.warning(f"Symbol routes not available: {e}")
 
 
 # ========== 认证与验证 ==========

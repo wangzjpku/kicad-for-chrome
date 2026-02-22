@@ -34,12 +34,16 @@ const TrackRenderer: React.FC<TrackRendererProps> = ({ track }) => {
     toggleSelection(id);
   }, [id, toggleSelection]);
 
+  // 确保走线有最小宽度（放大显示以便调试）
+  const minTrackWidth = 2; // 最小2像素
+  const trackWidth = Math.max((width || 0.25) * MM_TO_PX, minTrackWidth);
+
   return (
     <Line
       points={pixelPoints}
       stroke={color}
-      strokeWidth={width * MM_TO_PX}
-      hitStrokeWidth={Math.max(width * MM_TO_PX, 5)} // 增加点击区域
+      strokeWidth={trackWidth}
+      hitStrokeWidth={Math.max(trackWidth, 10)} // 增加点击区域
       onClick={handleClick}
       onTap={handleClick}
     />

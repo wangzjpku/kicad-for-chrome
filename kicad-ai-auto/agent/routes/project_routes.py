@@ -278,8 +278,29 @@ class PCBDataUpdate(BaseModel):
 
 @router.get("")
 async def list_projects():
-    """列出所有项目"""
-    return list(_projects.values())
+    """列出所有项目（去重）"""
+    projects = list(_projects.values())
+    # 根据项目名称去重，保留最新创建的项目
+    seen = {}
+    for project in projects:
+        name = project.get('name', '')
+        if name not in seen:
+            seen[name] = project
+        else:
+            # 保留更新日期更新的
+            if project.get('updatedAt', '') > seen[name].get('updatedAt', ''):
+                seen[name] = project
+    return list(seen.values())
+
+
+@router.delete("/clear-all")
+async def clear_all_projects():
+    """清除所有项目（仅用于调试）"""
+    global _projects, _pcb_data, _schematic_data
+    _projects.clear()
+    _pcb_data.clear()
+    _schematic_data.clear()
+    return {"success": True, "message": "All projects cleared"}
 
 
 @router.post("", response_model=ProjectResponse)
