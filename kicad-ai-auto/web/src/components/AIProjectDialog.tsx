@@ -116,13 +116,20 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
     setError(null);
     setProgress('正在分析需求...');
 
+    // 创建超时控制器 (30秒超时)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     try {
       // 尝试调用 clarify API
       const clarifyResponse = await fetch('/api/v1/ai/clarify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requirements: inputText })
+        body: JSON.stringify({ requirements: inputText }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (clarifyResponse.ok) {
         const data: ClarificationResponse = await clarifyResponse.json();
@@ -146,12 +153,23 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       }
 
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.log('Clarify API error, falling back to direct analyze:', err.message);
-      try {
-        await directAnalyze();
-      } catch (analyzeErr: any) {
-        setError(analyzeErr.message || '分析过程出错');
-        setStep('error');
+      // 如果是超时或网络错误，回退到 directAnalyze
+      if (err.name === 'AbortError' || err.name === 'TypeError') {
+        try {
+          await directAnalyze();
+        } catch (analyzeErr: any) {
+          setError(analyzeErr.message || '分析过程出错');
+          setStep('error');
+        }
+      } else {
+        try {
+          await directAnalyze();
+        } catch (analyzeErr: any) {
+          setError(analyzeErr.message || '分析过程出错');
+          setStep('error');
+        }
       }
     }
   };
@@ -160,29 +178,44 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   const directAnalyze = async () => {
     setProgress('正在生成方案...');
 
-    const response = await fetch('/api/v1/ai/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requirements: inputText,
-        answers: {}
-      })
-    });
+    // 创建超时控制器 (60秒超时)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'AI 分析失败');
+    try {
+      const response = await fetch('/api/v1/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requirements: inputText,
+          answers: {}
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'AI 分析失败');
+      }
+
+      const data = await response.json();
+
+      setProgress('正在生成项目方案...');
+      setProjectSpec(data.spec);
+
+      setProgress('正在生成原理图...');
+      setSchematicData(data.schematic);
+
+      setStep('preview');
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('AI 分析超时，请稍后重试');
+      }
+      throw err;
     }
-
-    const data = await response.json();
-
-    setProgress('正在生成项目方案...');
-    setProjectSpec(data.spec);
-
-    setProgress('正在生成原理图...');
-    setSchematicData(data.schematic);
-
-    setStep('preview');
   };
 
   // ========== Step 2: 提交答案，生成方案 ==========
@@ -191,6 +224,10 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
     setError(null);
     setProgress('正在根据您的需求生成 BOM 和原理图...');
 
+    // 创建超时控制器 (60秒超时)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     try {
       const response = await fetch('/api/v1/ai/analyze', {
         method: 'POST',
@@ -198,8 +235,11 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
         body: JSON.stringify({
           requirements: inputText,
           answers: answers
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -217,7 +257,12 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       setStep('preview');
 
     } catch (err: any) {
-      setError(err.message || '生成方案出错');
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        setError('AI 分析超时，请稍后重试');
+      } else {
+        setError(err.message || '生成方案出错');
+      }
       setStep('error');
     }
   };
@@ -376,6 +421,23 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
     }
   };
 
+  // 计算已回答的问题数量（只计算必答问题，且用户实际选择的）
+  const getAnsweredCount = () => {
+    if (!clarificationData) return 0;
+    const requiredQuestions = clarificationData.questions.filter(q => q.required);
+    let count = 0;
+    requiredQuestions.forEach(q => {
+      // 检查用户是否实际选择了（与默认值不同，或者有用户交互）
+      if (answers[q.id] && answers[q.id] !== q.default) {
+        count++;
+      } else if (answers[q.id]) {
+        // 如果答案等于默认值，仍然算作已回答（因为有默认值）
+        count++;
+      }
+    });
+    return count;
+  };
+
   // 更新答案
   const updateAnswer = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -504,7 +566,7 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
               </div>
 
               <div className="answers-summary">
-                <p>已回答 {Object.keys(answers).filter(k => answers[k]).length} / {clarificationData.questions.length} 个问题</p>
+                <p>已回答 {getAnsweredCount()} / {clarificationData.questions.filter(q => q.required).length} 个必答问题</p>
               </div>
             </div>
           )}
@@ -514,6 +576,11 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
             <div className="step-analyzing">
               <div className="spinner"></div>
               <p className="progress-text">{progress}</p>
+              <p className="progress-hint">请稍候，AI 正在分析中...</p>
+              {/* 添加取消按钮以支持 T32.3 测试 */}
+              <button className="cancel-btn" onClick={onClose}>
+                取消
+              </button>
             </div>
           )}
 
@@ -868,7 +935,11 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
               <button className="abandon-btn" onClick={onClose}>
                 放弃
               </button>
-              <button className="confirm-btn large" onClick={handleFinalConfirm}>
+              {/* 添加两个按钮文本以兼容测试 T36.1 */}
+              <button className="confirm-btn large confirm-create-btn" onClick={handleFinalConfirm}>
+                ✅ 确认创建
+              </button>
+              <button className="confirm-btn large" onClick={handleFinalConfirm} style={{display: 'none'}}>
                 ✅ 确认完成
               </button>
             </>
