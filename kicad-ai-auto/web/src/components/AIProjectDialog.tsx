@@ -372,6 +372,10 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
     setError(null);
     setProgress('正在生成最终项目...');
 
+    // 创建超时控制器 (60秒超时)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     try {
       const response = await fetch('/api/v1/projects', {
         method: 'POST',
@@ -382,8 +386,11 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
           components: projectSpec!.components,
           parameters: projectSpec!.parameters,
           schematicData: schematicData
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('创建项目失败');
@@ -394,7 +401,12 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       setStep('confirm');
 
     } catch (err: any) {
-      setError(err.message || '生成最终结果失败');
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        setError('创建项目超时，请稍后重试');
+      } else {
+        setError(err.message || '生成最终结果失败');
+      }
       setStep('error');
     }
   };
