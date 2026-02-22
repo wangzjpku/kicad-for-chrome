@@ -270,6 +270,7 @@ class SchematicComponent(BaseModel):
     footprint: Optional[str] = None  # 添加封装字段
     symbol_library: Optional[str] = None  # 添加符号库字段
     reference: Optional[str] = None  # 添加位号字段 (如 U1, R1, C1)
+    category: Optional[str] = None  # 添加元件类别字段
 
 
 class SchematicWire(BaseModel):
@@ -294,23 +295,116 @@ class AnalyzeResponse(BaseModel):
     schematic: SchematicData
 
 
-def _generate_dynamic_project(requirements: str) -> tuple:
+def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str]] = None) -> tuple:
     """
     根据用户输入动态生成项目方案
 
     从需求描述中提取关键信息，生成个性化的项目方案
+    如果提供了 answers（用户对澄清问题的回答），优先使用 answers 中的值
     """
     import re
+    from typing import Dict, Optional
 
-    logger.info(f"动态生成项目方案，输入: {requirements}")
+    if answers is None:
+        answers = {}
 
-    # 提取电压信息
-    voltage_match = re.search(r"(\d+)\s*[Vv]", requirements)
-    input_voltage = voltage_match.group(1) if voltage_match else "5"
+    logger.info(f"动态生成项目方案，输入: {requirements}, 答案: {answers}")
+
+    # ========== 解析输入电压 ==========
+    # 检测直流电 (DC)
+    dc_match = re.search(r"(\d+)\s*V\s*直流|(\d+)\s*V\s*DC|直流\s*(\d+)\s*V|DC\s*(\d+)\s*V", requirements, re.IGNORECASE)
+    # 检测交流电 (AC)
+    ac_match = re.search(r"(\d+)\s*V\s*交流|(\d+)\s*V\s*AC|交流\s*(\d+)\s*V|AC\s*(\d+)\s*V", requirements, re.IGNORECASE)
+
+    input_voltage = None
+    input_type = "DC"  # 默认直流
+
+    if dc_match:
+        # 找到直流输入
+        input_voltage = dc_match.group(1) or dc_match.group(2) or dc_match.group(3) or dc_match.group(4)
+        input_type = "DC"
+    elif ac_match:
+        # 找到交流输入
+        input_voltage = ac_match.group(1) or ac_match.group(2) or ac_match.group(3) or ac_match.group(4)
+        input_type = "AC"
+
+    # 如果没找到明确的输入电压，尝试提取电压数字
+    if not input_voltage:
+        voltage_match = re.search(r"(\d+)\s*[Vv]", requirements)
+        input_voltage = voltage_match.group(1) if voltage_match else "12"
+        # 如果用户只说了 "12V"，默认当作直流输入处理
+
+    # ========== 解析输出电压 ==========
+    output_voltage = "5"  # 默认5V
+    output_match = re.search(r"输出\s*(\d+)\s*V|(\d+)\s*V\s*输出", requirements, re.IGNORECASE)
+    if output_match:
+        output_voltage = output_match.group(1) or output_match.group(2)
+
+    # ========== 解析芯片型号 ==========
+    # 根据输出电压自动选择最优芯片
+    # 5V输出优先使用AMS1117-5V（比LM7805更高效，发热更小）
+    # 3.3V输出只能使用AMS1117-3.3
+    # 其他电压使用LM7805
+    if output_voltage == "3.3":
+        regulator_chip = "AMS1117-3.3"
+    elif output_voltage == "5":
+        # 5V优先使用AMS1117-5V，更高效
+        regulator_chip = "AMS1117-5V"
+    elif "ams1117" in requirements.lower() or "AMS1117" in requirements:
+        if "3.3" in requirements or "3.3v" in requirements.lower():
+            regulator_chip = "AMS1117-3.3"
+            output_voltage = "3.3"
+        elif "5" in requirements and "5v" in requirements.lower():
+            regulator_chip = "AMS1117-5V"
+            output_voltage = "5"
+        else:
+            regulator_chip = "AMS1117-5V"
+            output_voltage = "5"
+    elif "lm7805" in requirements.lower() or "7805" in requirements:
+        regulator_chip = "LM7805"
+    elif "1117" in requirements.lower():
+        regulator_chip = "AMS1117-5V"
+    else:
+        # 默认根据输出电压选择
+        if output_voltage in ["3.3", "5"]:
+            regulator_chip = f"AMS1117-{output_voltage}"
+        else:
+            regulator_chip = "LM7805"
 
     # 提取电流信息
     current_match = re.search(r"(\d+(?:\.\d+)?)\s*[Aa]", requirements)
     output_current = current_match.group(1) if current_match else "1"
+
+    # ========== 使用用户答案覆盖参数 ==========
+    # 用户答案优先级最高
+    if answers:
+        # 从用户答案中提取输出电压
+        for key in answers:
+            val = answers[key]
+            if val:
+                if "电压" in key or "voltage" in key.lower():
+                    # 解析电压值
+                    voltage_match = re.search(r"(\d+(?:\.\d+)?)", val)
+                    if voltage_match:
+                        output_voltage = voltage_match.group(1)
+                        # 根据输出电压选择芯片
+                        if output_voltage == "3.3":
+                            regulator_chip = "AMS1117-3.3"
+                        elif output_voltage == "5":
+                            regulator_chip = "AMS1117-5V"
+                        else:
+                            regulator_chip = "LM7805"
+                elif "电流" in key or "current" in key.lower():
+                    if "500mA" in val:
+                        output_current = "0.5"
+                    elif "1A" in val:
+                        output_current = "1"
+                    elif "2A" in val:
+                        output_current = "2"
+                    elif "5A" in val:
+                        output_current = "5"
+
+    logger.info(f"最终参数: input_voltage={input_voltage}, input_type={input_type}, output_voltage={output_voltage}, chip={regulator_chip}, current={output_current}A")
 
     # 检测功能关键词
     has_motor = any(
@@ -339,30 +433,61 @@ def _generate_dynamic_project(requirements: str) -> tuple:
 
     # 根据输入生成项目名称和描述
     if has_power:
-        project_name = f"{input_voltage}V稳压电源"
-        description = f"输入220V交流电，输出{input_voltage}V直流电，电流{output_current}A的稳压电源"
-        components = [
-            ComponentSpec(
-                name="变压器",
-                model=f"220V->{input_voltage}V 5W",
-                package="THT",
-                quantity=1,
-            ),
-            ComponentSpec(name="整流桥", model="MB6S", package="SMD", quantity=1),
-            ComponentSpec(
-                name="滤波电容", model="1000uF 25V", package="electrolytic", quantity=2
-            ),
-            ComponentSpec(
-                name="稳压芯片", model="LM7805", package="TO-220", quantity=1
-            ),
-            ComponentSpec(
-                name="输出电容", model="10uF 25V", package="0805", quantity=2
-            ),
-        ]
+        project_name = f"{output_voltage}V稳压电源"
+
+        # 根据输入类型生成描述
+        if input_type == "DC":
+            description = f"输入{input_voltage}V直流电，输出{output_voltage}V直流电，电流{output_current}A的稳压电源"
+            # 直流输入不需要变压器和整流桥
+            components = [
+                ComponentSpec(
+                    name="稳压芯片", model=regulator_chip, package="SOT-223", quantity=1
+                ),
+                ComponentSpec(
+                    name="输入电容", model="10uF 25V", package="0805", quantity=1
+                ),
+                ComponentSpec(
+                    name="输出电容", model="22uF 10V", package="0805", quantity=2
+                ),
+                ComponentSpec(
+                    name="二极管", model="1N4007", package="DO-41", quantity=1
+                ) if "5" not in input_voltage else ComponentSpec(
+                    name="TVS二极管", model="SMBJ5.0A", package="SMB", quantity=1
+                ),
+            ]
+        else:
+            # 交流输入需要变压器和整流桥
+            description = f"输入{input_voltage}V交流电，输出{output_voltage}V直流电，电流{output_current}A的稳压电源"
+            components = [
+                ComponentSpec(
+                    name="变压器",
+                    model=f"220V->{output_voltage}V 5W",
+                    package="THT",
+                    quantity=1,
+                ),
+                ComponentSpec(name="整流桥", model="MB6S", package="SMD", quantity=1),
+                ComponentSpec(
+                    name="滤波电容", model="1000uF 25V", package="electrolytic", quantity=2
+                ),
+                ComponentSpec(
+                    name="稳压芯片", model=regulator_chip, package="SOT-223", quantity=1
+                ),
+                ComponentSpec(
+                    name="输出电容", model="22uF 10V", package="0805", quantity=2
+                ),
+            ]
+
+        # 根据输出电压选择合适的封装
+        if output_voltage == "3.3":
+            output_cap_package = "0805"
+        else:
+            output_cap_package = "0805"
+
         parameters = [
-            ParameterSpec(key="输入电压", value="220", unit="V AC"),
-            ParameterSpec(key="输出电压", value=input_voltage, unit="V DC"),
+            ParameterSpec(key="输入电压", value=f"{input_voltage}", unit=f"V {input_type}"),
+            ParameterSpec(key="输出电压", value=output_voltage, unit="V DC"),
             ParameterSpec(key="输出电流", value=output_current, unit="A"),
+            ParameterSpec(key="稳压芯片", value=regulator_chip, unit=""),
         ]
     elif has_wifi:
         project_name = "WiFi智能控制器"
@@ -607,16 +732,22 @@ def _get_footprint_for_component(comp: ComponentSpec) -> str:
 
 
 # 模拟 AI 分析结果 - 实际项目中会调用 Claude/OpenAI API
-def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
+def mock_ai_analyze(requirements: str, answers: Optional[Dict[str, str]] = None) -> AnalyzeResponse:
     """模拟 AI 分析 - 实际项目中替换为真实 AI 调用"""
     import logging
+    from typing import Dict, Optional
 
     logger = logging.getLogger(__name__)
+
+    # 处理用户答案
+    if answers is None:
+        answers = {}
+
+    logger.info(f"AI分析请求: {requirements}, 答案: {answers}")
 
     # 根据需求关键词生成不同方案
     # 注意：不使用 .lower() 避免中文编码问题
     req = requirements
-    logger.info(f"AI分析请求: {req}")
 
     # 关键词到方案的映射表（按优先级排序）
     # 每个条目: (关键词列表, 项目名, 描述, 元件列表, 参数列表)
@@ -1094,7 +1225,6 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
     ]
 
     # 遍历模板，匹配第一个符合的条件
-    # 遍历模板，匹配第一个符合的条件
     project_name = "AI生成项目"
     description = "基于AI分析生成的电路项目"
     components = []
@@ -1116,11 +1246,12 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
         if matched:
             break
 
-    # 如果没有匹配到任何模板，尝试根据输入动态生成方案
-    if not matched and req.strip():
-        logger.info(f"未匹配到预设模板，尝试动态生成方案...")
+    # 关键修改：如果用户提供了答案（answers），使用动态生成覆盖模板结果
+    # 这样可以根据用户的具体需求（电压、芯片等）定制方案
+    if answers and req.strip():
+        logger.info(f"用户提供了答案，使用动态生成覆盖模板结果...")
         project_name, description, components, parameters = _generate_dynamic_project(
-            req
+            req, answers
         )
 
     # ========== 使用新的标准原理图生成器 ==========
@@ -1163,6 +1294,7 @@ def mock_ai_analyze(requirements: str) -> AnalyzeResponse:
             footprint=c.get("footprint", ""),
             symbol_library=c.get("symbol_library", ""),
             reference=c.get("reference", "U1"),
+            category=c.get("category", ""),  # 添加类别字段
         )
         for c in schematic_data["components"]
     ]
@@ -1424,9 +1556,13 @@ async def analyze_requirements(request: AnalyzeRequest):
     优先使用 GLM-4 大模型进行智能分析，
     如果没有配置 API Key 或调用失败则回退到模拟实现
     """
+    # 调试日志
+    logger.info(f"DEBUG: analyze_requirements called with requirements='{request.requirements}', answers={request.answers}")
     try:
+        # TODO: 暂时跳过 GLM-4 大模型，直接使用模拟AI分析
         # 优先使用 GLM-4 大模型
-        if is_glm4_available():
+        # if is_glm4_available():
+        if False:
             try:
                 logger.info(f"使用 GLM-4 分析需求: {request.requirements[:100]}...")
                 client = get_glm4_client()
@@ -1536,7 +1672,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                 ):
                     logger.warning("AI服务余额不足或请求频率过高，回退到模拟AI分析...")
                     try:
-                        result = mock_ai_analyze(request.requirements)
+                        result = mock_ai_analyze(request.requirements, request.answers)
                         logger.warning("回退到模拟AI分析成功")
                         return result
                     except Exception as mock_err:
@@ -1556,7 +1692,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                     # 其他错误，尝试回退到模拟实现
                     logger.warning("准备回退到模拟AI分析...")
                     try:
-                        result = mock_ai_analyze(request.requirements)
+                        result = mock_ai_analyze(request.requirements, request.answers)
                         logger.warning("回退到模拟AI分析成功")
                         return result
                     except Exception as mock_err:
@@ -1565,7 +1701,7 @@ async def analyze_requirements(request: AnalyzeRequest):
         else:
             # 没有配置 API Key，使用模拟实现
             logger.warning("未配置 ZHIPU_API_KEY，使用模拟AI分析")
-            result = mock_ai_analyze(request.requirements)
+            result = mock_ai_analyze(request.requirements, request.answers)
             return result
     except Exception as e:
         # 发生任何异常
@@ -1573,7 +1709,7 @@ async def analyze_requirements(request: AnalyzeRequest):
         logger.error(f"AI分析发生异常: {error_msg}")
         try:
             logger.warning("发生异常，回退到模拟AI分析")
-            result = mock_ai_analyze(request.requirements)
+            result = mock_ai_analyze(request.requirements, request.answers)
             return result
         except Exception as mock_error:
             logger.error(f"模拟AI分析也失败: {mock_error}")

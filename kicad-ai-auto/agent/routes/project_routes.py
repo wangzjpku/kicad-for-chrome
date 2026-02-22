@@ -19,6 +19,14 @@ from footprint_library import (
     infer_component_type,
 )
 
+# 导入智能封装查找器
+try:
+    from smart_footprint_finder import find_footprint as smart_find_footprint
+    HAS_SMART_FOOTPRINT_FINDER = True
+except ImportError:
+    HAS_SMART_FOOTPRINT_FINDER = False
+    logger.warning("smart_footprint_finder not available, using fallback")
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
@@ -28,20 +36,76 @@ router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
 
 
 def _get_default_footprint_for_pcb(
-    component_name: str, component_model: str = ""
+    component_name: str, component_model: str = "", component_category: str = ""
 ) -> str:
     """
-    根据元件名称获取PCB封装
+    根据元件名称、型号和类别获取PCB封装
+
+    优先根据 component_category 确定封装类型，
+    然后使用 smart_footprint_finder 从 KiCad 标准库中查找具体封装。
+    如果 component_model 是标准型号，则使用该型号的封装。
 
     Args:
         component_name: 元件名称
         component_model: 元件型号
+        component_category: 元件类别（如 resistor, capacitor, led, ic 等）
 
     Returns:
-        封装名称字符串
+        封装名称字符串 (格式: 库名:封装名)
     """
+    # DEBUG: 打印调用参数
+    print(f"[FOOTPRINT] name={component_name}, model={component_model}, category={component_category}")
+
+    # 1. 如果有 component_category，直接使用类别对应的默认封装
+    # 这是最可靠的方案，避免像 "1K" 这样的值被库搜索误匹配
+    if component_category:
+        category_lower = component_category.lower()
+        # 常见类别的默认封装
+        category_footprints = {
+            "led": ("LED_SMD", "LED_0603_1608Metric"),
+            "capacitor": ("Capacitor_SMD", "C_0603_1608Metric"),
+            "resistor": ("Resistor_SMD", "R_0603_1608Metric"),
+            "inductor": ("Inductor_SMD", "L_0603_1608Metric"),
+            "diode": ("Diode_SMD", "D_SOD-123"),
+            "ic": ("Package_TO_SOT_SMD", "SOT-223"),  # 默认 IC 封装
+            "transistor": ("Package_TO_SOT_SMD", "SOT-23"),
+            "crystal": ("Crystal", "Crystal_HC49-4H_Vertical"),
+        }
+
+        if category_lower in category_footprints:
+            lib_name, fp_name = category_footprints[category_lower]
+            logger.info(f"Category default footprint: {component_category} -> {lib_name}:{fp_name}")
+            return f"{lib_name}:{fp_name}"
+
+    # 2. 只有当 component_model 是明确的型号（如 LM7805, ESP32 等）时才使用库搜索
+    # 避免简单值（如 "Red", "1K", "10uF"）被库搜索误匹配
+    if HAS_SMART_FOOTPRINT_FINDER and component_model:
+        # 判断是否为标准型号（包含完整型号特征）
+        is_standard_model = (
+            len(component_model) >= 4 and  # 至少4个字符
+            any(c.isdigit() for c in component_model) and  # 包含数字
+            any(c.isalpha() for c in component_model)  # 包含字母
+        )
+
+        # 只有标准型号才进行库搜索
+        if is_standard_model:
+            try:
+                lib_name, fp_name = smart_find_footprint(
+                    model=component_model,
+                    component_type=component_category,
+                    package_hint=""
+                )
+                if lib_name and fp_name:
+                    logger.info(f"Smart footprint found: {component_model} -> {lib_name}:{fp_name}")
+                    return f"{lib_name}:{fp_name}"
+            except Exception as e:
+                logger.warning(f"Smart footprint lookup failed for {component_model}: {e}")
+
+    # 3. 降级使用 footprint_library 的默认封装
     component_type = infer_component_type(component_name, component_model)
-    return get_default_footprint(component_type)
+    footprint = get_default_footprint(component_type)
+    logger.info(f"Using default footprint: {component_name} -> {footprint}")
+    return footprint
 
 
 def _generate_pads_for_footprint(
@@ -332,14 +396,54 @@ async def create_project(project: ProjectCreate):
 
     # 从原理图生成PCB数据
     pcb_footprints = []
+    pcb_nets = []
+
     if project.schematicData and project.schematicData.get("components"):
+        # ===== 修复1: 收集所有网络名称 =====
+        schematic_nets = project.schematicData.get("nets", [])
+        for net in schematic_nets:
+            net_name = net.get("name", "")
+            if net_name and net_name not in [n["name"] for n in pcb_nets]:
+                pcb_nets.append({
+                    "id": net.get("id", f"net-{net_name}"),
+                    "name": net_name
+                })
+
+        # 确保VCC和GND网络存在
+        net_names = [n["name"] for n in pcb_nets]
+        if "GND" not in net_names:
+            pcb_nets.append({"id": "net-gnd", "name": "GND"})
+        if "VCC" not in net_names and "+5V" not in net_names:
+            pcb_nets.append({"id": "net-vcc", "name": "VCC"})
+
+        # ===== 修复2: 正确传递封装信息 =====
         for i, comp in enumerate(project.schematicData["components"]):
             # 获取封装 - 优先使用footprint字段，否则使用package字段
             footprint_name = comp.get("footprint") or comp.get("package", "")
+            # 获取元件类别（用于封装推断），如果没有则从名称推断
+            component_category = comp.get("category", "")
+            if not component_category:
+                # 从元件名称推断类别
+                name_lower = comp.get("name", "").lower()
+                if "led" in name_lower or "灯" in name_lower:
+                    component_category = "led"
+                elif "电容" in name_lower or "c" == name_lower or "cap" in name_lower:
+                    component_category = "capacitor"
+                elif "电阻" in name_lower or "r" == name_lower:
+                    component_category = "resistor"
+                elif "电感" in name_lower or "l" == name_lower:
+                    component_category = "inductor"
+                elif "二极管" in name_lower or "d" == name_lower or "diode" in name_lower:
+                    component_category = "diode"
+                elif "ams1117" in name_lower or "lm" in name_lower or "稳压" in name_lower:
+                    component_category = "ic"
+                else:
+                    component_category = "passive"
+
             if not footprint_name:
                 # 根据元件类型推断默认封装
                 footprint_name = _get_default_footprint_for_pcb(
-                    comp.get("name", ""), comp.get("model", "")
+                    comp.get("name", ""), comp.get("model", ""), component_category
                 )
 
             # 获取位号 - 使用schematic中的reference字段
@@ -360,6 +464,23 @@ async def create_project(project: ProjectCreate):
                 ),
             }
             pcb_footprints.append(footprint)
+
+    # ===== 修复3: 从原理图导线生成PCB走线 =====
+    pcb_tracks = []
+    if project.schematicData and project.schematicData.get("wires"):
+        for i, wire in enumerate(project.schematicData["wires"]):
+            net_name = wire.get("net", "")
+            points = wire.get("points", [])
+            if len(points) >= 2:
+                # 将原理图导线转换为PCB走线
+                track = {
+                    "id": f"track-{i + 1}",
+                    "net": net_name,
+                    "layer": "F.Cu",
+                    "width": 0.25,  # 默认线宽
+                    "points": points  # 直接使用原理图导线的坐标点
+                }
+                pcb_tracks.append(track)
 
     # 创建 PCB 数据
     _pcb_data[project_id] = {
@@ -397,11 +518,11 @@ async def create_project(project: ProjectCreate):
             },
         ],
         "footprints": pcb_footprints,
-        "tracks": [],
+        "tracks": pcb_tracks,
         "vias": [],
         "zones": [],
         "texts": [],
-        "nets": [{"id": "net-gnd", "name": "GND"}, {"id": "net-vcc", "name": "VCC"}],
+        "nets": pcb_nets if pcb_nets else [{"id": "net-gnd", "name": "GND"}, {"id": "net-vcc", "name": "VCC"}],
         "netclasses": [],
         "designRules": {
             "minTrackWidth": 0.1,

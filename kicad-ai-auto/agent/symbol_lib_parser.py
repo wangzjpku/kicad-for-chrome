@@ -321,11 +321,15 @@ class SymbolLibParser:
             "电源": ("Power", "VCC"),
         }
 
-        # 特定型号映射
+        # 特定型号映射（按优先级排序，精确匹配在前）
+        # 注意：KiCad符号库中AMS1117-5.0表示5V输出（不是5.0V）
         model_symbol_mappings = {
             "lm7805": ("Regulator_Linear", "LM7805_TO220"),
             "lm7812": ("Regulator_Linear", "LM7812_TO220"),
-            "ams1117": ("Regulator_Linear", "AMS1117-3.3"),
+            "ams1117-5v": ("Regulator_Linear", "AMS1117-5.0"),
+            "ams1117-5.0": ("Regulator_Linear", "AMS1117-5.0"),
+            "ams1117-3.3": ("Regulator_Linear", "AMS1117-3.3"),
+            "ams1117": ("Regulator_Linear", "AMS1117-3.3"),  # 默认3.3V
             "esp32": ("RF_Module", "ESP32-WROOM-32"),
             "esp8266": ("RF_Module", "ESP-12E"),
             "stm32f103": ("MCU_ST_STM32F1", "STM32F103C8Tx"),

@@ -411,19 +411,17 @@ def infer_component_type(
             return "capacitor"
         return "capacitor"
 
-    # 电感判断
+    # LED 判断 - 必须优先于电感和二极管判断
+    if "led" in name_lower or "灯" in name_lower:
+        return "led"
+
+    # 电感判断 - 必须在 LED 判断之后
     if name_lower.startswith("l") or "电感" in name_lower:
         return "inductor"
 
     # 二极管判断
     if name_lower.startswith("d") or "二极管" in name_lower or "diode" in name_lower:
-        if "led" in name_lower or "灯" in name_lower:
-            return "led"
         return "diode"
-
-    # LED 判断
-    if "led" in name_lower or "灯" in name_lower:
-        return "led"
 
     # 三极管/MOS判断
     if name_lower.startswith("q") or "三极管" in name_lower or "晶体管" in name_lower:

@@ -211,7 +211,8 @@ class SmartFootprintFinder:
         "usb": ("Connector_USB", "USB_Micro-B_Molex-105017-0001"),
         "switch": ("Button_Switch_SMD", "SW_SPST_SKQG_WithStem"),
         "开关": ("Button_Switch_SMD", "SW_SPST_SKQG_WithStem"),
-        "passive": ("Resistor_SMD", "R_0603_1608Metric"),
+        "passive": ("Resistor_SMD", "R_0603_1608Metric"),  # 默认电阻
+        "other": ("Resistor_SMD", "R_0603_1608Metric"),
         "power": ("Package_TO_SOT_SMD", "SOT-223"),
         "interface": ("Connector_PinHeader_2.54mm", "PinHeader_1x02_P2.54mm_Vertical"),
         "active": ("Package_TO_SOT_SMD", "SOT-23"),
@@ -250,7 +251,44 @@ class SmartFootprintFinder:
             (库名, 封装名) 如 ("Package_TO_SOT_SMD", "SOT-23")
         """
         model_upper = model.upper().strip()
+        model_lower = model.lower().strip()
         package_upper = package_hint.upper().strip() if package_hint else ""
+        component_type_lower = component_type.lower() if component_type else ""
+
+        # 0. 如果 component_type 是 passive，根据 model 推断具体类型
+        # 这个必须在型号匹配之前执行，避免像 "Red" 被错误识别为 "R" (电阻)
+        if component_type_lower == "passive":
+            model_keywords = [
+                # LED (最具体)
+                (["led", "red", "green", "blue", "yellow", "white", "灯"], "led"),
+                # 电容
+                (["电容", "uf", "nf", "pf", "cap"], "capacitor"),
+                # 电阻
+                (["电阻", "ohm", "res", "r_"], "resistor"),
+                # 电感
+                (["电感", "uh", "mh", "l_", "inductor"], "inductor"),
+                # 二极管
+                (["diode", "二极管", "1n", "bav"], "diode"),
+            ]
+            for keywords, comp_type in model_keywords:
+                if any(kw in model_lower for kw in keywords):
+                    for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
+                        if type_key in comp_type:
+                            logger.info(f"Passive类型推断: {model} -> {comp_type} -> {footprint[0]}:{footprint[1]}")
+                            return footprint
+
+        # 0.1. 如果有 component_type 且模型是简单名称，优先使用类型默认封装
+        # 避免像 "Red" 这样的简单型号误匹配到不相关的库
+        simple_names = ['led', 'red', 'green', 'blue', 'yellow', 'white',
+                       'r', 'res', 'resistor',
+                       'c', 'cap', 'capacitor',
+                       'l', 'inductor',
+                       'd', 'diode']
+        if component_type_lower and model_lower in simple_names:
+            for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
+                if type_key in component_type_lower:
+                    logger.info(f"简单名称+类型匹配: {model} -> {footprint[0]}:{footprint[1]}")
+                    return footprint
 
         # 1. 先检查型号映射表
         for model_key, footprint in self.MODEL_TO_FOOTPRINT.items():
@@ -272,7 +310,6 @@ class SmartFootprintFinder:
             return result
 
         # 4. 根据元件类型使用默认封装
-        component_type_lower = component_type.lower() if component_type else ""
         for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
             if type_key in component_type_lower:
                 logger.info(f"类型默认封装: {component_type} -> {footprint[0]}:{footprint[1]}")
@@ -305,6 +342,12 @@ class SmartFootprintFinder:
         for pattern in patterns:
             matches = re.findall(pattern, model, re.IGNORECASE)
             keywords.extend(matches)
+
+        # 如果没有提取到关键词，且模型是简单名称（电容、电阻、LED等），不进行库搜索
+        # 避免误匹配到不相关的封装
+        simple_passives = ['led', 'r', 'c', 'l', 'd', 'u', 'resistor', 'capacitor', 'inductor', 'diode']
+        if not keywords and model_lower in simple_passives:
+            return None
 
         # 在库中搜索
         for lib_name, footprints in self._libs_cache.items():
