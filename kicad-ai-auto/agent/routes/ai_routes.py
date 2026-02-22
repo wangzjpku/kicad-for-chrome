@@ -225,6 +225,7 @@ class AnalyzeRequest(BaseModel):
 
 class ClarificationQuestion(BaseModel):
     """澄清问题模型"""
+
     id: str
     question: str
     category: str  # "power", "interface", "size", "cost", etc.
@@ -235,6 +236,7 @@ class ClarificationQuestion(BaseModel):
 
 class ClarificationResponse(BaseModel):
     """澄清问题响应"""
+
     questions: List[ClarificationQuestion]
     summary: str  # 需求摘要
     detected_type: str  # 检测到的电路类型
@@ -295,7 +297,9 @@ class AnalyzeResponse(BaseModel):
     schematic: SchematicData
 
 
-def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str]] = None) -> tuple:
+def _generate_dynamic_project(
+    requirements: str, answers: Optional[Dict[str, str]] = None
+) -> tuple:
     """
     根据用户输入动态生成项目方案
 
@@ -312,20 +316,38 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
 
     # ========== 解析输入电压 ==========
     # 检测直流电 (DC)
-    dc_match = re.search(r"(\d+)\s*V\s*直流|(\d+)\s*V\s*DC|直流\s*(\d+)\s*V|DC\s*(\d+)\s*V", requirements, re.IGNORECASE)
+    dc_match = re.search(
+        r"(\d+)\s*V\s*直流|(\d+)\s*V\s*DC|直流\s*(\d+)\s*V|DC\s*(\d+)\s*V",
+        requirements,
+        re.IGNORECASE,
+    )
     # 检测交流电 (AC)
-    ac_match = re.search(r"(\d+)\s*V\s*交流|(\d+)\s*V\s*AC|交流\s*(\d+)\s*V|AC\s*(\d+)\s*V", requirements, re.IGNORECASE)
+    ac_match = re.search(
+        r"(\d+)\s*V\s*交流|(\d+)\s*V\s*AC|交流\s*(\d+)\s*V|AC\s*(\d+)\s*V",
+        requirements,
+        re.IGNORECASE,
+    )
 
     input_voltage = None
     input_type = "DC"  # 默认直流
 
     if dc_match:
         # 找到直流输入
-        input_voltage = dc_match.group(1) or dc_match.group(2) or dc_match.group(3) or dc_match.group(4)
+        input_voltage = (
+            dc_match.group(1)
+            or dc_match.group(2)
+            or dc_match.group(3)
+            or dc_match.group(4)
+        )
         input_type = "DC"
     elif ac_match:
         # 找到交流输入
-        input_voltage = ac_match.group(1) or ac_match.group(2) or ac_match.group(3) or ac_match.group(4)
+        input_voltage = (
+            ac_match.group(1)
+            or ac_match.group(2)
+            or ac_match.group(3)
+            or ac_match.group(4)
+        )
         input_type = "AC"
 
     # 如果没找到明确的输入电压，尝试提取电压数字
@@ -336,38 +358,68 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
 
     # ========== 解析输出电压 ==========
     output_voltage = "5"  # 默认5V
-    output_match = re.search(r"输出\s*(\d+)\s*V|(\d+)\s*V\s*输出", requirements, re.IGNORECASE)
+
+    # 先检查是否明确指定了输出电压
+    output_match = re.search(
+        r"输出\s*(\d+(?:\.\d+)?)\s*V|(\d+(?:\.\d+)?)\s*V\s*输出",
+        requirements,
+        re.IGNORECASE,
+    )
     if output_match:
         output_voltage = output_match.group(1) or output_match.group(2)
+    else:
+        # 如果没有明确指定输出电压，检查是否是稳压电源场景
+        # 用户说 "3.3V稳压电源" 意味着输出3.3V
+        has_power_keyword = any(
+            kw in requirements for kw in ["稳压", "电源", "power", "voltage"]
+        )
+        if has_power_keyword:
+            # 提取所有电压值，第一个可能是输出电压（如果有输入电压，第二个是输入）
+            voltage_values = re.findall(
+                r"(\d+(?:\.\d+)?)\s*V", requirements, re.IGNORECASE
+            )
+            if voltage_values:
+                # 如果只有一个电压值，或者第一个值是 3.3/5 等常见输出电压
+                first_voltage = voltage_values[0]
+                if first_voltage in ["3.3", "5", "12", "9"]:
+                    output_voltage = first_voltage
+                    # 如果有两个电压值，第一个是输出，第二个是输入
+                    if len(voltage_values) > 1 and not input_voltage:
+                        input_voltage = voltage_values[1]
 
     # ========== 解析芯片型号 ==========
-    # 根据输出电压自动选择最优芯片
-    # 5V输出优先使用AMS1117-5V（比LM7805更高效，发热更小）
-    # 3.3V输出只能使用AMS1117-3.3
-    # 其他电压使用LM7805
-    if output_voltage == "3.3":
-        regulator_chip = "AMS1117-3.3"
-    elif output_voltage == "5":
-        # 5V优先使用AMS1117-5V，更高效
-        regulator_chip = "AMS1117-5V"
-    elif "ams1117" in requirements.lower() or "AMS1117" in requirements:
+    # 优先检测输入中的特定芯片型号
+    regulator_chip = None
+
+    # 先检测 AMS1117
+    if "ams1117" in requirements.lower() or "AMS1117" in requirements:
         if "3.3" in requirements or "3.3v" in requirements.lower():
             regulator_chip = "AMS1117-3.3"
             output_voltage = "3.3"
-        elif "5" in requirements and "5v" in requirements.lower():
+        elif "5" in requirements or "5v" in requirements.lower():
             regulator_chip = "AMS1117-5V"
             output_voltage = "5"
         else:
+            # 没有明确指定电压，根据 output_voltage 判断
+            if output_voltage == "3.3":
+                regulator_chip = "AMS1117-3.3"
+            else:
+                regulator_chip = "AMS1117-5V"
+    elif "1117" in requirements.lower():
+        if output_voltage == "3.3":
+            regulator_chip = "AMS1117-3.3"
+        else:
             regulator_chip = "AMS1117-5V"
-            output_voltage = "5"
     elif "lm7805" in requirements.lower() or "7805" in requirements:
         regulator_chip = "LM7805"
-    elif "1117" in requirements.lower():
-        regulator_chip = "AMS1117-5V"
-    else:
-        # 默认根据输出电压选择
-        if output_voltage in ["3.3", "5"]:
-            regulator_chip = f"AMS1117-{output_voltage}"
+        output_voltage = "5"
+
+    # 如果没有检测到特定芯片，根据输出电压选择
+    if not regulator_chip:
+        if output_voltage == "3.3":
+            regulator_chip = "AMS1117-3.3"
+        elif output_voltage == "5":
+            regulator_chip = "AMS1117-5V"
         else:
             regulator_chip = "LM7805"
 
@@ -404,7 +456,9 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
                     elif "5A" in val:
                         output_current = "5"
 
-    logger.info(f"最终参数: input_voltage={input_voltage}, input_type={input_type}, output_voltage={output_voltage}, chip={regulator_chip}, current={output_current}A")
+    logger.info(
+        f"最终参数: input_voltage={input_voltage}, input_type={input_type}, output_voltage={output_voltage}, chip={regulator_chip}, current={output_current}A"
+    )
 
     # 检测功能关键词
     has_motor = any(
@@ -451,7 +505,9 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
                 ),
                 ComponentSpec(
                     name="二极管", model="1N4007", package="DO-41", quantity=1
-                ) if "5" not in input_voltage else ComponentSpec(
+                )
+                if "5" not in input_voltage
+                else ComponentSpec(
                     name="TVS二极管", model="SMBJ5.0A", package="SMB", quantity=1
                 ),
             ]
@@ -467,7 +523,10 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
                 ),
                 ComponentSpec(name="整流桥", model="MB6S", package="SMD", quantity=1),
                 ComponentSpec(
-                    name="滤波电容", model="1000uF 25V", package="electrolytic", quantity=2
+                    name="滤波电容",
+                    model="1000uF 25V",
+                    package="electrolytic",
+                    quantity=2,
                 ),
                 ComponentSpec(
                     name="稳压芯片", model=regulator_chip, package="SOT-223", quantity=1
@@ -484,7 +543,9 @@ def _generate_dynamic_project(requirements: str, answers: Optional[Dict[str, str
             output_cap_package = "0805"
 
         parameters = [
-            ParameterSpec(key="输入电压", value=f"{input_voltage}", unit=f"V {input_type}"),
+            ParameterSpec(
+                key="输入电压", value=f"{input_voltage}", unit=f"V {input_type}"
+            ),
             ParameterSpec(key="输出电压", value=output_voltage, unit="V DC"),
             ParameterSpec(key="输出电流", value=output_current, unit="A"),
             ParameterSpec(key="稳压芯片", value=regulator_chip, unit=""),
@@ -732,7 +793,9 @@ def _get_footprint_for_component(comp: ComponentSpec) -> str:
 
 
 # 模拟 AI 分析结果 - 实际项目中会调用 Claude/OpenAI API
-def mock_ai_analyze(requirements: str, answers: Optional[Dict[str, str]] = None) -> AnalyzeResponse:
+def mock_ai_analyze(
+    requirements: str, answers: Optional[Dict[str, str]] = None
+) -> AnalyzeResponse:
     """模拟 AI 分析 - 实际项目中替换为真实 AI 调用"""
     import logging
     from typing import Dict, Optional
@@ -1246,10 +1309,21 @@ def mock_ai_analyze(requirements: str, answers: Optional[Dict[str, str]] = None)
         if matched:
             break
 
-    # 关键修改：如果用户提供了答案（answers），使用动态生成覆盖模板结果
-    # 这样可以根据用户的具体需求（电压、芯片等）定制方案
-    if answers and req.strip():
-        logger.info(f"用户提供了答案，使用动态生成覆盖模板结果...")
+    # 关键修改：如果用户提供了答案（answers），或者输入中包含特定参数，
+    # 使用动态生成覆盖模板结果，以根据用户的具体需求定制方案
+    # 检测输入中是否包含需要动态处理的特定参数
+    has_specific_params = (
+        "ams1117" in req.lower()
+        or "3.3v" in req.lower()
+        or "3.3" in req
+        or "直流" in req
+        or "dc" in req.lower()
+        or "交流" in req
+        or "ac" in req.lower()
+    )
+
+    if (answers and req.strip()) or has_specific_params:
+        logger.info(f"检测到特定参数或用户答案，使用动态生成覆盖模板结果...")
         project_name, description, components, parameters = _generate_dynamic_project(
             req, answers
         )
@@ -1268,20 +1342,24 @@ def mock_ai_analyze(requirements: str, answers: Optional[Dict[str, str]] = None)
     # 准备元件数据
     comp_dicts = []
     for comp in components:
-        comp_dicts.append({
-            "name": comp.name,
-            "model": comp.model,
-            "package": comp.package,
-            "quantity": comp.quantity,
-        })
+        comp_dicts.append(
+            {
+                "name": comp.name,
+                "model": comp.model,
+                "package": comp.package,
+                "quantity": comp.quantity,
+            }
+        )
 
     # 使用新的原理图生成器
     schematic_data = generate_standard_schematic(comp_dicts, circuit_type)
-    logger.info(f"原理图生成完成: {len(schematic_data['components'])}个元件, "
-                f"{len(schematic_data['wires'])}条导线, "
-                f"{len(schematic_data['nets'])}个网络, "
-                f"{len(schematic_data.get('powerSymbols', []))}个电源符号, "
-                f"{len(schematic_data.get('netLabels', []))}个网络标签")
+    logger.info(
+        f"原理图生成完成: {len(schematic_data['components'])}个元件, "
+        f"{len(schematic_data['wires'])}条导线, "
+        f"{len(schematic_data['nets'])}个网络, "
+        f"{len(schematic_data.get('powerSymbols', []))}个电源符号, "
+        f"{len(schematic_data.get('netLabels', []))}个网络标签"
+    )
 
     # 转换为兼容格式
     schematic_components = [
@@ -1300,20 +1378,12 @@ def mock_ai_analyze(requirements: str, answers: Optional[Dict[str, str]] = None)
     ]
 
     schematic_wires = [
-        SchematicWire(
-            id=w["id"],
-            points=w["points"],
-            net=w["net"]
-        )
+        SchematicWire(id=w["id"], points=w["points"], net=w["net"])
         for w in schematic_data["wires"]
     ]
 
     schematic_nets = [
-        SchematicNet(
-            id=n["id"],
-            name=n["name"]
-        )
-        for n in schematic_data["nets"]
+        SchematicNet(id=n["id"], name=n["name"]) for n in schematic_data["nets"]
     ]
 
     # 为 spec.components 添加封装信息
@@ -1378,111 +1448,158 @@ def generate_clarification_questions(requirements: str) -> ClarificationResponse
     # ========== 电源相关问题 ==========
     if any(kw in req_lower for kw in ["电源", "稳压", "power", "供电", "voltage"]):
         # 检查是否已指定输入电压
-        input_v_match = re.search(r"(\d+(?:\.\d+)?)\s*[Vv].*输入|输入.*(\d+(?:\.\d+)?)\s*[Vv]", requirements)
+        input_v_match = re.search(
+            r"(\d+(?:\.\d+)?)\s*[Vv].*输入|输入.*(\d+(?:\.\d+)?)\s*[Vv]", requirements
+        )
         if not input_v_match:
-            questions.append(ClarificationQuestion(
-                id="input_voltage",
-                question="输入电压是多少？",
-                category="power",
-                options=["220V AC (市电)", "12V DC", "5V DC (USB)", "3.7V (锂电池)", "其他"],
-                required=True
-            ))
+            questions.append(
+                ClarificationQuestion(
+                    id="input_voltage",
+                    question="输入电压是多少？",
+                    category="power",
+                    options=[
+                        "220V AC (市电)",
+                        "12V DC",
+                        "5V DC (USB)",
+                        "3.7V (锂电池)",
+                        "其他",
+                    ],
+                    required=True,
+                )
+            )
 
         # 检查是否已指定输出电压
-        output_v_match = re.search(r"输出.*(\d+(?:\.\d+)?)\s*[Vv]|(\d+(?:\.\d+)?)\s*[Vv].*输出", requirements)
+        output_v_match = re.search(
+            r"输出.*(\d+(?:\.\d+)?)\s*[Vv]|(\d+(?:\.\d+)?)\s*[Vv].*输出", requirements
+        )
         if not output_v_match:
-            questions.append(ClarificationQuestion(
-                id="output_voltage",
-                question="需要的输出电压是多少？",
-                category="power",
-                options=["3.3V", "5V", "9V", "12V", "可调"],
-                required=True
-            ))
+            questions.append(
+                ClarificationQuestion(
+                    id="output_voltage",
+                    question="需要的输出电压是多少？",
+                    category="power",
+                    options=["3.3V", "5V", "9V", "12V", "可调"],
+                    required=True,
+                )
+            )
 
         # 检查输出电流
         current_match = re.search(r"(\d+(?:\.\d+)?)\s*[Aa]", requirements)
         if not current_match:
-            questions.append(ClarificationQuestion(
-                id="output_current",
-                question="最大输出电流需求是多少？",
-                category="power",
-                options=["<500mA (小功率)", "500mA-1A", "1A-2A", "2A-5A", ">5A (大功率)"],
-                required=True
-            ))
+            questions.append(
+                ClarificationQuestion(
+                    id="output_current",
+                    question="最大输出电流需求是多少？",
+                    category="power",
+                    options=[
+                        "<500mA (小功率)",
+                        "500mA-1A",
+                        "1A-2A",
+                        "2A-5A",
+                        ">5A (大功率)",
+                    ],
+                    required=True,
+                )
+            )
 
     # ========== 尺寸和封装相关问题 ==========
     if "尺寸" not in req_lower and "大小" not in req_lower:
-        questions.append(ClarificationQuestion(
-            id="pcb_size",
-            question="PCB 尺寸有要求吗？",
-            category="size",
-            options=["越小越好", "50x50mm", "100x100mm", "无特殊要求"],
-            default="无特殊要求",
-            required=False
-        ))
+        questions.append(
+            ClarificationQuestion(
+                id="pcb_size",
+                question="PCB 尺寸有要求吗？",
+                category="size",
+                options=["越小越好", "50x50mm", "100x100mm", "无特殊要求"],
+                default="无特殊要求",
+                required=False,
+            )
+        )
 
     # 封装偏好
-    questions.append(ClarificationQuestion(
-        id="package_type",
-        question="器件封装偏好？",
-        category="package",
-        options=["全贴片 (SMD)", "插件 (THT)", "混合使用", "无所谓"],
-        default="混合使用",
-        required=False
-    ))
+    questions.append(
+        ClarificationQuestion(
+            id="package_type",
+            question="器件封装偏好？",
+            category="package",
+            options=["全贴片 (SMD)", "插件 (THT)", "混合使用", "无所谓"],
+            default="混合使用",
+            required=False,
+        )
+    )
 
     # ========== 成本相关问题 ==========
     if "成本" not in req_lower and "价格" not in req_lower and "预算" not in req_lower:
-        questions.append(ClarificationQuestion(
-            id="cost_target",
-            question="成本预算范围？",
-            category="cost",
-            options=["低成本 (<20元)", "中等 (20-50元)", "高性能 (50-100元)", "不计成本"],
-            default="中等 (20-50元)",
-            required=False
-        ))
+        questions.append(
+            ClarificationQuestion(
+                id="cost_target",
+                question="成本预算范围？",
+                category="cost",
+                options=[
+                    "低成本 (<20元)",
+                    "中等 (20-50元)",
+                    "高性能 (50-100元)",
+                    "不计成本",
+                ],
+                default="中等 (20-50元)",
+                required=False,
+            )
+        )
 
     # ========== 接口相关问题 ==========
     if any(kw in req_lower for kw in ["控制", "mcu", "单片机", "智能"]):
-        questions.append(ClarificationQuestion(
-            id="control_interface",
-            question="需要什么控制接口？",
-            category="interface",
-            options=["GPIO (简单控制)", "I2C", "SPI", "UART/串口", "不需要MCU控制"],
-            required=False
-        ))
+        questions.append(
+            ClarificationQuestion(
+                id="control_interface",
+                question="需要什么控制接口？",
+                category="interface",
+                options=["GPIO (简单控制)", "I2C", "SPI", "UART/串口", "不需要MCU控制"],
+                required=False,
+            )
+        )
 
     # ========== 特殊功能需求 ==========
     # 是否需要指示灯
-    questions.append(ClarificationQuestion(
-        id="status_led",
-        question="需要状态指示灯吗？",
-        category="features",
-        options=["需要 (电源指示+状态)", "仅电源指示", "不需要"],
-        default="需要 (电源指示+状态)",
-        required=False
-    ))
+    questions.append(
+        ClarificationQuestion(
+            id="status_led",
+            question="需要状态指示灯吗？",
+            category="features",
+            options=["需要 (电源指示+状态)", "仅电源指示", "不需要"],
+            default="需要 (电源指示+状态)",
+            required=False,
+        )
+    )
 
     # 是否需要保护电路
     if any(kw in req_lower for kw in ["电源", "充电", "电池"]):
-        questions.append(ClarificationQuestion(
-            id="protection",
-            question="需要哪些保护功能？",
-            category="protection",
-            options=["过流保护", "过压保护", "过热保护", "全部需要", "不需要"],
-            default="全部需要",
-            required=False
-        ))
+        questions.append(
+            ClarificationQuestion(
+                id="protection",
+                question="需要哪些保护功能？",
+                category="protection",
+                options=["过流保护", "过压保护", "过热保护", "全部需要", "不需要"],
+                default="全部需要",
+                required=False,
+            )
+        )
 
     # ========== 连接器相关问题 ==========
-    questions.append(ClarificationQuestion(
-        id="connector_type",
-        question="输入/输出连接器偏好？",
-        category="connector",
-        options=["接线端子", "排针 (2.54mm)", "USB 接口", "DC 插座", "根据需要选择"],
-        default="根据需要选择",
-        required=False
-    ))
+    questions.append(
+        ClarificationQuestion(
+            id="connector_type",
+            question="输入/输出连接器偏好？",
+            category="connector",
+            options=[
+                "接线端子",
+                "排针 (2.54mm)",
+                "USB 接口",
+                "DC 插座",
+                "根据需要选择",
+            ],
+            default="根据需要选择",
+            required=False,
+        )
+    )
 
     # 生成需求摘要
     summary = f"检测到电路类型: {detected_type}。需要澄清 {len(questions)} 个问题以生成精确的 BOM 和原理图。"
@@ -1490,9 +1607,7 @@ def generate_clarification_questions(requirements: str) -> ClarificationResponse
     logger.info(f"生成了 {len(questions)} 个澄清问题")
 
     return ClarificationResponse(
-        questions=questions,
-        summary=summary,
-        detected_type=detected_type
+        questions=questions, summary=summary, detected_type=detected_type
     )
 
 
@@ -1532,10 +1647,7 @@ async def get_clarification_questions(request: AnalyzeRequest):
     """
     try:
         if not request.requirements.strip():
-            return JSONResponse(
-                status_code=400,
-                content={"detail": "需求描述不能为空"}
-            )
+            return JSONResponse(status_code=400, content={"detail": "需求描述不能为空"})
 
         result = generate_clarification_questions(request.requirements)
         return result
@@ -1543,8 +1655,7 @@ async def get_clarification_questions(request: AnalyzeRequest):
     except Exception as e:
         logger.error(f"生成澄清问题失败: {e}")
         return JSONResponse(
-            status_code=500,
-            content={"detail": f"生成问题失败: {str(e)}"}
+            status_code=500, content={"detail": f"生成问题失败: {str(e)}"}
         )
 
 
@@ -1557,7 +1668,9 @@ async def analyze_requirements(request: AnalyzeRequest):
     如果没有配置 API Key 或调用失败则回退到模拟实现
     """
     # 调试日志
-    logger.info(f"DEBUG: analyze_requirements called with requirements='{request.requirements}', answers={request.answers}")
+    logger.info(
+        f"DEBUG: analyze_requirements called with requirements='{request.requirements}', answers={request.answers}"
+    )
     try:
         # TODO: 暂时跳过 GLM-4 大模型，直接使用模拟AI分析
         # 优先使用 GLM-4 大模型
@@ -1825,14 +1938,17 @@ async def search_footprints(keyword: str, limit: int = 20):
 
 # ========== AI 聊天助手 API ==========
 
+
 class ChatMessage(BaseModel):
     role: str = "user"
     content: str
+
 
 class ChatRequest(BaseModel):
     message: str
     context: Optional[Dict[str, Any]] = None
     history: Optional[List[ChatMessage]] = []
+
 
 class ChatResponse(BaseModel):
     response: str
@@ -1882,20 +1998,29 @@ async def chat_with_ai(request: ChatRequest):
                 context_desc = ""
                 if request.context:
                     context_desc = f"\n\n当前原理图信息：\n"
-                    context_desc += f"项目：{request.context.get('projectName', '未知')}\n"
-                    if request.context.get('components'):
-                        context_desc += f"元件数量：{len(request.context['components'])}\n"
-                        for i, comp in enumerate(request.context['components'][:5]):
+                    context_desc += (
+                        f"项目：{request.context.get('projectName', '未知')}\n"
+                    )
+                    if request.context.get("components"):
+                        context_desc += (
+                            f"元件数量：{len(request.context['components'])}\n"
+                        )
+                        for i, comp in enumerate(request.context["components"][:5]):
                             context_desc += f"  - {comp.get('name', '?')} ({comp.get('model', '?')})\n"
-                    if request.context.get('nets'):
-                        context_desc += f"网络：{', '.join(request.context['nets'][:10])}\n"
+                    if request.context.get("nets"):
+                        context_desc += (
+                            f"网络：{', '.join(request.context['nets'][:10])}\n"
+                        )
 
                 # 调用 GLM-4
                 response = client.chat(
                     messages=[
                         {"role": "system", "content": system_prompt + context_desc},
-                        *[{"role": m.role, "content": m.content} for m in (request.history or [])],
-                        {"role": "user", "content": request.message}
+                        *[
+                            {"role": m.role, "content": m.content}
+                            for m in (request.history or [])
+                        ],
+                        {"role": "user", "content": request.message},
                     ]
                 )
 
@@ -1906,17 +2031,22 @@ async def chat_with_ai(request: ChatRequest):
                 actions = []
 
                 # 检查是否包含修改关键词
-                if any(kw in request.message for kw in ["修改", "改", "换成", "替换", "删除", "添加", "加"]):
-                    actions.append({
-                        "type": "modify",
-                        "target": "schematic",
-                        "description": "需要修改原理图"
-                    })
+                if any(
+                    kw in request.message
+                    for kw in ["修改", "改", "换成", "替换", "删除", "添加", "加"]
+                ):
+                    actions.append(
+                        {
+                            "type": "modify",
+                            "target": "schematic",
+                            "description": "需要修改原理图",
+                        }
+                    )
 
                 return ChatResponse(
                     response=ai_response,
                     actions=actions if actions else None,
-                    modifications=modifications
+                    modifications=modifications,
                 )
 
             except Exception as glm_error:
@@ -1933,7 +2063,7 @@ async def chat_with_ai(request: ChatRequest):
         return ChatResponse(
             response=f"抱歉，处理您的请求时出错：{str(e)}",
             actions=None,
-            modifications=None
+            modifications=None,
         )
 
 
@@ -1953,12 +2083,12 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
     def parse_position(text: str) -> dict:
         """尝试从文本中解析位置"""
         # 匹配坐标格式: (100, 200) 或 (100，200) - 更灵活
-        coord_match = re.search(r'[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', text)
+        coord_match = re.search(r"[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?", text)
         if coord_match:
             return {"x": int(coord_match.group(1)), "y": int(coord_match.group(2))}
         # 匹配 x=100 y=200 格式
-        x_match = re.search(r'x\s*[=:]\s*(\d+)', text)
-        y_match = re.search(r'y\s*[=:]\s*(\d+)', text)
+        x_match = re.search(r"x\s*[=:]\s*(\d+)", text)
+        y_match = re.search(r"y\s*[=:]\s*(\d+)", text)
         if x_match and y_match:
             return {"x": int(x_match.group(1)), "y": int(y_match.group(1))}
         # 随机位置作为默认
@@ -1967,7 +2097,7 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
     # 解析元件引用（如 R1, C3, U1）
     def parse_reference(text: str) -> str:
         """尝试从文本中解析元件引用"""
-        ref_match = re.search(r'([RCUQJD])\s*[-_]?\s*(\d+)', text, re.IGNORECASE)
+        ref_match = re.search(r"([RCUQJD])\s*[-_]?\s*(\d+)", text, re.IGNORECASE)
         if ref_match:
             return f"{ref_match.group(1).upper()}{ref_match.group(2)}"
         return None
@@ -1975,28 +2105,37 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
     # 简单的关键词匹配
     if "封装" in message:
         # 检查是否包含具体的封装值
-        package_match = re.search(r'(\d{4})', message)
+        package_match = re.search(r"(\d{4})", message)
         if package_match:
             package = package_match.group(1)
             ref = parse_reference(original_message)
             if ref:
                 response = f"好的，我已将元件 {ref} 的封装修改为 {package}。"
                 modifications = [
-                    {"action": "update_property", "id": ref, "property": "footprint", "value": f"R_{package}_Metric"}
+                    {
+                        "action": "update_property",
+                        "id": ref,
+                        "property": "footprint",
+                        "value": f"R_{package}_Metric",
+                    }
                 ]
             else:
                 response = f"好的，我已将选中的元件封装修改为 {package}。"
                 modifications = [
-                    {"action": "update_property", "property": "footprint", "value": f"R_{package}_Metric"}
+                    {
+                        "action": "update_property",
+                        "property": "footprint",
+                        "value": f"R_{package}_Metric",
+                    }
                 ]
         else:
             response = "我理解您对封装有疑问。让我检查一下当前元件的封装配置。\n\n"
-            response += "建议：检查封装库中是否有更合适的封装，或者根据数据手册选择正确的封装。"
-            actions.append({
-                "type": "check",
-                "target": "footprints",
-                "description": "检查元件封装"
-            })
+            response += (
+                "建议：检查封装库中是否有更合适的封装，或者根据数据手册选择正确的封装。"
+            )
+            actions.append(
+                {"type": "check", "target": "footprints", "description": "检查元件封装"}
+            )
 
     elif "布局" in message or "排列" in message:
         response = "布局优化建议：\n"
@@ -2004,47 +2143,56 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
         response += "2. 信号流向从左到右\n"
         response += "3. 地线在底部\n"
         response += "4. 避免长距离走线"
-        actions.append({
-            "type": "optimize",
-            "target": "layout",
-            "description": "优化布局"
-        })
+        actions.append(
+            {"type": "optimize", "target": "layout", "description": "优化布局"}
+        )
 
     elif "电源" in message or "vcc" in message or "gnd" in message:
         response = "电源符号建议：\n"
         response += "• VCC 应该在元件上方，使用向上箭头符号\n"
         response += "• GND 应该在元件下方，使用标准地符号\n"
         response += "需要我帮您添加或调整电源符号吗？"
-        actions.append({
-            "type": "modify",
-            "target": "power_symbols",
-            "description": "调整电源符号"
-        })
+        actions.append(
+            {"type": "modify", "target": "power_symbols", "description": "调整电源符号"}
+        )
 
     elif "电容" in message:
         # 优先处理添加电容的请求
         if "添加" in message or "加一个" in message:
             position = parse_position(original_message)
-            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            response = (
+                f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            )
             modifications = [
-                {"action": "add_component", "type": "capacitor", "value": "100nF", "position": position}
+                {
+                    "action": "add_component",
+                    "type": "capacitor",
+                    "value": "100nF",
+                    "position": position,
+                }
             ]
         else:
             response = "关于电容的建议：\n"
             response += "• 去耦电容应靠近芯片电源引脚\n"
             response += "• 滤波电容应放在整流后\n"
             response += "• 注意电容的耐压值"
-            actions.append({
-                "type": "modify",
-                "target": "capacitors",
-                "description": "调整电容位置"
-            })
+            actions.append(
+                {
+                    "type": "modify",
+                    "target": "capacitors",
+                    "description": "调整电容位置",
+                }
+            )
 
     elif "线" in message or "连接" in message:
         # 尝试解析坐标
         logger.info(f"处理走线请求: {original_message}")
-        start_match = re.search(r'从\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', original_message)
-        end_match = re.search(r'到\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?', original_message)
+        start_match = re.search(
+            r"从\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?", original_message
+        )
+        end_match = re.search(
+            r"到\s*[(\[]?\s*(\d+)\s*[,，]\s*(\d+)\s*[)\]]?", original_message
+        )
 
         logger.info(f"Start match: {start_match}, End match: {end_match}")
 
@@ -2052,14 +2200,12 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
             start = {"x": int(start_match.group(1)), "y": int(start_match.group(2))}
             end = {"x": int(end_match.group(1)), "y": int(end_match.group(2))}
             response = f"好的，我已添加了一条走线从 ({start['x']}, {start['y']}) 到 ({end['x']}, {end['y']})。"
-            modifications = [
-                {"action": "add_track", "start": start, "end": end}
-            ]
+            modifications = [{"action": "add_track", "start": start, "end": end}]
             logger.info(f"返回 modifications: {modifications}")
         else:
             # 尝试解析 "连接 XX 到 YY" 格式（元件名称）
             logger.info(f"尝试解析连接请求，原始消息: {original_message}")
-            connect_pattern = r'连接\s*([A-Za-z]+\d*)\s*到\s*([A-Za-z]+\d*)'
+            connect_pattern = r"连接\s*([A-Za-z]+\d*)\s*到\s*([A-Za-z]+\d*)"
             connect_match = re.search(connect_pattern, original_message)
             logger.info(f"连接正则匹配结果: {connect_match}")
 
@@ -2075,27 +2221,19 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
                 logger.info(f"返回 connect_components modifications: {modifications}")
             else:
                 response = "好的，我已优化了导线连接。"
-                modifications = [
-                    {"action": "optimize_wires"}
-                ]
-                actions.append({
-                    "type": "modify",
-                    "target": "wires",
-                    "description": "优化导线连接"
-                })
+                modifications = [{"action": "optimize_wires"}]
+                actions.append(
+                    {"type": "modify", "target": "wires", "description": "优化导线连接"}
+                )
 
     elif "删除" in message or "去掉" in message:
         ref = parse_reference(original_message)
         if ref:
             response = f"好的，我已删除元件 {ref}。"
-            modifications = [
-                {"action": "delete_component", "id": ref}
-            ]
+            modifications = [{"action": "delete_component", "id": ref}]
         else:
             response = "好的，我已删除选中的元件。"
-            modifications = [
-                {"action": "delete_component"}
-            ]
+            modifications = [{"action": "delete_component"}]
 
     elif "移动" in message or "移到" in message or "移动到" in message:
         ref = parse_reference(original_message)
@@ -2107,42 +2245,54 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
             ]
         else:
             response = "好的，我已移动了元件。"
-            modifications = [
-                {"action": "move_component", "position": position}
-            ]
+            modifications = [{"action": "move_component", "position": position}]
 
     elif "添加" in message or "加一个" in message or "添加一个" in message:
         position = parse_position(original_message)
         if "电容" in message or "cap" in message:
-            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            response = (
+                f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电容。"
+            )
             modifications = [
-                {"action": "add_component", "type": "capacitor", "value": "100nF", "position": position}
+                {
+                    "action": "add_component",
+                    "type": "capacitor",
+                    "value": "100nF",
+                    "position": position,
+                }
             ]
         elif "电阻" in message or "res" in message:
-            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电阻。"
+            response = (
+                f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个电阻。"
+            )
             modifications = [
-                {"action": "add_component", "type": "resistor", "value": "10k", "position": position}
+                {
+                    "action": "add_component",
+                    "type": "resistor",
+                    "value": "10k",
+                    "position": position,
+                }
             ]
         elif "过孔" in message or "via" in message:
-            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个过孔。"
-            modifications = [
-                {"action": "add_via", "position": position}
-            ]
+            response = (
+                f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了一个过孔。"
+            )
+            modifications = [{"action": "add_via", "position": position}]
         else:
-            response = f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了元件。"
-            modifications = [
-                {"action": "add_component", "position": position}
-            ]
+            response = (
+                f"好的，我已在位置 ({position['x']}, {position['y']}) 添加了元件。"
+            )
+            modifications = [{"action": "add_component", "position": position}]
 
     else:
-        response = f"我理解您提到：\"{request.message}\"\n\n"
+        response = f'我理解您提到："{request.message}"\n\n'
         response += "请告诉我具体需要修改什么，我会帮您处理。例如：\n"
-        response += "• \"把电阻R1的封装改成0805\"\n"
-        response += "• \"删除电容C3\"\n"
-        response += "• \"在电源处添加一个100uF电容\""
+        response += '• "把电阻R1的封装改成0805"\n'
+        response += '• "删除电容C3"\n'
+        response += '• "在电源处添加一个100uF电容"'
 
     return ChatResponse(
         response=response,
         actions=actions if actions else None,
-        modifications=modifications
+        modifications=modifications,
     )
