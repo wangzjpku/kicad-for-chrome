@@ -117,11 +117,29 @@ export const useSchematicStore = create<SchematicStoreState>()(
           if (data && typeof data === 'object') {
             // 后端直接返回数据，没有 success 包装器
             // 转换元件数据格式：后端返回 name, model -> 前端需要 reference, value
-            const components = (data.components || []).map((comp: any, idx: number) => ({
+            interface BackendComponent {
+              id?: string;
+              name?: string;
+              model?: string;
+              position?: Point2D;
+              rotation?: number;
+              mirror?: boolean;
+              unit?: number;
+              footprint?: string;
+              pins?: Array<{number?: string; name?: string; position?: Point2D}>;
+            }
+            
+            interface BackendPin {
+              number?: string;
+              name?: string;
+              position?: Point2D;
+            }
+            
+            const components = (data.components || []).map((comp: BackendComponent, idx: number) => ({
               id: comp.id || `comp-${idx}`,
               libraryName: 'AI_Lib',
-              symbolName: comp.name,
-              fullSymbolName: comp.name,
+              symbolName: comp.name || '',
+              fullSymbolName: comp.name || '',
               reference: `${(comp.name || 'U')[0]}${idx + 1}`,
               value: comp.model || '',
               position: comp.position || { x: 0, y: 0 },
@@ -130,10 +148,12 @@ export const useSchematicStore = create<SchematicStoreState>()(
               unit: comp.unit || 1,
               fields: {},
               footprint: comp.footprint,
-              pins: (comp.pins || []).map((pin: any, pinIdx: number) => ({
+              pins: (comp.pins || []).map((pin: BackendPin, pinIdx: number) => ({
                 id: `pin-${pinIdx}`,
                 number: pin.number || String(pinIdx + 1),
-                name: pin.name || ''
+                name: pin.name || '',
+                position: pin.position || { x: 0, y: 0 },
+                electricalType: 'passive' as const
               }))
             }));
 

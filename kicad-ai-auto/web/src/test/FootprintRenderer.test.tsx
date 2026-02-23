@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * FootprintRenderer 组件测试
  * 测试封装渲染、选择、拖拽功能

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * TrackRenderer 组件测试
  * 测试走线渲染和选择功能

@@ -26,10 +26,31 @@ interface WebMCPToolResult {
   error?: string;
 }
 
+// 定义回调函数类型
+type StateChangeCallback = (state: WebMCPState) => void;
+type ToolCallCallback = (tool: string, params: unknown) => void;
+
+// Chrome WebMCP API 类型定义
+interface ChromeWebMCP {
+  getState: () => Promise<WebMCPState>;
+  callTool: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+  onStateChange: (callback: StateChangeCallback) => void;
+  onToolCall: (callback: ToolCallCallback) => void;
+}
+
+// 扩展 Window 接口
+declare global {
+  interface Window {
+    chrome?: {
+      webmcp?: ChromeWebMCP;
+    };
+  }
+}
+
 class WebMCPClient {
   private baseUrl: string;
   private state: WebMCPState | null = null;
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, StateChangeCallback[] | ToolCallCallback[]> = new Map();
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl;
@@ -40,7 +61,7 @@ class WebMCPClient {
    */
   static isSupported(): boolean {
     return 'webmcp' in navigator || 
-           (window as any).chrome?.webmcp !== undefined;
+           window.chrome?.webmcp !== undefined;
   }
 
   /**
@@ -49,8 +70,8 @@ class WebMCPClient {
   async getState(): Promise<WebMCPState | null> {
     try {
       // 尝试通过 chrome.webmcp API 获取
-      if ((window as any).chrome?.webmcp) {
-        const state = await (window as any).chrome.webmcp.getState();
+      if (window.chrome?.webmcp) {
+        const state = await window.chrome.webmcp.getState();
         this.state = state;
         return state;
       }
@@ -77,8 +98,8 @@ class WebMCPClient {
    */
   async callTool(toolName: string, params: Record<string, unknown>): Promise<WebMCPToolResult> {
     try {
-      if ((window as any).chrome?.webmcp) {
-        const result = await (window as any).chrome.webmcp.callTool(toolName, params);
+      if (window.chrome?.webmcp) {
+        const result = await window.chrome.webmcp.callTool(toolName, params);
         return {
           success: true,
           result
@@ -90,10 +111,11 @@ class WebMCPClient {
         success: false,
         error: 'WebMCP not supported in this browser'
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Tool call failed';
       return {
         success: false,
-        error: error.message || 'Tool call failed'
+        error: errorMessage
       };
     }
   }
@@ -101,12 +123,12 @@ class WebMCPClient {
   /**
    * 监听状态变化
    */
-  onStateChange(callback: (state: WebMCPState) => void): () => void {
-    if (!(window as any).chrome?.webmcp?.onStateChange) {
+  onStateChange(callback: StateChangeCallback): () => void {
+    if (!window.chrome?.webmcp?.onStateChange) {
       return () => {};
     }
     
-    (window as any).chrome.webmcp.onStateChange(callback);
+    window.chrome.webmcp.onStateChange(callback);
     
     return () => {
       // 取消监听
@@ -116,12 +138,12 @@ class WebMCPClient {
   /**
    * 监听工具调用
    */
-  onToolCall(callback: (tool: string, params: unknown) => void): () => void {
-    if (!(window as any).chrome?.webmcp?.onToolCall) {
+  onToolCall(callback: ToolCallCallback): () => void {
+    if (!window.chrome?.webmcp?.onToolCall) {
       return () => {};
     }
     
-    (window as any).chrome.webmcp.onToolCall(callback);
+    window.chrome.webmcp.onToolCall(callback);
     
     return () => {
       // 取消监听

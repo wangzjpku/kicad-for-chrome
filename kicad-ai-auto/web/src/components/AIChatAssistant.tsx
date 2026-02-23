@@ -17,8 +17,10 @@ import './AIChatAssistant.css';
 import { useKiCadIPC } from '../hooks/useKiCadIPC';
 import { usePCBStore } from '../stores/pcbStore';
 import { useSchematicStore } from '../stores/schematicStore';
-import { Footprint, Track, Via, SchematicComponent } from '../types';
-import { searchTemplates, generatePCBFromTemplate, ALL_TEMPLATES } from '../data/circuitTemplates';
+import { Footprint, Track, Via, SchematicComponent, SchematicData, Project, PCBData } from '../types';
+
+// 仅导入实际使用的函数
+// import { searchTemplates, generatePCBFromTemplate, ALL_TEMPLATES } from '../data/circuitTemplates';
 
 interface Message {
   id: string;
@@ -50,9 +52,9 @@ interface Modification {
 
 interface AIChatAssistantProps {
   // 当前原理图数据
-  schematicData?: any;
+  schematicData?: SchematicData | Project | PCBData | null;
   // 当前项目规格
-  projectSpec?: any;
+  projectSpec?: Project | { name: string } | null;
   // 修改回调
   onModifySchematic?: (modifications: Modification[]) => void;
   // 是否展开
@@ -320,7 +322,8 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
                 results.push(`已从 PCB 画布删除元件 ${targetId}`);
               }
             } else if (isSchematicMode && storeSchematicData?.components) {
-              const existingComp = schematicData.components.find(
+              const components = 'components' in schematicData ? schematicData.components : [];
+              const existingComp = components.find(
                 c => c.reference === targetId || c.id === targetId
               );
               if (existingComp && schematicStore.removeComponent) {
@@ -354,7 +357,8 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
                 results.push(`已将 PCB 中元件 ${targetId} 移动到 (${newPosition.x}, ${newPosition.y})`);
               }
             } else if (isSchematicMode && storeSchematicData?.components) {
-              const existingComp = schematicData.components.find(
+              const components = 'components' in schematicData ? schematicData.components : [];
+              const existingComp = components.find(
                 c => c.reference === targetId || c.id === targetId
               );
               if (existingComp && schematicStore.updateComponentPosition) {
@@ -575,9 +579,10 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           default:
             results.push(`未知操作: ${mod.action}`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`执行操作失败 ${mod.action}:`, error);
-        results.push(`执行 ${mod.action} 失败: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        results.push(`执行 ${mod.action} 失败: ${errorMessage}`);
       }
     }
 
@@ -741,11 +746,11 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         }
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'system',
-        content: `抱歉，处理您的请求时出错：${error.message}`,
+        content: `抱歉，处理您的请求时出错：${error instanceof Error ? error.message : '未知错误'}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -756,16 +761,34 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
 
   // 构建上下文信息
   const buildContext = () => {
-    return {
-      projectName: projectSpec?.name || '未知项目',
-      components: schematicData?.components?.map((c: any) => ({
-        name: c.name,
-        model: c.model,
+    // 提取组件信息
+    let componentsInfo: Array<{name: string; model: string; footprint?: string; position?: {x: number; y: number}}> = [];
+    let wiresCount = 0;
+    let netsInfo: string[] = [];
+
+    // 安全访问 schematicData
+    if (schematicData && 'components' in schematicData && Array.isArray(schematicData.components)) {
+      componentsInfo = schematicData.components.map((c: SchematicComponent) => ({
+        name: c.symbolName || c.reference || 'Unknown',
+        model: c.value || '',
         footprint: c.footprint,
         position: c.position
-      })) || [],
-      wires: schematicData?.wires?.length || 0,
-      nets: schematicData?.nets?.map((n: any) => n.name) || []
+      }));
+    }
+
+    if (schematicData && 'wires' in schematicData && Array.isArray(schematicData.wires)) {
+      wiresCount = schematicData.wires.length;
+    }
+
+    if (schematicData && 'nets' in schematicData && Array.isArray(schematicData.nets)) {
+      netsInfo = schematicData.nets.map((n: {name?: string}) => n.name || '').filter(Boolean);
+    }
+
+    return {
+      projectName: projectSpec?.name || '未知项目',
+      components: componentsInfo,
+      wires: wiresCount,
+      nets: netsInfo
     };
   };
 

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Group, Rect, Line, Text, Circle, Shape } from 'react-konva';
+import Konva from 'konva';
 
 interface Pin {
   id: string;
@@ -33,7 +34,7 @@ interface SchematicSymbolProps {
   component: SchematicComponent;
   selected?: boolean;
   onClick?: () => void;
-  onDragEnd?: (e: any) => void;
+  onDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   draggable?: boolean;
 }
 
@@ -583,15 +584,17 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
     switch (symbolType) {
       case 'resistor':
         return <ResistorSymbol selected={selected} />;
-      case 'capacitor':
+      case 'capacitor': {
         // 判断是否为电解电容
         const isPolarized = (component.model || '').toLowerCase().includes('uf') ||
                            (component.model || '').toLowerCase().includes('电解') ||
                            (component.name || '').includes('滤波');
         return <CapacitorSymbol selected={selected} polarized={isPolarized} />;
-      case 'led':
+      }
+      case 'led': {
         const color = component.model || component.name || 'red';
         return <LEDSymbol selected={selected} color={color} />;
+      }
       case 'diode':
         return <DiodeSymbol selected={selected} />;
       case 'transistor':
@@ -600,9 +603,10 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
         return <CrystalSymbol selected={selected} />;
       case 'connector':
         return <ConnectorSymbol selected={selected} pins={component.pins?.length || 2} />;
-      case 'power_vcc':
+      case 'power_vcc': {
         const voltage = component.value || component.model || 'VCC';
         return <VCCSymbol selected={selected} voltage={voltage} />;
+      }
       case 'power_gnd':
         return <GNDSymbol selected={selected} />;
       case 'ic':

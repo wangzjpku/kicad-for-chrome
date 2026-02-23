@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Line, Text, Group, Circle, Rect } from 'react-konva';
 import type { Stage as StageType } from 'konva/lib/Stage';
 import type { KonvaEventObject } from 'konva/lib/Node';
+import Konva from 'konva';
 
 import { useSchematicStore } from '../stores/schematicStore';
 import { SchematicComponent, Wire, Label, Point2D } from '../types';
@@ -96,7 +97,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   }, [projectId]);
   
   // 滚轮缩放
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const scaleBy = 1.1;
     const newScale = e.evt.deltaY > 0 ? zoom / scaleBy : zoom * scaleBy;

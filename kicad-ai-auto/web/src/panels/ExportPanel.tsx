@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { usePCBStore } from '../stores/pcbStore';
-import { exportApi } from '../services/api';
+import { exportApi, ApiResponse, ExportResultData } from '../services/api';
 
 interface ExportPanelProps {
   onClose?: () => void;
@@ -15,7 +15,7 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
   const [exporting, setExporting] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
-  const handleExport = async (type: string, exportFn: () => Promise<any>) => {
+  const handleExport = async (type: string, exportFn: () => Promise<ApiResponse<ExportResultData>>) => {
     if (!projectId) {
       setResults(prev => ({
         ...prev,
@@ -38,7 +38,7 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
           [type]: { success: false, message: response.error || 'Export failed' }
         }));
       }
-    } catch (error) {
+    } catch (_error) {
       setResults(prev => ({
         ...prev,
         [type]: { success: false, message: 'Network error' }

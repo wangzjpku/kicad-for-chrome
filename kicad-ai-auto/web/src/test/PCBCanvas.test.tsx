@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * PCBCanvas 组件测试
  * 测试画布渲染、交互、事件处理
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ReactNode } from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import PCBCanvas from '../canvas/PCBCanvas';
 import { samplePCB } from '../data/samplePCB';
 import * as pcbStore from '../stores/pcbStore';

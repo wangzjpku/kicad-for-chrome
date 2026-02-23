@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { Stage, Layer, Line, Text, Group, Circle } from 'react-konva';
 import type { Stage as StageType } from 'konva/lib/Stage';
+import Konva from 'konva';
 
 import { usePCBStore } from '../stores/pcbStore';
 import { samplePCB } from '../data/samplePCB';
@@ -82,7 +83,7 @@ const PCBEditor: React.FC = () => {
   });
 
   // 滚轮缩放
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const scaleBy = 1.1;
     const newScale = e.evt.deltaY > 0 ? zoom / scaleBy : zoom * scaleBy;
@@ -90,7 +91,7 @@ const PCBEditor: React.FC = () => {
   };
 
   // 点击空白处取消选择
-  const handleStageClick = (e: any) => {
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (e.target === e.target.getStage()) {
       clearSelection();
     }
@@ -320,10 +321,10 @@ const PCBEditor: React.FC = () => {
         <div style={{ width: 250, backgroundColor: '#2d2d2d', borderLeft: '1px solid #3d3d3d', display: 'flex', flexDirection: 'column' }}>
           {/* 标签页 */}
           <div style={{ display: 'flex', borderBottom: '1px solid #3d3d3d' }}>
-            {['properties', 'layers', 'drc', 'export'].map(tab => (
+            {(['properties', 'layers', 'drc', 'export'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab)}
                 style={{
                   flex: 1,
                   padding: '10px',

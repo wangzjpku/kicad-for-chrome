@@ -17,7 +17,20 @@ import './AIProjectDialog.css';
 interface AIProjectDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectCreated: (project: any) => void;
+  onProjectCreated: (project: CreatedProject) => void;
+}
+
+// 创建的项目返回类型
+interface CreatedProject {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'archived' | 'deleted';
+  schematic?: SchematicData;
+  pcb?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  ownerId?: string;
 }
 
 interface ClarificationQuestion {
@@ -56,10 +69,33 @@ interface ProjectSpec {
   parameters: ParameterSpec[];
 }
 
+// 原理图元件类型
+interface SchematicComponent {
+  id: string;
+  name: string;
+  model: string;
+  reference: string;
+  position: { x: number; y: number };
+  pins: Array<{ number: string; name: string; position: { x: number; y: number } }>;
+}
+
+// 导线类型
+interface SchematicWire {
+  id: string;
+  points: Array<{ x: number; y: number }>;
+  net?: string;
+}
+
+// 网络类型
+interface SchematicNet {
+  id: string;
+  name: string;
+}
+
 interface SchematicData {
-  components: any[];
-  wires: any[];
-  nets: any[];
+  components: SchematicComponent[];
+  wires: SchematicWire[];
+  nets: SchematicNet[];
 }
 
 type DialogStep = 'input' | 'clarifying' | 'analyzing' | 'preview' | 'editing' | 'generating' | 'confirm' | 'error';
@@ -85,8 +121,15 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   const [tempComponent, setTempComponent] = useState<ComponentSpec | null>(null);
   const [tempParameter, setTempParameter] = useState<ParameterSpec | null>(null);
 
+// 最终结果类型
+interface FinalResult {
+  project: CreatedProject;
+  schematic: SchematicData;
+  message: string;
+}
+
   // 最终结果
-  const [finalResult, setFinalResult] = useState<any>(null);
+  const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
 
   // 重置状态
   useEffect(() => {
@@ -152,22 +195,26 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
         await directAnalyze();
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
-      console.log('Clarify API error, falling back to direct analyze:', err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.log('Clarify API error, falling back to direct analyze:', errorMessage);
       // 如果是超时或网络错误，回退到 directAnalyze
-      if (err.name === 'AbortError' || err.name === 'TypeError') {
+      const errorName = err instanceof Error ? err.name : '';
+      if (errorName === 'AbortError' || errorName === 'TypeError') {
         try {
           await directAnalyze();
-        } catch (analyzeErr: any) {
-          setError(analyzeErr.message || '分析过程出错');
+        } catch (analyzeErr: unknown) {
+          const analyzeMessage = analyzeErr instanceof Error ? analyzeErr.message : '分析过程出错';
+          setError(analyzeMessage);
           setStep('error');
         }
       } else {
         try {
           await directAnalyze();
-        } catch (analyzeErr: any) {
-          setError(analyzeErr.message || '分析过程出错');
+        } catch (analyzeErr: unknown) {
+          const analyzeMessage = analyzeErr instanceof Error ? analyzeErr.message : '分析过程出错';
+          setError(analyzeMessage);
           setStep('error');
         }
       }
@@ -209,9 +256,9 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       setSchematicData(data.schematic);
 
       setStep('preview');
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         throw new Error('AI 分析超时，请稍后重试');
       }
       throw err;
@@ -256,12 +303,13 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
 
       setStep('preview');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('AI 分析超时，请稍后重试');
       } else {
-        setError(err.message || '生成方案出错');
+        const errorMessage = err instanceof Error ? err.message : '生成方案出错';
+        setError(errorMessage);
       }
       setStep('error');
     }
@@ -400,12 +448,13 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
       setFinalResult(result);
       setStep('confirm');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('创建项目超时，请稍后重试');
       } else {
-        setError(err.message || '生成最终结果失败');
+        const errorMessage = err instanceof Error ? err.message : '生成最终结果失败';
+        setError(errorMessage);
       }
       setStep('error');
     }
@@ -413,8 +462,8 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
 
   // ========== Step 4: 确认最终结果 ==========
   const handleFinalConfirm = () => {
-    if (finalResult) {
-      onProjectCreated(finalResult);
+    if (finalResult && finalResult.project) {
+      onProjectCreated(finalResult.project);
       onClose();
     }
   };
@@ -794,7 +843,7 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
                         </defs>
                         <rect width="100%" height="100%" fill="url(#grid)" />
 
-                        {schematicData.wires?.map((wire: any, index: number) => {
+                        {schematicData.wires?.map((wire: SchematicWire, index: number) => {
                           const points = wire.points || [];
                           if (points.length < 2) return null;
                           let pathD = `M ${points[0].x} ${points[0].y}`;
@@ -812,7 +861,7 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
                           );
                         })}
 
-                        {schematicData.components.map((comp: any, index: number) => {
+                        {schematicData.components.map((comp: SchematicComponent, index: number) => {
                           const x = comp.position?.x || 50;
                           const y = comp.position?.y || 50;
                           const color = '#607D8B';
@@ -854,7 +903,7 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
                 </div>
                 <div className="result-item">
                   <span className="label">项目 ID</span>
-                  <span className="value code">{finalResult.id}</span>
+                  <span className="value code">{finalResult?.project?.id || 'N/A'}</span>
                 </div>
                 <div className="result-item">
                   <span className="label">器件数量</span>

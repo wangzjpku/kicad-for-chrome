@@ -338,7 +338,17 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
       <AIProjectDialog
         isOpen={showAIDialog}
         onClose={() => setShowAIDialog(false)}
-        onProjectCreated={(project) => {
+        onProjectCreated={(createdProject) => {
+          // 将 CreatedProject 转换为 Project
+          const project: Project = {
+            id: createdProject.id,
+            name: createdProject.name,
+            description: createdProject.description,
+            status: createdProject.status || 'active',
+            createdAt: createdProject.createdAt || new Date().toISOString(),
+            updatedAt: createdProject.updatedAt || new Date().toISOString(),
+            ownerId: createdProject.ownerId || 'default',
+          };
           setProjects([...projects, project]);
           onOpenProject?.(project);
         }}

@@ -7,7 +7,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { PCBData, Project, ApiResponse, DRCReport, DRCItem } from '../types';
 
 // 为了兼容性导出类型
-export type { DRCReport, DRCItem };
+export type { DRCReport, DRCItem, ApiResponse };
 
 // 创建 axios 实例
 const apiClient: AxiosInstance = axios.create({
@@ -79,27 +79,27 @@ export const pcbApi = {
     return response.data;
   },
 
-  savePCB: async (projectId: string, data: PCBData): Promise<ApiResponse<any>> => {
+  savePCB: async (projectId: string, data: PCBData): Promise<ApiResponse<PCBData>> => {
     const response = await apiClient.post(`/projects/${projectId}/pcb/design`, data);
     return response.data;
   },
 
-  getPCBItems: async (projectId: string): Promise<ApiResponse<any[]>> => {
+  getPCBItems: async (projectId: string): Promise<ApiResponse<PCBData>> => {
     const response = await apiClient.get(`/projects/${projectId}/pcb/items`);
     return response.data;
   },
 
-  createFootprint: async (projectId: string, data: any): Promise<ApiResponse<any>> => {
+  createFootprint: async (projectId: string, data: Partial<import('../types').Footprint>): Promise<ApiResponse<import('../types').Footprint>> => {
     const response = await apiClient.post(`/projects/${projectId}/pcb/items/footprint`, data);
     return response.data;
   },
 
-  createTrack: async (projectId: string, data: any): Promise<ApiResponse<any>> => {
+  createTrack: async (projectId: string, data: Partial<import('../types').Track>): Promise<ApiResponse<import('../types').Track>> => {
     const response = await apiClient.post(`/projects/${projectId}/pcb/items/track`, data);
     return response.data;
   },
 
-  createVia: async (projectId: string, data: any): Promise<ApiResponse<any>> => {
+  createVia: async (projectId: string, data: Partial<import('../types').Via>): Promise<ApiResponse<import('../types').Via>> => {
     const response = await apiClient.post(`/projects/${projectId}/pcb/items/via`, data);
     return response.data;
   },
@@ -108,7 +108,7 @@ export const pcbApi = {
 // ==================== DRC API ====================
 
 export const drcApi = {
-  runDRC: async (projectId: string, pcbData?: any): Promise<ApiResponse<DRCReport>> => {
+  runDRC: async (projectId: string, pcbData?: PCBData): Promise<ApiResponse<DRCReport>> => {
     const response = await apiClient.post(`/projects/${projectId}/drc/run`, pcbData || {});
     return response.data;
   },
@@ -121,23 +121,31 @@ export const drcApi = {
 
 // ==================== 导出 API ====================
 
+// 导出结果类型
+export interface ExportResultData {
+  success: boolean;
+  files?: string[];
+  outputDir?: string;
+  message?: string;
+}
+
 export const exportApi = {
-  exportGerber: async (projectId: string): Promise<ApiResponse<any>> => {
+  exportGerber: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
     const response = await apiClient.post(`/projects/${projectId}/export/gerber`);
     return response.data;
   },
 
-  exportDrill: async (projectId: string): Promise<ApiResponse<any>> => {
+  exportDrill: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
     const response = await apiClient.post(`/projects/${projectId}/export/drill`);
     return response.data;
   },
 
-  exportBOM: async (projectId: string): Promise<ApiResponse<any>> => {
+  exportBOM: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
     const response = await apiClient.post(`/projects/${projectId}/export/bom`);
     return response.data;
   },
 
-  exportSTEP: async (projectId: string): Promise<ApiResponse<any>> => {
+  exportSTEP: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
     const response = await apiClient.post(`/projects/${projectId}/export/step`);
     return response.data;
   },
@@ -163,9 +171,31 @@ export interface FootprintRecommendResponse {
   message: string;
 }
 
+// AI 分析结果类型
+export interface AIAnalyzeResult {
+  analysis: string;
+  components?: unknown[];
+  suggestions?: string[];
+}
+
+// 封装库类型
+export interface FootprintLibrary {
+  name: string;
+  path: string;
+  count: number;
+}
+
+// 搜索结果类型
+export interface FootprintSearchResult {
+  name: string;
+  library: string;
+  description?: string;
+  pads: number;
+}
+
 export const aiApi = {
   // AI 分析电路需求
-  analyzeRequirements: async (requirements: string): Promise<ApiResponse<any>> => {
+  analyzeRequirements: async (requirements: string): Promise<ApiResponse<AIAnalyzeResult>> => {
     const response = await apiClient.post('/ai/analyze', { requirements });
     return response.data;
   },
@@ -177,13 +207,13 @@ export const aiApi = {
   },
 
   // 获取所有封装库
-  getFootprintLibraries: async (): Promise<ApiResponse<any>> => {
+  getFootprintLibraries: async (): Promise<ApiResponse<FootprintLibrary[]>> => {
     const response = await apiClient.get('/ai/footprint/libraries');
     return response.data;
   },
 
   // 搜索封装
-  searchFootprints: async (keyword: string, limit: number = 20): Promise<ApiResponse<any>> => {
+  searchFootprints: async (keyword: string, limit: number = 20): Promise<ApiResponse<FootprintSearchResult[]>> => {
     const response = await apiClient.get('/ai/footprint/search', { params: { keyword, limit } });
     return response.data;
   },
@@ -299,7 +329,7 @@ export const kicadApi: KiCadApi = {
     timestamp: new Date().toISOString()
   }),
   clickMenu: async (menu: string, item: string) => ({ success: true, menu, item }),
-  export: async (type: string, path: string) => {
+  export: async (type: string, _path: string) => {
     // 根据类型调用对应的导出方法
     const projectId = 'default';
     try {

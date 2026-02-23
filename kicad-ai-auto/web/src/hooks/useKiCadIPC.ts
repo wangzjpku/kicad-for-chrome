@@ -23,7 +23,7 @@ export interface KiCadState {
 // WebSocket 消息类型
 interface WSMessage {
   type: string;
-  data?: any;
+  data?: KiCadState | Record<string, unknown>;
   message?: string;
   timestamp?: number;
 }
@@ -62,8 +62,10 @@ export function useKiCadIPC() {
         switch (message.type) {
           case 'status':
           case 'status_update':
-            setKicadState(message.data);
-            setConnected(message.data?.connected || false);
+            if (message.data && 'connected' in message.data) {
+              setKicadState(message.data as KiCadState);
+              setConnected((message.data as KiCadState).connected || false);
+            }
             break;
 
           case 'action_result':
@@ -162,7 +164,7 @@ export function useKiCadIPC() {
   }, []);
 
   // 执行动作
-  const executeAction = useCallback((actionName: string, params?: Record<string, any>) => {
+  const executeAction = useCallback((actionName: string, params?: Record<string, unknown>) => {
     return sendMessage({
       type: 'execute_action',
       action: actionName,

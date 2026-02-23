@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * ViaRenderer 组件测试
  * 测试过孔渲染和选择功能
