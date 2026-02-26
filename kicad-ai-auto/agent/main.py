@@ -84,6 +84,15 @@ except ImportError as e:
 from routes.project_routes import router as project_router
 from routes.ai_routes import router as ai_router
 
+# 导入芯片质量门控路由
+try:
+    from routes.chip_quality import router as chip_quality_router
+
+    HAS_CHIP_QUALITY = True
+except ImportError as e:
+    logger.warning(f"Chip quality routes not available: {e}")
+    HAS_CHIP_QUALITY = False
+
 # ========== 安全配置 ==========
 
 # CORS 允许的域名（从环境变量读取）
@@ -164,6 +173,15 @@ try:
 except ImportError as e:
     logger.warning(f"Symbol routes not available: {e}")
 
+# 注册知识库 API 路由
+try:
+    from routes.knowledge_routes import router as knowledge_router
+
+    app.include_router(knowledge_router)
+    logger.info("Knowledge Base API routes registered")
+except ImportError as e:
+    logger.warning(f"Knowledge routes not available: {e}")
+
 
 # ========== 认证与验证 ==========
 
@@ -182,9 +200,34 @@ class ProjectPath(BaseModel):
 
     @validator("path")
     def validate_path(cls, v):
-        # 防止路径遍历攻击
-        if ".." in v or not v.startswith("/"):
-            raise ValueError("Invalid path: path traversal not allowed")
+        """防止路径遍历攻击 - 增强版"""
+        from urllib.parse import unquote
+
+        # URL 解码处理
+        decoded_path = unquote(v)
+
+        # 检查路径遍历模式（包括编码后的）
+        traversal_patterns = ["..", "%2e%2e", "%2E%2E", "..%2f", "%2e%2e%2f"]
+        for pattern in traversal_patterns:
+            if pattern.lower() in decoded_path.lower():
+                raise ValueError("Invalid path: path traversal not allowed")
+
+        # 规范化路径
+        try:
+            normalized = Path(decoded_path).resolve()
+
+            # 确保路径在项目目录内
+            if not str(normalized).startswith(str(PROJECTS_DIR.resolve())):
+                # 对于相对路径，检查规范化后是否仍在项目目录内
+                if not decoded_path.startswith("/"):
+                    full_path = (PROJECTS_DIR / decoded_path).resolve()
+                    if not str(full_path).startswith(str(PROJECTS_DIR.resolve())):
+                        raise ValueError("Invalid path: path must be within projects directory")
+        except Exception as e:
+            if "path traversal" in str(e) or "within projects" in str(e):
+                raise
+            raise ValueError(f"Invalid path format: {str(e)}")
+
         return v
 
 
@@ -458,6 +501,7 @@ async def send_keyboard_action(request: Request, action: KeyboardAction):
 @limiter.limit("60/minute")
 async def get_screenshot(request: Request):
     """获取屏幕截图 - 支持GUI截图和CLI导出"""
+    tmp_path = None
     try:
         # 首先尝试GUI截图
         screenshot = kicad_controller.get_screenshot()
@@ -480,25 +524,17 @@ async def get_screenshot(request: Request):
                         ) as tmp:
                             tmp_path = tmp.name
 
-                        try:
-                            success = kicad_manager.get_screenshot_via_cli(tmp_path)
-                            if success and os.path.exists(tmp_path):
-                                with open(tmp_path, "rb") as f:
-                                    svg_data = f.read()
-                                os.unlink(tmp_path)
-                                return StreamingResponse(
-                                    io.BytesIO(svg_data),
-                                    media_type="image/svg+xml",
-                                    headers={
-                                        "Content-Disposition": "inline; filename=screenshot.svg"
-                                    },
-                                )
-                            else:
-                                os.unlink(tmp_path)
-                        except Exception as cli_error:
-                            logger.error(f"CLI export failed: {cli_error}")
-                            if os.path.exists(tmp_path):
-                                os.unlink(tmp_path)
+                        success = kicad_manager.get_screenshot_via_cli(tmp_path)
+                        if success and os.path.exists(tmp_path):
+                            with open(tmp_path, "rb") as f:
+                                svg_data = f.read()
+                            return StreamingResponse(
+                                io.BytesIO(svg_data),
+                                media_type="image/svg+xml",
+                                headers={
+                                    "Content-Disposition": "inline; filename=screenshot.svg"
+                                },
+                            )
                 except Exception as ipc_error:
                     logger.error(f"IPC manager error: {ipc_error}")
 
@@ -510,6 +546,13 @@ async def get_screenshot(request: Request):
     except Exception as e:
         logger.error(f"Failed to get screenshot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # 确保临时文件被清理
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
 
 
 @app.get("/api/state/full", response_model=StateResponse)
@@ -633,21 +676,31 @@ async def get_drc_report(request: Request):
 
 
 class ConnectionManager:
-    """WebSocket 连接管理器"""
+    """WebSocket 连接管理器 - 线程安全版本"""
 
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+        self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        async with self._lock:
+            self.active_connections.append(websocket)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    async def disconnect(self, websocket: WebSocket):
+        async with self._lock:
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            await connection.send_json(message)
+        async with self._lock:
+            # 复制列表以避免在迭代时修改
+            connections = list(self.active_connections)
+        for connection in connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.warning(f"Failed to send message to connection: {e}")
 
 
 manager = ConnectionManager()
@@ -659,16 +712,31 @@ async def control_websocket(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            message = await websocket.receive_json()
+            try:
+                message = await websocket.receive_json()
+            except Exception as e:
+                logger.warning(f"Invalid JSON received: {e}")
+                await websocket.send_json({"type": "error", "message": "Invalid JSON format"})
+                continue
+
+            # 验证消息结构
+            msg_type = message.get("type")
+            if msg_type is None:
+                await websocket.send_json({"type": "error", "message": "Missing message type"})
+                continue
 
             # 处理不同类型的消息
-            if message["type"] == "mouse":
+            if msg_type == "mouse":
                 await handle_mouse_message(message)
-            elif message["type"] == "keyboard":
+            elif msg_type == "keyboard":
                 await handle_keyboard_message(message)
-            elif message["type"] == "command":
-                result = await handle_command(message["command"])
-                cmd_type = message.get("command", {}).get("type")
+            elif msg_type == "command":
+                command = message.get("command")
+                if command is None:
+                    await websocket.send_json({"type": "error", "message": "Missing command field"})
+                    continue
+                result = await handle_command(command)
+                cmd_type = command.get("type")
 
                 # 根据命令类型返回对应的消息格式
                 if cmd_type == "screenshot":
@@ -677,11 +745,13 @@ async def control_websocket(websocket: WebSocket):
                     await websocket.send_json(
                         {"type": "result", "id": message.get("id"), "data": result}
                     )
-            elif message["type"] == "ping":
+            elif msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
+            else:
+                await websocket.send_json({"type": "error", "message": f"Unknown message type: {msg_type}"})
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
 
 
 async def handle_mouse_message(message: dict):

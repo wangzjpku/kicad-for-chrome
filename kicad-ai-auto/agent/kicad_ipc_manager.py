@@ -124,7 +124,26 @@ class KiCadIPCManager:
             return False
 
     def _get_kicad_command(self) -> str:
-        """获取 KiCad 可执行文件路径"""
+        """获取 KiCad 可执行文件路径
+
+        优先级：
+        1. 环境变量 KICAD_PATH / KICAD_CLI_PATH
+        2. 配置文件 self.config.kicad_cli_path
+        3. 系统默认安装路径
+        4. PATH 中查找
+        """
+        # 1. 首先检查环境变量
+        env_path = os.environ.get("KICAD_CLI_PATH") or os.environ.get("KICAD_PATH")
+        if env_path:
+            if os.path.exists(env_path):
+                logger.info(f"Using KiCad from environment variable: {env_path}")
+                return env_path
+            else:
+                logger.warning(
+                    f"KICAD_PATH environment variable set but file not found: {env_path}"
+                )
+
+        # 2. 从配置文件路径推断
         if self.config.kicad_cli_path:
             # 从 CLI 路径推断 pcbnew 路径
             base_dir = os.path.dirname(self.config.kicad_cli_path)
@@ -349,22 +368,92 @@ class KiCadIPCManager:
             logger.error("KiCad CLI path not configured")
             return False
 
+        if not self.config.pcb_file_path:
+            logger.error("PCB file path not configured")
+            return False
+
         try:
+            # 安全验证：确保路径是有效的
+            pcb_path = Path(self.config.pcb_file_path).resolve()
+            if not pcb_path.exists():
+                logger.error(f"PCB file does not exist: {pcb_path}")
+                return False
+            if not pcb_path.is_file():
+                logger.error(f"PCB path is not a file: {pcb_path}")
+                return False
+            if not str(pcb_path).endswith(('.kicad_pcb', '.pcb')):
+                logger.error(f"Invalid PCB file extension: {pcb_path}")
+                return False
+
+            # 验证输出路径
+            out_path = Path(output_path).resolve()
+            if not str(out_path).endswith('.svg'):
+                logger.error(f"Output must be SVG file: {out_path}")
+                return False
+
+            # 验证输出目录是否在允许的白名单内
+            import tempfile
+            allowed_output_dirs = [
+                Path(tempfile.gettempdir()).resolve(),
+                Path(os.getenv("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))).resolve(),
+                Path.cwd() / "output",
+            ]
+
+            is_allowed = False
+            for allowed_dir in allowed_output_dirs:
+                try:
+                    if out_path.is_relative_to(allowed_dir):
+                        is_allowed = True
+                        break
+                except (OSError, ValueError):
+                    continue
+
+            if not is_allowed:
+                logger.error(f"Output path not in allowed directories: {out_path}")
+                return False
+
+            # 验证 KiCad CLI 路径
+            cli_path = Path(self.config.kicad_cli_path).resolve()
+            if not cli_path.exists():
+                logger.error(f"KiCad CLI does not exist: {cli_path}")
+                return False
+            if not cli_path.is_file():
+                logger.error(f"KiCad CLI path is not a file: {cli_path}")
+                return False
+
+            # 验证可执行权限（非Windows）或文件扩展名（Windows）
+            import platform
+            if platform.system() != "Windows":
+                if not os.access(cli_path, os.X_OK):
+                    logger.error(f"KiCad CLI is not executable: {cli_path}")
+                    return False
+            else:
+                # Windows: 验证扩展名
+                if not str(cli_path).lower().endswith(('.exe', '.bat', '.cmd')):
+                    logger.error(f"KiCad CLI must be executable file (.exe, .bat, .cmd): {cli_path}")
+                    return False
+
             cmd = [
-                self.config.kicad_cli_path,
+                str(cli_path),
                 "pcb",
                 "export",
                 "svg",
                 "--page-size",
                 "A4",
                 "--output",
-                output_path,
-                self.config.pcb_file_path,
+                str(out_path),
+                str(pcb_path),
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             return result.returncode == 0
 
+        except subprocess.TimeoutExpired:
+            logger.error("Screenshot command timed out")
+            return False
+        except subprocess.SubprocessError as e:
+            logger.error(f"Subprocess error during screenshot: {e}")
+            return False
         except Exception as e:
             logger.error(f"Screenshot failed: {e}")
             return False
@@ -679,29 +768,41 @@ class KiCadIPCManager:
         self.cleanup()
 
 
-# 单例模式 - 用于 FastAPI
+# 单例模式 - 用于 FastAPI（线程安全版本）
+import threading
+
 _kicad_manager: Optional[KiCadIPCManager] = None
+_manager_lock = threading.Lock()
 
 
 def get_kicad_manager() -> KiCadIPCManager:
-    """获取 KiCad 管理器单例（用于 FastAPI Depends）"""
+    """获取 KiCad 管理器单例（用于 FastAPI Depends）- 线程安全版本"""
     global _kicad_manager
     if _kicad_manager is None:
-        config = KiCadConnectionConfig(
-            kicad_cli_path=os.getenv("KICAD_CLI_PATH"),
-            use_virtual_display=os.getenv("USE_VIRTUAL_DISPLAY", "false").lower()
-            == "true",
-        )
-        _kicad_manager = KiCadIPCManager(config)
+        with _manager_lock:
+            # 双重检查锁定
+            if _kicad_manager is None:
+                try:
+                    config = KiCadConnectionConfig(
+                        kicad_cli_path=os.getenv("KICAD_CLI_PATH"),
+                        use_virtual_display=os.getenv("USE_VIRTUAL_DISPLAY", "false").lower()
+                        == "true",
+                    )
+                    _kicad_manager = KiCadIPCManager(config)
+                except Exception as e:
+                    logger.error(f"Failed to initialize KiCad manager: {e}")
+                    _kicad_manager = None
+                    raise RuntimeError(f"Failed to initialize KiCad manager: {e}") from e
     return _kicad_manager
 
 
 def reset_kicad_manager():
-    """重置管理器（用于测试或重新连接）"""
+    """重置管理器（用于测试或重新连接）- 线程安全版本"""
     global _kicad_manager
-    if _kicad_manager:
-        _kicad_manager.cleanup()
-    _kicad_manager = None
+    with _manager_lock:
+        if _kicad_manager:
+            _kicad_manager.cleanup()
+        _kicad_manager = None
 
 
 # ========== 封装库 API 方法 ==========

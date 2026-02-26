@@ -6,12 +6,15 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 import json
 import os
 from pathlib import Path
 import logging
+from collections import OrderedDict
+import threading
+import re
 
 # 导入封装库函数
 from footprint_library import (
@@ -25,11 +28,119 @@ try:
     HAS_SMART_FOOTPRINT_FINDER = True
 except ImportError:
     HAS_SMART_FOOTPRINT_FINDER = False
-    logger.warning("smart_footprint_finder not available, using fallback")
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
+
+
+# ========== 内存存储管理（带过期清理） ==========
+
+MAX_PROJECTS = 500
+PROJECT_EXPIRY_HOURS = 24
+
+
+class ProjectCache:
+    """
+    项目缓存管理器 - 带 LRU 淘汰和过期清理
+    """
+
+    def __init__(self, max_size: int = MAX_PROJECTS, expiry_hours: int = PROJECT_EXPIRY_HOURS):
+        self._cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
+        self._timestamps: Dict[str, datetime] = {}
+        self._lock = threading.Lock()
+        self._max_size = max_size
+        self._expiry = timedelta(hours=expiry_hours)
+
+    def get(self, key: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            if key in self._cache:
+                # 更新访问顺序（LRU）
+                self._cache.move_to_end(key)
+                return self._cache[key]
+            return None
+
+    def set(self, key: str, value: Dict[str, Any]) -> None:
+        with self._lock:
+            self._cache[key] = value
+            self._timestamps[key] = datetime.now()
+            self._cache.move_to_end(key)
+
+            # 检查是否需要清理
+            if len(self._cache) > self._max_size:
+                self._evict_oldest()
+
+    def delete(self, key: str) -> bool:
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+                self._timestamps.pop(key, None)
+                return True
+            return False
+
+    def clear(self) -> None:
+        with self._lock:
+            self._cache.clear()
+            self._timestamps.clear()
+
+    def values(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            return list(self._cache.values())
+
+    def keys(self) -> List[str]:
+        """获取所有缓存的键"""
+        with self._lock:
+            return list(self._cache.keys())
+
+    def _evict_oldest(self) -> int:
+        """清理最旧的项目"""
+        evicted = 0
+        now = datetime.now()
+
+        # 首先清理过期的
+        expired_keys = [
+            k for k, t in self._timestamps.items()
+            if now - t > self._expiry
+        ]
+        for key in expired_keys:
+            del self._cache[key]
+            del self._timestamps[key]
+            evicted += 1
+
+        # 如果还是太满，清理最旧的
+        while len(self._cache) > self._max_size:
+            oldest_key = next(iter(self._cache))
+            del self._cache[oldest_key]
+            self._timestamps.pop(oldest_key, None)
+            evicted += 1
+
+        if evicted > 0:
+            logger.info(f"Evicted {evicted} projects from cache")
+
+        return evicted
+
+    def cleanup_expired(self) -> int:
+        """手动清理过期项目"""
+        with self._lock:
+            now = datetime.now()
+            expired_keys = [
+                k for k, t in self._timestamps.items()
+                if now - t > self._expiry
+            ]
+            for key in expired_keys:
+                del self._cache[key]
+                del self._timestamps[key]
+
+            if expired_keys:
+                logger.info(f"Cleaned up {len(expired_keys)} expired projects")
+
+            return len(expired_keys)
+
+
+# 使用缓存管理器替代简单字典
+_projects = ProjectCache()
+_pcb_data = ProjectCache()
+_schematic_data = ProjectCache()
 
 
 # ========== 辅助函数 ==========
@@ -53,8 +164,7 @@ def _get_default_footprint_for_pcb(
     Returns:
         封装名称字符串 (格式: 库名:封装名)
     """
-    # DEBUG: 打印调用参数
-    print(f"[FOOTPRINT] name={component_name}, model={component_model}, category={component_category}")
+    logger.debug(f"get_footprint: name={component_name}, model={component_model}, category={component_category}")
 
     # 1. 如果有 component_category，直接使用类别对应的默认封装
     # 这是最可靠的方案，避免像 "1K" 这样的值被库搜索误匹配
@@ -293,12 +403,6 @@ def _generate_pads_for_footprint(
     return pads
 
 
-# 内存存储 (生产环境应使用数据库)
-_projects: Dict[str, Dict[str, Any]] = {}
-_pcb_data: Dict[str, Dict[str, Any]] = {}
-_schematic_data: Dict[str, Dict[str, Any]] = {}
-
-
 # ========== Pydantic 模型 ==========
 
 
@@ -343,7 +447,7 @@ class PCBDataUpdate(BaseModel):
 @router.get("")
 async def list_projects():
     """列出所有项目（去重）"""
-    projects = list(_projects.values())
+    projects = _projects.values()
     # 根据项目名称去重，保留最新创建的项目
     seen = {}
     for project in projects:
@@ -386,11 +490,11 @@ async def create_project(project: ProjectCreate):
         "ownerId": "default",
     }
 
-    _projects[project_id] = new_project
+    _projects.set(project_id, new_project)
 
     # 保存原理图数据
     if project.schematicData:
-        _schematic_data[project_id] = project.schematicData
+        _schematic_data.set(project_id, project.schematicData)
         # 同时更新项目信息
         new_project["schematicFile"] = f"/api/v1/projects/{project_id}/schematic"
 
@@ -483,7 +587,7 @@ async def create_project(project: ProjectCreate):
                 pcb_tracks.append(track)
 
     # 创建 PCB 数据
-    _pcb_data[project_id] = {
+    _pcb_data.set(project_id, {
         "id": f"pcb-{project_id}",
         "projectId": project_id,
         "boardOutline": [
@@ -535,24 +639,28 @@ async def create_project(project: ProjectCreate):
         },
     }
 
+    # 保存PCB数据并更新项目信息
+    if pcb_footprints:
+        new_project["pcbFile"] = f"/api/v1/projects/{project_id}/pcb/design"
+
     return new_project
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(project_id: str):
     """获取项目详情"""
-    if project_id not in _projects:
+    project = _projects.get(project_id)
+    if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    return _projects[project_id]
+    return project
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(project_id: str, project: ProjectUpdate):
     """更新项目"""
-    if project_id not in _projects:
+    existing = _projects.get(project_id)
+    if existing is None:
         raise HTTPException(status_code=404, detail="Project not found")
-
-    existing = _projects[project_id]
 
     if project.name is not None:
         existing["name"] = project.name
@@ -562,6 +670,7 @@ async def update_project(project_id: str, project: ProjectUpdate):
         existing["status"] = project.status
 
     existing["updatedAt"] = datetime.now().isoformat()
+    _projects.set(project_id, existing)  # 更新缓存
 
     return existing
 
@@ -569,12 +678,12 @@ async def update_project(project_id: str, project: ProjectUpdate):
 @router.delete("/{project_id}")
 async def delete_project(project_id: str):
     """删除项目"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    del _projects[project_id]
-    if project_id in _pcb_data:
-        del _pcb_data[project_id]
+    _projects.delete(project_id)
+    _pcb_data.delete(project_id)
+    _schematic_data.delete(project_id)
 
     return {"message": "Project deleted"}
 
@@ -585,37 +694,36 @@ async def delete_project(project_id: str):
 @router.get("/{project_id}/pcb/design")
 async def get_pcb_design(project_id: str):
     """获取 PCB 设计数据"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _pcb_data:
+    pcb = _pcb_data.get(project_id)
+    if pcb is None:
         raise HTTPException(status_code=404, detail="PCB data not found")
 
-    return _pcb_data[project_id]
+    return pcb
 
 
 @router.get("/{project_id}/schematic")
 async def get_schematic(project_id: str):
     """获取原理图数据"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _schematic_data:
+    schematic = _schematic_data.get(project_id)
+    if schematic is None:
         raise HTTPException(status_code=404, detail="Schematic data not found")
 
-    return _schematic_data[project_id]
+    return schematic
 
 
 @router.post("/{project_id}/pcb/design")
 async def save_pcb_design(project_id: str, pcb_data: PCBDataUpdate):
     """保存 PCB 设计数据"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _pcb_data:
-        _pcb_data[project_id] = {}
-
-    existing = _pcb_data[project_id]
+    existing = _pcb_data.get(project_id) or {}
 
     # 更新非空字段
     if pcb_data.boardOutline is not None:
@@ -633,8 +741,13 @@ async def save_pcb_design(project_id: str, pcb_data: PCBDataUpdate):
     if pcb_data.nets is not None:
         existing["nets"] = pcb_data.nets
 
+    _pcb_data.set(project_id, existing)
+
     # 更新项目修改时间
-    _projects[project_id]["updatedAt"] = datetime.now().isoformat()
+    project = _projects.get(project_id)
+    if project:
+        project["updatedAt"] = datetime.now().isoformat()
+        _projects.set(project_id, project)
 
     return {"message": "PCB data saved"}
 
@@ -645,13 +758,15 @@ async def save_pcb_design(project_id: str, pcb_data: PCBDataUpdate):
 @router.post("/{project_id}/pcb/items/footprint")
 async def create_footprint(project_id: str, footprint: Dict[str, Any]):
     """创建封装"""
-    if project_id not in _pcb_data:
+    pcb = _pcb_data.get(project_id)
+    if pcb is None:
         raise HTTPException(status_code=404, detail="PCB data not found")
 
     footprint_id = footprint.get("id", f"fp-{uuid4()}")
     footprint["id"] = footprint_id
 
-    _pcb_data[project_id]["footprints"].append(footprint)
+    pcb["footprints"].append(footprint)
+    _pcb_data.set(project_id, pcb)
 
     return {"success": True, "id": footprint_id}
 
@@ -659,13 +774,15 @@ async def create_footprint(project_id: str, footprint: Dict[str, Any]):
 @router.post("/{project_id}/pcb/items/track")
 async def create_track(project_id: str, track: Dict[str, Any]):
     """创建走线"""
-    if project_id not in _pcb_data:
+    pcb = _pcb_data.get(project_id)
+    if pcb is None:
         raise HTTPException(status_code=404, detail="PCB data not found")
 
     track_id = track.get("id", f"track-{uuid4()}")
     track["id"] = track_id
 
-    _pcb_data[project_id]["tracks"].append(track)
+    pcb["tracks"].append(track)
+    _pcb_data.set(project_id, pcb)
 
     return {"success": True, "id": track_id}
 
@@ -673,13 +790,15 @@ async def create_track(project_id: str, track: Dict[str, Any]):
 @router.post("/{project_id}/pcb/items/via")
 async def create_via(project_id: str, via: Dict[str, Any]):
     """创建过孔"""
-    if project_id not in _pcb_data:
+    pcb = _pcb_data.get(project_id)
+    if pcb is None:
         raise HTTPException(status_code=404, detail="PCB data not found")
 
     via_id = via.get("id", f"via-{uuid4()}")
     via["id"] = via_id
 
-    _pcb_data[project_id]["vias"].append(via)
+    pcb["vias"].append(via)
+    _pcb_data.set(project_id, pcb)
 
     return {"success": True, "id": via_id}
 
@@ -690,11 +809,11 @@ async def create_via(project_id: str, via: Dict[str, Any]):
 @router.post("/{project_id}/drc/run")
 async def run_drc(project_id: str):
     """运行 DRC 检查"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     # 简化的 DRC 检查 - 实际应该调用 KiCad
-    pcb = _pcb_data.get(project_id, {})
+    pcb = _pcb_data.get(project_id) or {}
 
     # 示例检查: 检查走线宽度
     errors = []
@@ -728,7 +847,7 @@ async def run_drc(project_id: str):
 @router.get("/{project_id}/drc/report")
 async def get_drc_report(project_id: str):
     """获取 DRC 报告"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     # 返回空的 DRC 报告
@@ -750,7 +869,7 @@ async def get_drc_report(project_id: str):
 @router.post("/{project_id}/export/gerber")
 async def export_gerber(project_id: str):
     """导出 Gerber 文件"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     # 简化的导出响应 - 实际应该调用 KiCad
@@ -763,7 +882,7 @@ async def export_gerber(project_id: str):
 @router.post("/{project_id}/export/drill")
 async def export_drill(project_id: str):
     """导出钻孔文件"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return {"files": [f"{project_id}-drill.xln"]}
@@ -776,12 +895,17 @@ async def export_bom(project_id: str):
     import os
     from datetime import datetime
 
-    if project_id not in _projects:
+    # 验证 project_id 格式，防止路径遍历攻击
+    if not re.match(r'^[a-zA-Z0-9_-]+$', project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID format")
+
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     # 获取PCB数据中的元件信息
     pcb_info = _pcb_data.get(project_id, {})
     footprints = pcb_info.get("footprints", [])
+    components = []  # 初始化变量，避免未定义风险
 
     # 如果没有PCB数据，尝试从原理图数据中获取
     if not footprints:
@@ -799,34 +923,41 @@ async def export_bom(project_id: str):
             for i, comp in enumerate(components)
         ]
 
-    # 调试：打印获取到的数据
-    import logging
-    import traceback
-
-    logger = logging.getLogger(__name__)
-
-    # 强制刷新日志输出
-    import sys
-
-    print(f"DEBUG: BOM export called for {project_id}", file=sys.stderr)
-    print(
-        f"DEBUG: _schematic_data keys: {list(_schematic_data.keys())}", file=sys.stderr
-    )
-
     logger.info(
-        f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, schematic components={len(components) if 'components' in dir() else 0}"
+        f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, "
+        f"schematic components={len(components)}"
     )
 
-    # 生成BOM CSV - 使用固定的输出目录
-    output_dir = r"C:\KiCadWebEditor\output"
-    logger.info(f"Creating output directory: {output_dir}")
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f"{project_id}-bom.csv")
+    # 使用环境变量配置的输出目录，支持跨平台
+    output_dir = os.getenv("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+
+    # 验证输出目录安全性
+    safe_output_dir = Path(output_dir).resolve()
+    cwd_path = Path.cwd().resolve()
+
+    # 确保输出目录在当前工作目录下或其子目录中
+    try:
+        # 检查路径遍历
+        if ".." in str(safe_output_dir):
+            raise ValueError("Path traversal not allowed in output directory")
+
+        # 允许在当前工作目录下或环境变量指定的安全目录
+        if not (str(safe_output_dir).startswith(str(cwd_path)) or
+                safe_output_dir.is_relative_to(cwd_path)):
+            logger.warning(f"Output directory outside working directory: {safe_output_dir}")
+            # 回退到安全目录
+            safe_output_dir = cwd_path / "output"
+    except Exception as e:
+        logger.warning(f"Output directory validation failed: {e}, using default")
+        safe_output_dir = cwd_path / "output"
+
+    logger.info(f"Creating output directory: {safe_output_dir}")
+    os.makedirs(safe_output_dir, exist_ok=True)
+    output_path = safe_output_dir / f"{project_id}-bom.csv"
     logger.info(f"Writing BOM to: {output_path}")
 
     try:
-        # 调试：打印要写入的数据
-        logger.info(f"Footprints to write: {footprints}")
+        logger.debug(f"Footprints to write: {len(footprints)}")
 
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
@@ -851,24 +982,22 @@ async def export_bom(project_id: str):
             for group in component_groups.values():
                 writer.writerow(group)
 
-        print(f"DEBUG: Returning success for {project_id}", file=sys.stderr)
+        logger.info(f"BOM export completed for {project_id}")
         return {
             "success": True,
-            "file": output_path,
+            "file": str(output_path),
             "components": len(footprints),
             "files": [f"{project_id}-bom.csv"],
-            "debug": f"output_path={output_path}, footprints={len(footprints)}",
         }
     except Exception as e:
-        print(f"DEBUG: Exception in BOM export: {e}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
-        return {"success": False, "error": str(e), "files": []}
+        logger.error(f"BOM export failed: {e}", exc_info=True)
+        return {"success": False, "error": "BOM export failed", "files": []}
 
 
 @router.post("/{project_id}/export/step")
 async def export_step(project_id: str):
     """导出 STEP 模型"""
-    if project_id not in _projects:
+    if not _projects.get(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return {"files": [f"{project_id}.step"]}

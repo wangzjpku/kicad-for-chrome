@@ -72,6 +72,42 @@ from middleware import (
 
 logger = logging.getLogger(__name__)
 
+# 安全配置：允许的输出目录
+# 在模块加载时确定路径，使用应用根目录而非当前工作目录
+from pathlib import Path
+_APP_ROOT = Path(__file__).parent.parent.resolve()  # agent 目录的父目录
+ALLOWED_OUTPUT_BASE = Path(os.getenv("OUTPUT_DIR", str(_APP_ROOT / "output"))).resolve()
+
+
+def _validate_output_path(output_path: str) -> Path:
+    """
+    验证输出路径安全性
+
+    Args:
+        output_path: 输出路径
+
+    Returns:
+        验证后的安全路径
+
+    Raises:
+        ValueError: 如果路径不安全
+    """
+    path = Path(output_path).resolve()
+
+    # 检查路径遍历
+    if ".." in str(path):
+        raise ValueError("Path traversal not allowed in output path")
+
+    # 确保路径在允许的基础目录内
+    try:
+        path.relative_to(ALLOWED_OUTPUT_BASE)
+    except ValueError:
+        raise ValueError(
+            f"Output path must be within {ALLOWED_OUTPUT_BASE}"
+        )
+
+    return path
+
 
 def retry(
     max_attempts: int = 3,
@@ -216,19 +252,31 @@ class KiCadController:
                 for item, coords in items.items()
             }
 
-    def start(self, project_path: Optional[str] = None):
-        """启动 KiCad"""
+    def start(self, project_path: Optional[str] = None, max_retries: int = 3):
+        """启动 KiCad
+
+        Args:
+            project_path: 可选的项目路径
+            max_retries: 最大重试次数
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'error': str}
+        """
         if self.kicad_process and self.kicad_process.poll() is None:
             logger.info("KiCad is already running")
-            return
+            return {"success": True, "message": "KiCad is already running"}
+
+        # 查找 KiCad 可执行文件
+        kicad_exe = self._find_kicad_executable()
+        if not kicad_exe:
+            error_msg = "KiCad executable not found. Please install KiCad or set KICAD_PATH environment variable."
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
 
         logger.info(f"Starting KiCad (Platform: {platform.system()})")
 
         # 设置环境变量
         env = os.environ.copy()
-
-        # Windows 下使用完整路径
-        kicad_exe = r"E:\Program Files\KiCad\9.0\bin\kicad.exe"
 
         # 构建命令
         cmd = [kicad_exe]
@@ -236,28 +284,112 @@ class KiCadController:
             cmd.append(project_path)
             self.current_project = project_path
 
-        # 启动 KiCad
-        self.kicad_process = subprocess.Popen(
-            cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
-        # 等待 KiCad 启动
-        time.sleep(3)
-
-        # 连接 X11 (仅 Linux)
-        if IS_LINUX and HAS_XLIB:
+        # 重试机制
+        last_error = None
+        for attempt in range(1, max_retries + 1):
             try:
-                env["DISPLAY"] = self.display_id
-                self.x_display = display.Display(self.display_id)
-                logger.info("Connected to X11 display")
+                # 启动 KiCad
+                self.kicad_process = subprocess.Popen(
+                    cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+
+                # 等待 KiCad 启动
+                time.sleep(3)
+
+                # 检查进程是否成功启动
+                if self.kicad_process.poll() is not None:
+                    # 进程已退出，读取错误信息
+                    stdout, stderr = self.kicad_process.communicate()
+                    last_error = (
+                        stderr.decode("utf-8", errors="ignore")
+                        if stderr
+                        else "Unknown error"
+                    )
+                    logger.warning(
+                        f"KiCad exited immediately. Attempt {attempt}/{max_retries}"
+                    )
+                    time.sleep(1)  # 等待后重试
+                    continue
+
+                # 连接 X11 (仅 Linux)
+                if IS_LINUX and HAS_XLIB:
+                    try:
+                        env["DISPLAY"] = self.display_id
+                        self.x_display = display.Display(self.display_id)
+                        logger.info("Connected to X11 display")
+                    except Exception as e:
+                        logger.warning(f"Failed to connect to X11: {e}")
+
+                # Windows 下查找窗口句柄
+                if IS_WINDOWS:
+                    self._find_kicad_window()
+
+                logger.info("KiCad started successfully")
+                return {"success": True, "message": "KiCad started successfully"}
+
+            except FileNotFoundError as e:
+                last_error = f"KiCad executable not found: {e}"
+                logger.error(last_error)
+                break
+            except PermissionError as e:
+                last_error = f"Permission denied running KiCad: {e}"
+                logger.error(last_error)
+                break
             except Exception as e:
-                logger.error(f"Failed to connect to X11: {e}")
+                last_error = f"Error starting KiCad: {e}"
+                logger.error(last_error)
+                if attempt < max_retries:
+                    time.sleep(1)  # 等待后重试
 
-        # Windows 下查找窗口句柄
+        # 所有重试都失败
+        error_msg = f"Failed to start KiCad after {max_retries} attempts: {last_error}"
+        logger.error(error_msg)
+        return {"success": False, "error": error_msg}
+
+    def _find_kicad_executable(self) -> Optional[str]:
+        """查找 KiCad 可执行文件路径
+
+        Returns:
+            str: KiCad 可执行文件路径，如果未找到返回 None
+        """
+        # 1. 先检查环境变量
+        env_path = os.environ.get("KICAD_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+
+        # 2. Windows 路径
         if IS_WINDOWS:
-            self._find_kicad_window()
+            common_paths = [
+                r"E:\Program Files\KiCad\9.0\bin\kicad.exe",
+                r"E:\Program Files\KiCad\8.0\bin\kicad.exe",
+                r"C:\Program Files\KiCad\9.0\bin\kicad.exe",
+                r"C:\Program Files\KiCad\8.0\bin\kicad.exe",
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    return path
 
-        logger.info("KiCad started successfully")
+        # 3. Linux 路径
+        if IS_LINUX:
+            common_paths = [
+                "/usr/bin/kicad",
+                "/usr/local/bin/kicad",
+                "/opt/kicad/bin/kicad",
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    return path
+
+        # 4. Mac 路径
+        if platform.system() == "Darwin":
+            common_paths = [
+                "/Applications/KiCad.app/Contents/MacOS/kicad",
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    return path
+
+        return None
 
     def _find_kicad_window(self):
         """查找 KiCad 窗口句柄 (Windows)"""
@@ -307,25 +439,47 @@ class KiCadController:
 
         logger.info("KiCad closed")
 
-    def open_project(self, project_path: str):
-        """打开项目"""
+    def open_project(self, project_path: str) -> Dict[str, Any]:
+        """打开项目
+
+        Args:
+            project_path: 项目文件路径
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'error': str}
+        """
         if not os.path.exists(project_path):
-            raise FileNotFoundError(f"Project not found: {project_path}")
+            error_msg = f"Project not found: {project_path}"
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
 
-        # 使用菜单打开文件
-        self.click_menu("file", "open")
-        time.sleep(0.5)
+        # 检查 KiCad 是否运行
+        if not self.is_running():
+            error_msg = "KiCad is not running. Please start KiCad first."
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
 
-        # 输入文件路径（假设文件对话框已打开）
-        self.type_text(project_path)
-        time.sleep(0.2)
+        try:
+            # 使用菜单打开文件
+            self.click_menu("file", "open")
+            time.sleep(0.5)
 
-        # 按 Enter 确认
-        self.press_key("return")
-        time.sleep(2)
+            # 输入文件路径（假设文件对话框已打开）
+            self.type_text(project_path)
+            time.sleep(0.2)
 
-        self.current_project = project_path
-        logger.info(f"Opened project: {project_path}")
+            # 按 Enter 确认
+            self.press_key("return")
+            time.sleep(2)
+
+            self.current_project = project_path
+            logger.info(f"Opened project: {project_path}")
+            return {"success": True, "message": f"Opened project: {project_path}"}
+
+        except Exception as e:
+            error_msg = f"Failed to open project: {str(e)}"
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
 
     def save_project(self):
         """保存项目"""
@@ -335,13 +489,21 @@ class KiCadController:
 
     def get_project_info(self) -> Dict[str, Any]:
         """获取项目信息"""
+        # 获取文件修改时间
+        modified_time = None
+        if self.current_project and os.path.exists(self.current_project):
+            try:
+                modified_time = os.path.getmtime(self.current_project)
+            except OSError as e:
+                logger.warning(f"Failed to get file modification time: {e}")
+
         return {
             "path": self.current_project,
             "name": os.path.basename(self.current_project)
             if self.current_project
             else None,
             "running": self.is_running(),
-            "modified": None,  # TODO: 获取实际修改时间
+            "modified": modified_time,
         }
 
     # ========== 菜单操作 ==========
@@ -609,8 +771,8 @@ class KiCadController:
                         | win32con.SWP_SHOWWINDOW,
                     )
                     win32gui.SetForegroundWindow(current_foreground)
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"设置窗口前景失败: {e}")
 
             return screenshot_bytes
 
@@ -750,8 +912,8 @@ class KiCadController:
                                                     height,
                                                 )
                                             )
-                                    except:
-                                        pass
+                                    except Exception as e:
+                                        logger.debug(f"枚举窗口回调失败: {e}")
                             else:
                                 if pattern in title and pattern == title.strip():
                                     try:
@@ -770,8 +932,8 @@ class KiCadController:
                                                     height,
                                                 )
                                             )
-                                    except:
-                                        pass
+                                    except Exception as e:
+                                        logger.debug(f"获取窗口信息失败: {e}")
                 return True
 
             windows = []
@@ -802,8 +964,8 @@ class KiCadController:
                                     f"找到 KiCad 窗口 (精确匹配): {pattern} ({width}x{height})"
                                 )
                                 return hwnd
-                        except:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"获取精确匹配窗口失败: {e}")
 
             logger.warning("未找到 KiCad 主窗口（可能需要启动 KiCad 或打开项目）")
             return 0
@@ -823,26 +985,217 @@ class KiCadController:
 
     # ========== DRC ==========
 
-    def run_drc(self) -> Dict[str, Any]:
-        """运行 DRC 检查"""
-        # 打开 DRC 对话框
-        self.click_menu("tools", "drc")
-        time.sleep(0.5)
+    def run_drc(self, output_file: Optional[str] = None) -> Dict[str, Any]:
+        """运行 DRC 检查（使用 KiCad CLI - 原生方式）"""
+        import subprocess
+        import json
 
-        # 点击运行按钮
-        pyautogui.click(400, 500)  # DRC 运行按钮位置
-        time.sleep(2)
+        # 获取当前 PCB 文件路径
+        if not self.current_project:
+            return {"success": False, "error": "No project loaded"}
 
-        # 关闭对话框
-        self.press_key("esc")
+        # 确保是 .kicad_pcb 文件
+        pcb_file = self.current_project
+        if not pcb_file.endswith(".kicad_pcb"):
+            # 尝试查找同名的 .kicad_pcb 文件
+            base = pcb_file.replace(".kicad_pro", "")
+            pcb_file = base + ".kicad_pcb"
+            if not os.path.exists(pcb_file):
+                return {"success": False, "error": f"PCB file not found: {pcb_file}"}
 
-        return {"success": True, "message": "DRC check completed"}
+        # 确定输出文件路径
+        if output_file is None:
+            output_file = pcb_file.replace(".kicad_pcb", "-drc.json")
 
-    def get_drc_report(self) -> Dict[str, Any]:
+        try:
+            # 使用 kicad-cli 运行 DRC
+            cmd = [
+                "kicad-cli",
+                "pcb",
+                "drc",
+                "--format",
+                "json",
+                "--output",
+                output_file,
+                "--exit-code-violations",
+                pcb_file,
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+            # 解析 DRC 结果
+            drc_result = {
+                "success": True,
+                "output_file": output_file,
+                "exit_code": result.returncode,
+                "violations_found": result.returncode == 5,
+            }
+
+            # 尝试读取 JSON 报告
+            if os.path.exists(output_file):
+                try:
+                    with open(output_file, "r", encoding="utf-8") as f:
+                        report = json.load(f)
+                    drc_result["report"] = report
+                    drc_result["error_count"] = report.get("error_count", 0)
+                    drc_result["warning_count"] = report.get("warning_count", 0)
+                except json.JSONDecodeError:
+                    drc_result["report_text"] = result.stdout
+            else:
+                drc_result["stdout"] = result.stdout
+                drc_result["stderr"] = result.stderr
+
+            return drc_result
+
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "DRC timeout after 120 seconds"}
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "error": "kicad-cli not found. Please ensure KiCad is installed and in PATH",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def get_drc_report(self, report_file: Optional[str] = None) -> Dict[str, Any]:
         """获取 DRC 报告"""
-        # 这里需要解析 KiCad 生成的 DRC 报告文件
-        # 暂时返回空结果
-        return {"error_count": 0, "warning_count": 0, "errors": [], "warnings": []}
+        import json
+
+        # 如果没有指定报告文件，尝试查找默认位置
+        if not report_file and self.current_project:
+            report_file = self.current_project.replace(".kicad_pro", "-drc.json")
+
+        if not report_file or not os.path.exists(report_file):
+            return {
+                "error_count": 0,
+                "warning_count": 0,
+                "errors": [],
+                "warnings": [],
+                "message": "No DRC report found. Run run_drc() first.",
+            }
+
+        try:
+            with open(report_file, "r", encoding="utf-8") as f:
+                report = json.load(f)
+
+            # 解析 KiCad DRC JSON 报告格式
+            errors = []
+            warnings = []
+
+            for violation in report.get("violations", []):
+                item = {
+                    "severity": violation.get("severity", "error"),
+                    "message": violation.get("description", ""),
+                    "board_constraints": violation.get("board_constraints", []),
+                }
+                if violation.get("severity") == "error":
+                    errors.append(item)
+                else:
+                    warnings.append(item)
+
+            return {
+                "error_count": len(errors),
+                "warning_count": len(warnings),
+                "errors": errors,
+                "warnings": warnings,
+                "report_file": report_file,
+            }
+
+        except json.JSONDecodeError:
+            return {
+                "error_count": 0,
+                "warning_count": 0,
+                "errors": [],
+                "warnings": [],
+                "message": "Failed to parse DRC report",
+            }
+        except Exception as e:
+            return {
+                "error_count": 0,
+                "warning_count": 0,
+                "errors": [],
+                "warnings": [],
+                "error": str(e),
+            }
+
+    # ========== ERC ==========
+
+    def run_erc(self, output_file: Optional[str] = None) -> Dict[str, Any]:
+        """运行 ERC 检查（使用 KiCad CLI - 原生方式）"""
+        import subprocess
+        import json
+
+        # 获取当前原理图文件路径
+        if not self.current_project:
+            return {"success": False, "error": "No project loaded"}
+
+        # 确保是 .kicad_pro 文件，尝试查找原理图
+        sch_file = self.current_project.replace(".kicad_pro", ".kicad_sch")
+        if not os.path.exists(sch_file):
+            # 尝试查找其他可能的原理图文件
+            base_dir = os.path.dirname(self.current_project)
+            proj_name = os.path.splitext(os.path.basename(self.current_project))[0]
+            for f in os.listdir(base_dir) if os.path.exists(base_dir) else []:
+                if f.endswith(".kicad_sch") and proj_name in f:
+                    sch_file = os.path.join(base_dir, f)
+                    break
+
+        if not os.path.exists(sch_file):
+            return {"success": False, "error": f"Schematic file not found: {sch_file}"}
+
+        # 确定输出文件路径
+        if output_file is None:
+            output_file = sch_file.replace(".kicad_sch", "-erc.json")
+
+        try:
+            # 使用 kicad-cli 运行 ERC
+            cmd = [
+                "kicad-cli",
+                "sch",
+                "erc",
+                "--format",
+                "json",
+                "--output",
+                output_file,
+                "--exit-code-violations",
+                sch_file,
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+            # 解析 ERC 结果
+            erc_result = {
+                "success": True,
+                "output_file": output_file,
+                "exit_code": result.returncode,
+                "violations_found": result.returncode == 5,
+            }
+
+            # 尝试读取 JSON 报告
+            if os.path.exists(output_file):
+                try:
+                    with open(output_file, "r", encoding="utf-8") as f:
+                        report = json.load(f)
+                    erc_result["report"] = report
+                    erc_result["error_count"] = report.get("error_count", 0)
+                    erc_result["warning_count"] = report.get("warning_count", 0)
+                except json.JSONDecodeError:
+                    erc_result["report_text"] = result.stdout
+            else:
+                erc_result["stdout"] = result.stdout
+                erc_result["stderr"] = result.stderr
+
+            return erc_result
+
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "ERC timeout after 120 seconds"}
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "error": "kicad-cli not found. Please ensure KiCad is installed and in PATH",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     # ========== 导出 ==========
 
@@ -932,6 +1285,9 @@ class KiCadController:
             import pcbnew
             import csv
 
+            # 验证输出路径安全性
+            safe_path = _validate_output_path(output_path)
+
             board = pcbnew.GetBoard()
             if not board:
                 raise RuntimeError("No PCB board loaded")
@@ -947,8 +1303,11 @@ class KiCadController:
                 }
                 components.append(component)
 
+            # 确保输出目录存在
+            safe_path.parent.mkdir(parents=True, exist_ok=True)
+
             # 保存为 CSV
-            with open(output_path, "w", newline="") as f:
+            with open(safe_path, "w", newline="") as f:
                 writer = csv.DictWriter(
                     f, fieldnames=["reference", "value", "footprint", "layer"]
                 )
@@ -957,10 +1316,13 @@ class KiCadController:
 
             return {
                 "success": True,
-                "file": output_path,
+                "file": str(safe_path),
                 "component_count": len(components),
             }
 
+        except ValueError as e:
+            logger.error(f"Invalid output path: {e}")
+            return {"success": False, "error": "Invalid output path"}
         except Exception as e:
             logger.error(f"Failed to export BOM: {e}")
             return {"success": False, "error": str(e)}
@@ -970,6 +1332,9 @@ class KiCadController:
         try:
             import pcbnew
             import csv
+
+            # 验证输出路径安全性
+            safe_path = _validate_output_path(output_path)
 
             board = pcbnew.GetBoard()
             if not board:
@@ -993,8 +1358,11 @@ class KiCadController:
                 }
                 components.append(component)
 
+            # 确保输出目录存在
+            safe_path.parent.mkdir(parents=True, exist_ok=True)
+
             # 保存为 CSV
-            with open(output_path, "w", newline="") as f:
+            with open(safe_path, "w", newline="") as f:
                 writer = csv.DictWriter(
                     f,
                     fieldnames=[
@@ -1012,10 +1380,13 @@ class KiCadController:
 
             return {
                 "success": True,
-                "file": output_path,
+                "file": str(safe_path),
                 "component_count": len(components),
             }
 
+        except ValueError as e:
+            logger.error(f"Invalid output path: {e}")
+            return {"success": False, "error": "Invalid output path"}
         except Exception as e:
             logger.error(f"Failed to export Pick & Place: {e}")
             return {"success": False, "error": str(e)}

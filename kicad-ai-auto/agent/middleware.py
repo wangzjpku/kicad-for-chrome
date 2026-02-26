@@ -64,18 +64,19 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # 计算处理时间
             process_time = (time.time() - start_time) * 1000
 
-            # 记录错误
+            # 记录完整错误到日志（仅服务端可见）
             logger.error(
                 f"[{request_id}] Request failed: {method} {url} "
-                f"-> {type(e).__name__}: {str(e)} ({process_time:.2f}ms)"
+                f"-> {type(e).__name__}: {str(e)} ({process_time:.2f}ms)",
+                exc_info=True
             )
 
-            # 返回错误响应
+            # 返回通用错误响应（不暴露敏感信息）
             return JSONResponse(
                 status_code=500,
                 content={
                     "error": "Internal Server Error",
-                    "detail": str(e),
+                    "detail": "An unexpected error occurred. Please try again later.",
                     "request_id": request_id,
                 },
             )

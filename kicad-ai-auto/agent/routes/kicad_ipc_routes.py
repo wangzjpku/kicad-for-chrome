@@ -3,6 +3,9 @@ KiCad IPC API 路由
 提供 REST API 和 WebSocket 接口给浏览器使用
 """
 
+import os
+import tempfile
+
 from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from typing import Optional, Dict, Any, List
@@ -171,24 +174,36 @@ async def get_selection(manager: KiCadIPCManager = Depends(get_kicad_manager)):
 
 @router.post("/screenshot")
 async def take_screenshot(
-    output_path: Optional[str] = None,
     manager: KiCadIPCManager = Depends(get_kicad_manager),
 ):
     """使用 KiCad CLI 导出截图"""
-    try:
-        if not output_path:
-            import tempfile
+    temp_file_path = None
+    operation_success = False
 
-            output_path = tempfile.mktemp(suffix=".svg")
+    try:
+        # 始终使用安全的临时文件，不接受用户提供的路径
+        with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as temp_file:
+            temp_file_path = temp_file.name
+        output_path = temp_file_path
 
         success = manager.get_screenshot_via_cli(output_path)
         if success:
+            operation_success = True
             return {"success": True, "path": output_path, "message": "Screenshot saved"}
         else:
             raise HTTPException(status_code=500, detail="Screenshot failed")
     except Exception as e:
         logger.error(f"Error taking screenshot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # 仅当操作失败且是我们创建的临时文件时，才清理它
+        if temp_file_path and not operation_success:
+            try:
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+                    logger.debug(f"Cleaned up temp file: {temp_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
 
 
 @router.delete("/item/{item_id}")
@@ -329,33 +344,41 @@ async def clear_selection(manager: KiCadIPCManager = Depends(get_kicad_manager))
 
 
 class WebSocketManager:
-    """WebSocket 连接管理器"""
+    """WebSocket 连接管理器 - 线程安全版本"""
 
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+        self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        async with self._lock:
+            self.active_connections.append(websocket)
         logger.info(f"WebSocket connected. Total: {len(self.active_connections)}")
 
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
+    async def disconnect(self, websocket: WebSocket):
+        async with self._lock:
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
         logger.info(f"WebSocket disconnected. Total: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
         """广播消息给所有连接"""
+        async with self._lock:
+            # 复制列表以避免在迭代时修改
+            connections = list(self.active_connections)
+
         disconnected = []
-        for conn in self.active_connections:
+        for conn in connections:
             try:
                 await conn.send_json(message)
-            except:
+            except Exception as e:
+                logger.warning(f"Failed to send message to connection: {e}")
                 disconnected.append(conn)
 
         # 清理断开的连接
         for conn in disconnected:
-            self.disconnect(conn)
+            await self.disconnect(conn)
 
 
 ws_manager = WebSocketManager()
@@ -430,10 +453,10 @@ async def kicad_websocket(
                 )
 
     except WebSocketDisconnect:
-        ws_manager.disconnect(websocket)
+        await ws_manager.disconnect(websocket)
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
-        ws_manager.disconnect(websocket)
+        await ws_manager.disconnect(websocket)
 
 
 # ========== 状态广播任务 ==========
