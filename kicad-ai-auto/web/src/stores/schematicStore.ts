@@ -9,9 +9,9 @@ import {
   SchematicComponent,
   Wire,
   Label,
-  Point2D,
-  SchematicSheet,
-  Project
+  // SchematicSheet, // 未使用
+  Project,
+  Point2D
 } from '../types';
 import apiClient from '../services/api';
 
@@ -100,8 +100,8 @@ export const useSchematicStore = create<SchematicStoreState>()(
       currentSheetId: null,
       selectedIds: [],
       currentTool: 'select',
-      zoom: 1,
-      pan: { x: 0, y: 0 },
+      zoom: 1,  // 初始zoom为1，确保内容可见
+      pan: { x: 100, y: 50 },  // 默认偏移，配合 MM_TO_PX=0.5 让元件显示在视野内
       history: [],
       historyIndex: -1,
       canUndo: false,
@@ -109,6 +109,7 @@ export const useSchematicStore = create<SchematicStoreState>()(
 
       // 加载原理图数据
       loadSchematicData: async (projectId: string) => {
+        console.log('[SchematicStore] loadSchematicData called with projectId:', projectId);
         try {
           const axiosResponse = await apiClient.get(`/projects/${projectId}/schematic`);
           // axios 返回的响应在 data 属性中
@@ -121,11 +122,14 @@ export const useSchematicStore = create<SchematicStoreState>()(
               id?: string;
               name?: string;
               model?: string;
+              reference?: string;
               position?: Point2D;
               rotation?: number;
               mirror?: boolean;
               unit?: number;
               footprint?: string;
+              category?: string;
+              symbol_library?: string;
               pins?: Array<{number?: string; name?: string; position?: Point2D}>;
             }
             
@@ -135,27 +139,95 @@ export const useSchematicStore = create<SchematicStoreState>()(
               position?: Point2D;
             }
             
-            const components = (data.components || []).map((comp: BackendComponent, idx: number) => ({
-              id: comp.id || `comp-${idx}`,
-              libraryName: 'AI_Lib',
-              symbolName: comp.name || '',
-              fullSymbolName: comp.name || '',
-              reference: `${(comp.name || 'U')[0]}${idx + 1}`,
-              value: comp.model || '',
-              position: comp.position || { x: 0, y: 0 },
-              rotation: comp.rotation || 0,
-              mirror: comp.mirror || false,
-              unit: comp.unit || 1,
-              fields: {},
-              footprint: comp.footprint,
-              pins: (comp.pins || []).map((pin: BackendPin, pinIdx: number) => ({
-                id: `pin-${pinIdx}`,
-                number: pin.number || String(pinIdx + 1),
-                name: pin.name || '',
-                position: pin.position || { x: 0, y: 0 },
-                electricalType: 'passive' as const
-              }))
-            }));
+            // 网格布局参数
+            const GRID_COLS = 3;  // 每行3个元器件
+            const GRID_SPACING_X = 150;  // 水平间距 (单位：mm * MM_TO_PX 换算前的逻辑单位)
+            const GRID_SPACING_Y = 100;  // 垂直间距
+            const START_X = 50;  // 起始X位置
+            const START_Y = 50;  // 起始Y位置
+            const MIN_DISTANCE = 30; // 元器件之间的最小允许距离
+
+            // 自动布局：检查是否需要自动排列元器件
+            const hasInvalidPosition = data.components?.some((comp: BackendComponent) =>
+              !comp.position ||
+              typeof comp.position.x !== 'number' ||
+              typeof comp.position.y !== 'number' ||
+              (comp.position.x === 0 && comp.position.y === 0)
+            );
+
+            // 检查元器件是否过于密集（彼此距离小于阈值）
+            const isTooDense = (() => {
+              const positions = (data.components || [])
+                .filter((comp: BackendComponent) => comp.position && typeof comp.position.x === 'number' && typeof comp.position.y === 'number')
+                .map((comp: BackendComponent) => ({ x: comp.position!.x, y: comp.position!.y }));
+
+              for (let i = 0; i < positions.length; i++) {
+                for (let j = i + 1; j < positions.length; j++) {
+                  const dx = positions[i].x - positions[j].x;
+                  const dy = positions[i].y - positions[j].y;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+                  if (distance < MIN_DISTANCE) {
+                    console.log(`[SchematicStore] Components too close: ${distance.toFixed(1)}mm, need auto-layout`);
+                    return true;
+                  }
+                }
+              }
+              return false;
+            })();
+
+            const needsAutoLayout = hasInvalidPosition || isTooDense;
+
+            const components = (data.components || []).map((comp: BackendComponent, idx: number) => {
+              // 安全获取 position 值，确保不是 null/undefined
+              let posX = (comp.position && typeof comp.position.x === 'number') ? comp.position.x : 0;
+              let posY = (comp.position && typeof comp.position.y === 'number') ? comp.position.y : 0;
+
+              // 如果需要自动布局，或者位置为(0,0)，则计算网格位置
+              if (needsAutoLayout || (posX === 0 && posY === 0)) {
+                const col = idx % GRID_COLS;
+                const row = Math.floor(idx / GRID_COLS);
+                posX = START_X + col * GRID_SPACING_X;
+                posY = START_Y + row * GRID_SPACING_Y;
+                console.log(`[SchematicStore] Auto-layout for ${comp.name || comp.id}: row=${row}, col=${col}, pos=(${posX}, ${posY})`);
+              }
+
+              return {
+                id: comp.id || `comp-${idx}`,
+                libraryName: comp.category || 'AI_Lib',
+                symbolName: comp.name || '',
+                fullSymbolName: comp.symbol_library || comp.name || '',
+                // 优先使用后端返回的 reference，否则生成一个
+                reference: comp.reference || `${(comp.name || 'U')[0]}${idx + 1}`,
+                value: comp.model || '',
+                position: { x: posX, y: posY },
+                rotation: comp.rotation || 0,
+                mirror: comp.mirror || false,
+                unit: comp.unit || 1,
+                fields: {},
+                footprint: comp.footprint,
+                symbol_library: comp.symbol_library || '',  // 传递符号库信息
+                category: comp.category || '',  // 传递类别信息
+                pins: (comp.pins || []).map((pin: BackendPin, pinIdx: number) => ({
+                  id: `pin-${pinIdx}`,
+                  number: pin.number || String(pinIdx + 1),
+                  name: pin.name || '',
+                  position: (pin.position && typeof pin.position.x === 'number')
+                    ? { x: pin.position.x, y: pin.position.y || 0 }
+                    : { x: 0, y: 0 },
+                  electricalType: 'passive' as const
+                }))
+              };
+            });
+
+            const rawPositions = data.components?.map((c, i) => ({ id: c.id || `comp-${i}`, name: c.name, pos: c.position, ref: c.reference }));
+            console.log('[SchematicStore] Component positions (raw from backend):', rawPositions);
+            console.log('[SchematicStore] Needs auto-layout:', needsAutoLayout);
+            console.log('[SchematicStore] Component positions (after transform/auto-layout):', components.map(c => ({ id: c.id, ref: c.reference, pos: c.position })));
+
+            // 暴露到 window 用于调试
+            if (typeof window !== 'undefined') {
+              (window as any).__schematicDebug = { raw: rawPositions, transformed: components };
+            }
 
             const schematicData: SchematicData = {
               id: data.id || `schematic-${projectId}`,
@@ -163,7 +235,8 @@ export const useSchematicStore = create<SchematicStoreState>()(
               components,
               wires: data.wires || [],
               nets: data.nets || [],
-              labels: data.labels || [],
+              // 兼容后端返回的 netLabels 和 labels 两种字段名
+              labels: data.labels || data.netLabels || [],
               powerSymbols: data.powerSymbols || [],
               sheets: data.sheets || [{ id: 'sheet1', name: 'Sheet1', components: [], wires: [] }]
             };
