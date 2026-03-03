@@ -140,11 +140,11 @@ export const useSchematicStore = create<SchematicStoreState>()(
             }
             
             // 网格布局参数
-            const GRID_COLS = 3;  // 每行3个元器件
-            const GRID_SPACING_X = 150;  // 水平间距 (单位：mm * MM_TO_PX 换算前的逻辑单位)
-            const GRID_SPACING_Y = 100;  // 垂直间距
-            const START_X = 50;  // 起始X位置
-            const START_Y = 50;  // 起始Y位置
+            const GRID_COLS = 2;  // 每行2个元器件（更宽松的布局）
+            const GRID_SPACING_X = 300;  // 水平间距增加到300mm，留出足够连线空间
+            const GRID_SPACING_Y = 250;  // 垂直间距增加到250mm，确保连线有足够空间
+            const START_X = 100;  // 起始X位置
+            const START_Y = 80;  // 起始Y位置
             const MIN_DISTANCE = 30; // 元器件之间的最小允许距离
 
             // 自动布局：检查是否需要自动排列元器件
