@@ -7,6 +7,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import PCBEditor from './editors/PCBEditor';
 import SchematicEditor from './editors/SchematicEditor';
 import ProjectList from './pages/ProjectList';
+import AIChatAssistant from './components/AIChatAssistant';
 import { Project } from './types';
 import { usePCBStore } from './stores/pcbStore';
 import { useSchematicStore } from './stores/schematicStore';
@@ -57,8 +58,8 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewType>('project-list');
   const [editorType, setEditorType] = useState<EditorType>('pcb');
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(true);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -547,15 +548,23 @@ function App() {
       </div>
 
       {/* ===== 主内容区 ===== */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        overflow: 'hidden',
+        minWidth: 600,
+      }}>
         {/* ===== 左侧边栏 ===== */}
         <div style={{
-          width: sidebarCollapsed ? 40 : 240,
+          width: sidebarCollapsed ? 32 : 200,
+          minWidth: 32,
+          maxWidth: 200,
           backgroundColor: THEME.bg.panel,
           borderRight: `1px solid ${THEME.border.default}`,
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.2s',
+          flexShrink: 0,
         }}>
           {/* 边栏折叠按钮 */}
           <button
@@ -661,46 +670,56 @@ function App() {
           )}
         </div>
 
-        {/* ===== 画布区域 ===== */}
+        {/* ===== 中间区域（画布80% + 底部10%） ===== */}
         <div style={{
           flex: 1,
-          backgroundColor: THEME.bg.canvas,
-          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
+          minWidth: 400,
+          height: '100%',  // 关键：确保子元素百分比高度有效
+          overflow: 'hidden',
         }}>
-          {/* 编辑器内容 */}
-          <div style={{ flex: 1, position: 'relative' }}>
+          {/* 画布区域 - 80%高度 */}
+          <div style={{
+            flex: '0 0 80%',
+            backgroundColor: THEME.bg.canvas,
+            position: 'relative',
+            display: 'flex',
+            overflow: 'hidden',
+          }}>
             {editorType === 'pcb' ? <PCBEditor /> : <SchematicEditor />}
           </div>
 
-          {/* ===== 底部输出面板 ===== */}
+          {/* 底部区域 - 10%高度（输出面板 + 状态栏） */}
           <div style={{
-            height: 150,
+            flex: '0 0 10%',
+            minHeight: 60,
             backgroundColor: THEME.bg.panel,
             borderTop: `1px solid ${THEME.border.default}`,
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
           }}>
             {/* 面板标签 */}
             <div style={{
-              height: 28,
+              height: 24,
               backgroundColor: THEME.bg.secondary,
               display: 'flex',
               alignItems: 'center',
               padding: '0 8px',
               borderBottom: `1px solid ${THEME.border.dark}`,
+              flexShrink: 0,
             }}>
               {['消息', 'DRC', 'ERC', ' BOM'].map((tab, i) => (
                 <button
                   key={tab}
                   style={{
-                    padding: '4px 12px',
+                    padding: '2px 10px',
                     backgroundColor: i === 0 ? THEME.bg.panel : 'transparent',
                     border: 'none',
                     borderBottom: i === 0 ? `2px solid ${THEME.accent.primary}` : 'none',
                     color: i === 0 ? THEME.text.primary : THEME.text.muted,
-                    fontSize: 11,
+                    fontSize: 10,
                     cursor: 'pointer',
                   }}
                 >
@@ -711,9 +730,9 @@ function App() {
             {/* 面板内容 */}
             <div style={{
               flex: 1,
-              padding: 8,
+              padding: '4px 8px',
               overflow: 'auto',
-              fontSize: 11,
+              fontSize: 10,
               fontFamily: 'Consolas, Monaco, monospace',
               color: THEME.text.secondary,
             }}>
@@ -725,12 +744,15 @@ function App() {
 
         {/* ===== 右侧边栏 ===== */}
         <div style={{
-          width: rightPanelCollapsed ? 40 : 280,
+          width: rightPanelCollapsed ? 32 : 200,
+          minWidth: 32,
+          maxWidth: 200,
           backgroundColor: THEME.bg.panel,
           borderLeft: `1px solid ${THEME.border.default}`,
           transition: 'width 0.2s',
           display: 'flex',
           flexDirection: 'column',
+          flexShrink: 0,
         }}>
           <button
             onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
@@ -844,35 +866,19 @@ function App() {
         </div>
       </div>
 
-      {/* ===== 状态栏 ===== */}
-      <footer style={{
-        height: 24,
-        backgroundColor: THEME.bg.toolbar,
-        borderTop: `1px solid ${THEME.border.default}`,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 12px',
-        fontSize: 11,
-        color: THEME.text.muted,
-        gap: 24,
+      {/* ===== AI 聊天助手 (浮动组件 - fixed定位不影响布局) ===== */}
+      <div style={{
+        position: 'fixed',
+        bottom: 20,
+        right: 20,
+        zIndex: 1000,
       }}>
-        <span>
-          当前层: <span style={{ color: THEME.text.secondary }}>F.Cu</span>
-        </span>
-        <span>
-          光标: <span style={{ color: THEME.text.secondary }}>X: 0.00 mm  Y: 0.00 mm</span>
-        </span>
-        <span>
-          缩放: <span style={{ color: THEME.text.secondary }}>100%</span>
-        </span>
-        <span>
-          网格: <span style={{ color: THEME.text.secondary }}>1.27 mm</span>
-        </span>
-        <div style={{ flex: 1 }} />
-        <span style={{ color: THEME.accent.warning }}>
-          ● 等待 KiCad 连接
-        </span>
-      </footer>
+        <AIChatAssistant
+          schematicData={currentProject}
+          projectSpec={currentProject}
+          defaultExpanded={false}
+        />
+      </div>
     </div>
   );
 }
