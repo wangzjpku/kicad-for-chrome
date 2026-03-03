@@ -15,7 +15,6 @@ import Konva from 'konva';
 import { useSchematicStore } from '../stores/schematicStore';
 import { SchematicComponent, Wire, Label } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import AIChatAssistant from '../components/AIChatAssistant';
 import SchematicSymbol from '../components/SchematicSymbol';
 import SchematicDebugOverlay, { calculateRecommendedPan } from '../components/SchematicDebugOverlay';
 
@@ -65,7 +64,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       console.log('[SchematicEditor] Content Layer ref set, _id:', (contentLayer as any)._id, 'children count:', contentLayer.getChildren().length);
     }
   }, [contentLayer]);
-  const [showAIChat, setShowAIChat] = useState(false);
   const [showDebug, setShowDebug] = useState(false); // 调试模式
   const [containerSize, setContainerSize] = useState({
     width: 800,
@@ -586,51 +584,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#1a1a1a', position: 'relative' }}>
-      {/* AI 聊天助手浮窗按钮 - 移到左上角工具栏区域 */}
-      <button
-        onClick={() => setShowAIChat(!showAIChat)}
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          zIndex: 100,
-          padding: '8px 16px',
-          backgroundColor: showAIChat ? '#4a9eff' : '#2d2d2d',
-          border: '1px solid #4a4a4a',
-          borderRadius: 6,
-          color: '#fff',
-          cursor: 'pointer',
-          fontSize: 12,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        }}
-      >
-        🤖 AI助手
-      </button>
-
-      {/* AI 聊天助手面板 - 左上角浮窗 */}
-      {showAIChat && (
-        <div style={{
-          position: 'absolute',
-          top: 50,
-          left: 10,
-          zIndex: 99,
-          width: 380,
-          height: 500,
-        }}>
-          <AIChatAssistant
-            schematicData={schematicData}
-            projectSpec={{ name: projectId || '未命名项目' }}
-            onModifySchematic={(modifications) => {
-              console.log('AI modifications:', modifications);
-            }}
-            defaultExpanded={true}
-          />
-        </div>
-      )}
-
       {/* 画布区域 */}
       <div style={{ flex: 1, position: 'relative', display: 'flex', minWidth: 0 }}>
         <div ref={containerRef} style={{ flex: 1, position: 'relative', minWidth: 0, minHeight: 400 }}>

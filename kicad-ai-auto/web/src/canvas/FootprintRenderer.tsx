@@ -20,15 +20,17 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
   const padList = pads || pad || [];
 
   // 从 store 获取状态和操作
-  const { selectedIds, toggleSelection, currentTool, updateFootprintPosition, pushHistory, gridSize, snapToGrid } = usePCBStore();
+  const { selectedIds, toggleSelection, setSelectedIds, currentTool, updateFootprintPosition, pushHistory, gridSize, snapToGrid } = usePCBStore();
   const selected = selectedIds.includes(id);
   
   // 用于保存拖拽开始时的位置
   const dragStartPos = useRef({ x: 0, y: 0 });
   
-  // 转换位置到像素
-  const x = position.x * MM_TO_PX;
-  const y = position.y * MM_TO_PX;
+  // 转换位置到像素（添加安全检查，防止NaN）
+  const safeX = (position?.x ?? 0);
+  const safeY = (position?.y ?? 0);
+  const x = safeX * MM_TO_PX;
+  const y = safeY * MM_TO_PX;
   
   // 根据层设置颜色
   const color = layer === 'F.Cu' ? '#FF0000' : '#00FF00';
@@ -36,15 +38,21 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
 
   // 点击处理
   const handleClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
-    e.cancelBubble = true; // 防止冒泡到 Stage
+    e.evt.stopPropagation(); // 阻止DOM事件冒泡到 Stage
+    e.cancelBubble = true; // 阻止Konva事件冒泡
+    console.log('[FootprintRenderer] Clicked:', id, reference);
     toggleSelection(id);
-  }, [id, toggleSelection]);
+  }, [id, toggleSelection, reference]);
 
-  // 拖拽开始 - 保存历史记录
+  // 拖拽开始 - 保存历史记录并自动选中
   const handleDragStart = useCallback((e: KonvaEventObject<DragEvent>) => {
     dragStartPos.current = { x: e.target.x(), y: e.target.y() };
+    // 选择工具下拖动时自动选中该footprint
+    if (currentTool === 'select' && !selected) {
+      setSelectedIds([id]);
+    }
     pushHistory(); // 保存历史，支持撤销
-  }, [pushHistory]);
+  }, [pushHistory, currentTool, selected, id, setSelectedIds]);
 
   // 拖拽中 - 网格吸附
   const handleDragMove = useCallback((e: KonvaEventObject<DragEvent>) => {
@@ -73,23 +81,29 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
     updateFootprintPosition(id, { x: newX, y: newY });
   }, [id, updateFootprintPosition]);
 
-  // 只有选择工具或移动工具时可以拖拽
-  const draggable = selected && (currentTool === 'select' || currentTool === 'move');
+  // 选择工具或移动工具时可以拖拽
+  // 选择工具下：可以直接拖动任何footprint（无需预先选中）
+  // 移动工具下：可以拖动已选中的footprint
+  const draggable = (currentTool === 'select') || (selected && currentTool === 'move');
 
-  // 如果没有焊盘，渲染一个默认的封装形状（放大以便可见）
+  // 如果没有焊盘，渲染一个默认的封装形状（放大以便可见和点击）
   const renderDefaultFootprint = () => {
     return (
       <Rect
-        x={-15}
-        y={-15}
-        width={30}
-        height={30}
+        x={-20}
+        y={-20}
+        width={40}
+        height={40}
         fill={highlightColor}
         stroke={selected ? '#FFFF00' : color}
         strokeWidth={selected ? 2 : 1}
+        listening={false}
       />
     );
   };
+
+  // 点击目标区域大小（确保有足够大的可点击区域）
+  const HIT_AREA_SIZE = 40;
 
   return (
     <Group
@@ -103,11 +117,21 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
+      {/* 透明点击区域 - 增大可点击范围 */}
+      <Rect
+        x={-HIT_AREA_SIZE / 2}
+        y={-HIT_AREA_SIZE / 2}
+        width={HIT_AREA_SIZE}
+        height={HIT_AREA_SIZE}
+        fill="rgba(0,0,0,0.001)"
+        listening={true}
+      />
+
       {/* 绘制焊盘 */}
       {padList.length > 0 ? (
         padList.map((pad) => {
-          // 确保焊盘有最小可见尺寸（放大显示以便调试）
-          const minSize = 8; // 最小8像素
+          // 确保焊盘有最小可见尺寸（放大显示以便用户容易点击）
+          const minSize = 12; // 最小12像素，更容易点击
           const padWidth = Math.max(pad.size.x * MM_TO_PX, minSize);
           const padHeight = Math.max(pad.size.y * MM_TO_PX, minSize);
           return (
@@ -120,6 +144,7 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
               fill={highlightColor}
               stroke={selected ? '#FFFF00' : '#FFFFFF'}
               strokeWidth={selected ? 2 : 1}
+              listening={false}
             />
           );
         })
@@ -136,6 +161,7 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
         fontSize={12}
         fill="#FFFFFF"
         align="center"
+        listening={false}
       />
 
       {/* 选中高亮框 */}
@@ -148,6 +174,7 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
           stroke="#FFFF00"
           strokeWidth={2}
           dash={[5, 5]}
+          listening={false}
         />
       )}
     </Group>
