@@ -306,26 +306,52 @@ const PCBEditor: React.FC = () => {
     setIsDragging(false);
   };
 
-  // 生成网格线 - 使用固定值而不是依赖stageRef（stageRef在首次渲染时为null）
+  // 生成网格线 - 在世界坐标系中生成，Layer会处理pan/zoom变换
   const generateGridLines = () => {
     const lines = [];
-    // 使用containerSize而不是stageRef.width()/height()
-    const width = containerSize.width / zoom;
-    const height = containerSize.height / zoom;
-    const gridPixelSize = GRID_SIZE;
-    const offsetX = (pan.x / zoom) % gridPixelSize;
-    const offsetY = (pan.y / zoom) % gridPixelSize;
+    // 在世界坐标系中计算网格范围（考虑pan和缩放）
+    const viewWidth = containerSize.width / zoom;
+    const viewHeight = containerSize.height / zoom;
+    const startX = -pan.x / zoom;
+    const startY = -pan.y / zoom;
 
-    for (let x = offsetX; x <= width; x += gridPixelSize) {
+    // 网格间距（像素）
+    const gridPixelSize = GRID_SIZE;
+
+    // 计算网格起始点（对齐到网格）
+    const gridStartX = Math.floor(startX / gridPixelSize) * gridPixelSize;
+    const gridStartY = Math.floor(startY / gridPixelSize) * gridPixelSize;
+
+    // 计算网格结束点
+    const gridEndX = gridStartX + viewWidth + gridPixelSize;
+    const gridEndY = gridStartY + viewHeight + gridPixelSize;
+
+    // 生成垂直线
+    for (let x = gridStartX; x <= gridEndX; x += gridPixelSize) {
       lines.push(
-        <Line key={`v-${x}`} points={[x * zoom, 0, x * zoom, height * zoom]} stroke={GRID_COLOR} strokeWidth={1 / zoom} />
+        <Line
+          key={`v-${x}`}
+          points={[x, startY, x, gridEndY]}
+          stroke={GRID_COLOR}
+          strokeWidth={1}
+          opacity={0.3}
+        />
       );
     }
-    for (let y = offsetY; y <= height; y += gridPixelSize) {
+
+    // 生成水平线
+    for (let y = gridStartY; y <= gridEndY; y += gridPixelSize) {
       lines.push(
-        <Line key={`h-${y}`} points={[0, y * zoom, width * zoom, y * zoom]} stroke={GRID_COLOR} strokeWidth={1 / zoom} />
+        <Line
+          key={`h-${y}`}
+          points={[startX, y, gridEndX, y]}
+          stroke={GRID_COLOR}
+          strokeWidth={1}
+          opacity={0.3}
+        />
       );
     }
+
     return lines;
   };
 
@@ -519,8 +545,15 @@ const PCBEditor: React.FC = () => {
               }}
               style={{ background: '#1a1a2e' }}
             >
-            {/* 网格层 - 暂时隐藏以便查看PCB内容 */}
-            {/* <Layer>{generateGridLines()}</Layer> */}
+            {/* 网格层 - 应用 pan 和 zoom 使网格跟随画布移动 */}
+            <Layer
+              x={pan.x}
+              y={pan.y}
+              scaleX={zoom}
+              scaleY={zoom}
+            >
+              {generateGridLines()}
+            </Layer>
 
             {/* PCB元素层 - 将 pan 和 zoom 应用在 Layer 上，与 SchematicEditor 一致 */}
             <Layer
