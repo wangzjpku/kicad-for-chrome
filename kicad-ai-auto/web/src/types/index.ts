@@ -58,6 +58,7 @@ export interface Footprint extends PCBElement {
   value: string;
   position: Point2D;
   rotation: number;
+  mirror?: boolean;
   layer: string;
   pads: Pad[];
   pad?: Pad[]; // 兼容后端返回的字段名（单数形式）
@@ -380,6 +381,8 @@ export interface SchematicComponent {
   fields: Record<string, string>;
   footprint?: string;
   pins: SchematicPin[];
+  category?: string;
+  symbol_library?: string;
 }
 
 export interface SchematicPin {

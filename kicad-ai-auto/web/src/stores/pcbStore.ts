@@ -6,9 +6,10 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { PCBData, Footprint, Track, Via, Project } from '../types';
-import { pcbApi, projectApi } from '../services/api';
+// projectApi 未使用，暂时移除
+import { pcbApi } from '../services/api';
 
-export type ToolType = 'select' | 'move' | 'route' | 'place_footprint' | 'place_via';
+export type ToolType = 'select' | 'move' | 'route' | 'place_footprint' | 'place_via' | 'rotate' | 'mirror' | 'place_zone' | 'place_text';
 
 interface HistoryState {
   pcbData: PCBData;
@@ -50,6 +51,8 @@ interface PCBStoreState {
   // ========== 元素操作 ==========
   updateFootprintPosition: (id: string, position: { x: number; y: number }) => void;
   updateFootprintRotation: (id: string, rotation: number) => void;
+  rotateSelectedFootprints: (angle: number) => void;
+  mirrorSelectedFootprints: (axis: 'x' | 'y') => void;
   addFootprint: (footprint: Footprint) => void;
   removeFootprint: (id: string) => void;
   addTrack: (track: Track) => void;
@@ -98,16 +101,17 @@ export const usePCBStore = create<PCBStoreState>()(
       },
       
       loadPCBData: async (projectId: string) => {
+        console.log('[PCBStore] loadPCBData called with projectId:', projectId);
         set({ isLoading: true, error: null });
         try {
           // pcbApi.getPCB 返回后端数据
           const response = await pcbApi.getPCB(projectId);
           console.log('[PCBStore] Load PCB response:', response);
-          
+
           // 后端直接返回 PCBData 对象（没有 success 包装器）
           // 需要进行类型断言
           const pcbData = response as unknown as PCBData;
-          
+
           if (pcbData && typeof pcbData === 'object' && 'id' in pcbData) {
             set({
               pcbData: pcbData,
@@ -116,7 +120,7 @@ export const usePCBStore = create<PCBStoreState>()(
               history: [{ pcbData: pcbData, selectedIds: [] }],
               historyIndex: 0,
             });
-            console.log('[PCBStore] PCB data loaded, footprints:', pcbData.footprints?.length);
+            console.log('[PCBStore] PCB data loaded, footprints:', pcbData.footprints?.length, 'tracks:', pcbData.tracks?.length);
           } else {
             console.error('[PCBStore] Invalid PCB data:', response);
             set({ error: 'Failed to load PCB data', isLoading: false });
@@ -130,7 +134,13 @@ export const usePCBStore = create<PCBStoreState>()(
       savePCBData: async () => {
         const { pcbData, projectId } = get();
         if (!pcbData || !projectId) return;
-        
+
+        // 防止空数据覆盖后端生成的数据
+        if (!pcbData.footprints || pcbData.footprints.length === 0) {
+          console.warn('[PCBStore] No footprints to save, skipping');
+          return;
+        }
+
         set({ isSaving: true });
         try {
           // 调用真实API保存PCB数据
@@ -140,7 +150,7 @@ export const usePCBStore = create<PCBStoreState>()(
           } else {
             set({ error: response.error || 'Failed to save', isSaving: false });
           }
-        } catch (error) {
+        } catch {
           set({ error: 'Failed to save', isSaving: false });
         }
       },
@@ -163,9 +173,9 @@ export const usePCBStore = create<PCBStoreState>()(
       setCurrentTool: (tool) => set({ currentTool: tool }),
       
       // ========== 画布状态 ==========
-      zoom: 1,
+      zoom: 1,  // 初始缩放 1:1
       setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(zoom, 10)) }),
-      pan: { x: 50, y: 50 },
+      pan: { x: 0, y: 0 },  // 初始偏移为0
       setPan: (pan) => set({ pan }),
       gridSize: 1, // 1mm
       setGridSize: (size) => set({ gridSize: size }),
@@ -189,11 +199,53 @@ export const usePCBStore = create<PCBStoreState>()(
       updateFootprintRotation: (id, rotation) => {
         const { pcbData } = get();
         if (!pcbData) return;
-        
+
         const newFootprints = pcbData.footprints.map(fp =>
           fp.id === id ? { ...fp, rotation } : fp
         );
-        
+
+        set({
+          pcbData: { ...pcbData, footprints: newFootprints }
+        });
+      },
+
+      rotateSelectedFootprints: (angle: number) => {
+        const { pcbData, selectedIds } = get();
+        if (!pcbData || selectedIds.length === 0) return;
+
+        get().pushHistory();
+        const newFootprints = pcbData.footprints.map(fp => {
+          if (selectedIds.includes(fp.id)) {
+            return { ...fp, rotation: (fp.rotation || 0) + angle };
+          }
+          return fp;
+        });
+
+        set({
+          pcbData: { ...pcbData, footprints: newFootprints }
+        });
+      },
+
+      mirrorSelectedFootprints: (axis: 'x' | 'y') => {
+        const { pcbData, selectedIds } = get();
+        if (!pcbData || selectedIds.length === 0) return;
+
+        get().pushHistory();
+        const newFootprints = pcbData.footprints.map(fp => {
+          if (selectedIds.includes(fp.id)) {
+            const newFp = { ...fp };
+            if (axis === 'x') {
+              newFp.position = { x: fp.position.x, y: -fp.position.y };
+            } else {
+              newFp.position = { x: -fp.position.x, y: fp.position.y };
+            }
+            // Toggle mirror flag
+            newFp.mirror = !fp.mirror;
+            return newFp;
+          }
+          return fp;
+        });
+
         set({
           pcbData: { ...pcbData, footprints: newFootprints }
         });

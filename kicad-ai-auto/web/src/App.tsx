@@ -63,8 +63,49 @@ function App() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { setCurrentProject: setPCBProject, loadPCBData, savePCBData, undo, redo } = usePCBStore();
-  const { setCurrentProject: setSchematicProject, loadSchematicData } = useSchematicStore();
+  const {
+    setCurrentProject: setPCBProject,
+    loadPCBData,
+    savePCBData,
+    undo: pcbUndo,
+    redo: pcbRedo,
+    currentTool: pcbCurrentTool,
+    setCurrentTool: setPcbCurrentTool,
+    zoom: pcbZoom,
+    setZoom: setPcbZoom,
+    gridSize: pcbGridSize,
+    setGridSize: setPcbGridSize,
+    snapToGrid: pcbSnapToGrid,
+    setSnapToGrid: setPcbSnapToGrid,
+    rotateSelectedFootprints: rotatePCBSelected,
+    mirrorSelectedFootprints: mirrorPCBSelected,
+    selectedIds: pcbSelectedIds
+  } = usePCBStore();
+  const {
+    setCurrentProject: setSchematicProject,
+    loadSchematicData,
+    currentTool: schematicCurrentTool,
+    setCurrentTool: setSchematicCurrentTool,
+    zoom: schematicZoom,
+    setZoom: setSchematicZoom,
+    undo: schematicUndo,
+    redo: schematicRedo,
+    rotateSelectedComponents: rotateSchematicSelected,
+    mirrorSelectedComponents: mirrorSchematicSelected,
+    selectedIds: schematicSelectedIds
+  } = useSchematicStore();
+
+  // 根据当前编辑器类型获取对应的工具和操作方法
+  const currentTool = editorType === 'pcb' ? pcbCurrentTool : schematicCurrentTool;
+  const setCurrentTool = editorType === 'pcb' ? setPcbCurrentTool : setSchematicCurrentTool;
+  const zoom = editorType === 'pcb' ? pcbZoom : schematicZoom;
+  const setZoom = editorType === 'pcb' ? setPcbZoom : setSchematicZoom;
+  const gridSize = editorType === 'pcb' ? pcbGridSize : 1;
+  const setGridSize = editorType === 'pcb' ? setPcbGridSize : () => {};
+  const snapToGrid = editorType === 'pcb' ? pcbSnapToGrid : false;
+  const setSnapToGrid = editorType === 'pcb' ? setPcbSnapToGrid : () => {};
+  const undo = editorType === 'pcb' ? pcbUndo : schematicUndo;
+  const redo = editorType === 'pcb' ? pcbRedo : schematicRedo;
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -99,56 +140,239 @@ function App() {
     setEditorType(type);
   };
 
+  // 剪切板状态
+  const [clipboard, setClipboard] = useState<any>(null);
+
+  // 底部面板标签状态
+  const [activeBottomTab, setActiveBottomTab] = useState<'messages' | 'drc' | 'erc' | 'bom'>('messages');
+  const [bottomPanelMessages, setBottomPanelMessages] = useState<string[]>(['[20:25:00] 系统就绪', '[20:25:01] 等待 KiCad 连接...']);
+
+  // 添加消息到底部面板
+  const addMessage = useCallback((msg: string) => {
+    const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    setBottomPanelMessages(prev => [...prev.slice(-49), `[${timestamp}] ${msg}`]);
+  }, []);
+
   // 菜单操作处理
   const handleMenuAction = useCallback(async (action: string) => {
     setActiveMenu(null);
-    if (!currentProject?.id) return;
 
     switch (action) {
       case 'new':
         handleBackToList();
+        addMessage('新建项目');
         break;
       case 'open':
         handleBackToList();
+        addMessage('打开项目');
         break;
       case 'save':
-        await savePCBData();
+        if (currentProject?.id) {
+          await savePCBData();
+          addMessage('项目已保存');
+        }
+        break;
+      case 'saveas':
+        addMessage('另存为功能开发中...');
+        alert('另存为功能开发中');
         break;
       case 'undo':
         undo();
+        addMessage('撤销操作');
         break;
       case 'redo':
         redo();
+        addMessage('重做操作');
         break;
-      case 'drc':
-        try {
-          const result = await drcApi.runDRC(currentProject.id);
-          console.log('DRC Result:', result);
-          alert(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
-        } catch (e) {
-          console.error('DRC failed:', e);
+      case 'cut':
+        if (editorType === 'pcb') {
+          const { selectedIds, pcbData } = usePCBStore.getState();
+          if (selectedIds.length > 0 && pcbData) {
+            const selectedFootprints = pcbData.footprints.filter(fp => selectedIds.includes(fp.id));
+            setClipboard({ type: 'footprints', data: selectedFootprints });
+            usePCBStore.getState().removeSelectedElements();
+            addMessage(`剪切 ${selectedIds.length} 个元素`);
+          }
+        } else {
+          const { selectedIds, schematicData } = useSchematicStore.getState();
+          if (selectedIds.length > 0 && schematicData) {
+            const selectedComponents = schematicData.components.filter(c => selectedIds.includes(c.id));
+            setClipboard({ type: 'components', data: selectedComponents });
+            useSchematicStore.getState().removeSelectedElements();
+            addMessage(`剪切 ${selectedIds.length} 个元素`);
+          }
         }
         break;
+      case 'copy':
+        if (editorType === 'pcb') {
+          const { selectedIds, pcbData } = usePCBStore.getState();
+          if (selectedIds.length > 0 && pcbData) {
+            const selectedFootprints = pcbData.footprints.filter(fp => selectedIds.includes(fp.id));
+            setClipboard({ type: 'footprints', data: selectedFootprints });
+            addMessage(`复制 ${selectedIds.length} 个元素`);
+          }
+        } else {
+          const { selectedIds, schematicData } = useSchematicStore.getState();
+          if (selectedIds.length > 0 && schematicData) {
+            const selectedComponents = schematicData.components.filter(c => selectedIds.includes(c.id));
+            setClipboard({ type: 'components', data: selectedComponents });
+            addMessage(`复制 ${selectedIds.length} 个元素`);
+          }
+        }
+        break;
+      case 'paste':
+        if (clipboard?.type === 'footprints') {
+          const { addFootprint, pcbData } = usePCBStore.getState();
+          const newIds: string[] = [];
+          clipboard.data.forEach((fp: any, idx: number) => {
+            const newId = `FP${Date.now()}_${idx}`;
+            newIds.push(newId);
+            addFootprint({
+              ...fp,
+              id: newId,
+              reference: `${fp.reference}_copy`,
+              position: { x: fp.position.x + 10, y: fp.position.y + 10 }
+            });
+          });
+          usePCBStore.getState().setSelectedIds(newIds);
+          addMessage(`粘贴 ${clipboard.data.length} 个封装`);
+        } else if (clipboard?.type === 'components') {
+          const { addComponent } = useSchematicStore.getState();
+          const newIds: string[] = [];
+          clipboard.data.forEach((comp: any, idx: number) => {
+            const newId = `comp-${Date.now()}_${idx}`;
+            newIds.push(newId);
+            addComponent({
+              ...comp,
+              id: newId,
+              reference: `${comp.reference}_copy`,
+              position: { x: comp.position.x + 10, y: comp.position.y + 10 }
+            });
+          });
+          useSchematicStore.getState().setSelectedIds(newIds);
+          addMessage(`粘贴 ${clipboard.data.length} 个元件`);
+        }
+        break;
+      case 'delete':
+        if (editorType === 'pcb') {
+          const { selectedIds, removeSelectedElements } = usePCBStore.getState();
+          if (selectedIds.length > 0) {
+            removeSelectedElements();
+            addMessage(`删除 ${selectedIds.length} 个元素`);
+          }
+        } else {
+          const { selectedIds, removeSelectedElements } = useSchematicStore.getState();
+          if (selectedIds.length > 0) {
+            removeSelectedElements();
+            addMessage(`删除 ${selectedIds.length} 个元素`);
+          }
+        }
+        break;
+      case 'zoom_in':
+        setZoom(Math.min(zoom * 1.2, 10));
+        addMessage('放大视图');
+        break;
+      case 'zoom_out':
+        setZoom(Math.max(zoom / 1.2, 0.1));
+        addMessage('缩小视图');
+        break;
+      case 'zoom_fit':
+        setZoom(1);
+        if (editorType === 'pcb') {
+          usePCBStore.getState().setPan({ x: 0, y: 0 });
+        } else {
+          useSchematicStore.getState().setPan({ x: 100, y: 50 });
+        }
+        addMessage('适应窗口');
+        break;
+      case 'toggle_left':
+        setSidebarCollapsed(!sidebarCollapsed);
+        addMessage(sidebarCollapsed ? '显示左侧面板' : '隐藏左侧面板');
+        break;
+      case 'toggle_right':
+        setRightPanelCollapsed(!rightPanelCollapsed);
+        addMessage(rightPanelCollapsed ? '显示右侧面板' : '隐藏右侧面板');
+        break;
+      case 'place_footprint':
+        setCurrentTool('place_footprint');
+        addMessage('放置封装模式');
+        break;
+      case 'route':
+        setCurrentTool('route');
+        addMessage('布线模式');
+        break;
+      case 'place_via':
+        setCurrentTool('place_via');
+        addMessage('放置过孔模式');
+        break;
+      case 'place_zone':
+        addMessage('放置铜区功能开发中...');
+        alert('放置铜区功能开发中');
+        break;
+      case 'place_text':
+        addMessage('放置文本功能开发中...');
+        alert('放置文本功能开发中');
+        break;
+      case 'drc':
+        if (currentProject?.id) {
+          try {
+            setActiveBottomTab('drc');
+            const result = await drcApi.runDRC(currentProject.id);
+            console.log('DRC Result:', result);
+            addMessage(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
+            alert(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
+          } catch (e) {
+            console.error('DRC failed:', e);
+            addMessage('DRC检查失败');
+          }
+        }
+        break;
+      case 'refill':
+        addMessage('重新灌铜功能开发中...');
+        alert('重新灌铜功能开发中');
+        break;
       case 'gerber':
-        try {
-          const result = await exportApi.exportGerber(currentProject.id);
-          console.log('Gerber export:', result);
-          alert('Gerber导出成功！');
-        } catch (e) {
-          console.error('Gerber export failed:', e);
+        if (currentProject?.id) {
+          try {
+            setActiveBottomTab('bom');
+            const result = await exportApi.exportGerber(currentProject.id);
+            console.log('Gerber export:', result);
+            addMessage('Gerber导出成功');
+            alert('Gerber导出成功！');
+          } catch (e) {
+            console.error('Gerber export failed:', e);
+            addMessage('Gerber导出失败');
+          }
         }
         break;
       case 'bom':
-        try {
-          const result = await exportApi.exportBOM(currentProject.id);
-          console.log('BOM export:', result);
-          alert('BOM导出成功！');
-        } catch (e) {
-          console.error('BOM export failed:', e);
+        if (currentProject?.id) {
+          try {
+            setActiveBottomTab('bom');
+            const result = await exportApi.exportBOM(currentProject.id);
+            console.log('BOM export:', result);
+            addMessage('BOM导出成功');
+            alert('BOM导出成功！');
+          } catch (e) {
+            console.error('BOM export failed:', e);
+            addMessage('BOM导出失败');
+          }
         }
         break;
+      case 'dxf':
+        addMessage('导出DXF功能开发中...');
+        alert('导出DXF功能开发中');
+        break;
+      case 'manual':
+        addMessage('打开使用手册...');
+        window.open('https://docs.kicad.org/', '_blank');
+        break;
+      case 'about':
+        addMessage('关于 KiCad Web Editor');
+        alert('KiCad Web Editor v0.9.0\n基于 KiCad 的在线 PCB 设计工具');
+        break;
     }
-  }, [currentProject, savePCBData, undo, redo]);
+  }, [currentProject, savePCBData, undo, redo, editorType, clipboard, zoom, sidebarCollapsed, rightPanelCollapsed]);
 
   // 菜单配置
   const menus = [
@@ -454,35 +678,106 @@ function App() {
         {/* 工具分组 */}
         <div style={{ display: 'flex', gap: 2, paddingLeft: 8 }}>
           {[
-            { label: '选择', icon: '↖', group: 'select' },
-            { label: '移动', icon: '✥', group: 'select' },
-            { label: '旋转', icon: '↻', group: 'edit' },
-            { label: '镜像', icon: '⇆', group: 'edit' },
+            { label: '选择', icon: '↖', toolType: 'select' },
+            { label: '移动', icon: '✥', toolType: 'move' },
           ].map((tool) => (
             <button
               key={tool.label}
               title={tool.label}
+              onClick={() => setCurrentTool(tool.toolType as any)}
               style={{
                 width: 32,
                 height: 28,
-                backgroundColor: 'transparent',
+                backgroundColor: currentTool === tool.toolType ? THEME.accent.primary : 'transparent',
                 border: 'none',
                 borderRadius: 4,
-                color: THEME.text.secondary,
+                color: currentTool === tool.toolType ? '#fff' : THEME.text.secondary,
                 fontSize: 14,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = THEME.hover.default;
+                if (currentTool !== tool.toolType) {
+                  e.currentTarget.style.backgroundColor = THEME.hover.default;
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
+                if (currentTool !== tool.toolType) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
               }}
             >
               {tool.icon}
             </button>
           ))}
+          {/* 旋转按钮 */}
+          <button
+            title="旋转选中元件 (90°)"
+            onClick={() => {
+              if (editorType === 'pcb' && pcbSelectedIds.length > 0) {
+                rotatePCBSelected(90);
+                addMessage(`旋转 ${pcbSelectedIds.length} 个封装 90°`);
+              } else if (editorType === 'schematic' && schematicSelectedIds.length > 0) {
+                rotateSchematicSelected(90);
+                addMessage(`旋转 ${schematicSelectedIds.length} 个元件 90°`);
+              } else {
+                addMessage('请先选择要旋转的元件');
+              }
+            }}
+            style={{
+              width: 32,
+              height: 28,
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: 4,
+              color: THEME.text.secondary,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = THEME.hover.default;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            ↻
+          </button>
+          {/* 镜像按钮 */}
+          <button
+            title="镜像选中元件"
+            onClick={() => {
+              if (editorType === 'pcb' && pcbSelectedIds.length > 0) {
+                mirrorPCBSelected('x');
+                addMessage(`镜像 ${pcbSelectedIds.length} 个封装`);
+              } else if (editorType === 'schematic' && schematicSelectedIds.length > 0) {
+                mirrorSchematicSelected();
+                addMessage(`镜像 ${schematicSelectedIds.length} 个元件`);
+              } else {
+                addMessage('请先选择要镜像的元件');
+              }
+            }}
+            style={{
+              width: 32,
+              height: 28,
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: 4,
+              color: THEME.text.secondary,
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = THEME.hover.default;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            ⇆
+          </button>
         </div>
 
         {/* 分隔线 */}
@@ -491,24 +786,35 @@ function App() {
         {/* 放置工具 */}
         <div style={{ display: 'flex', gap: 2 }}>
           {[
-            { label: '封装', icon: '□', group: 'place' },
-            { label: '走线', icon: '⬡', group: 'route' },
-            { label: '过孔', icon: '◎', group: 'route' },
-            { label: '铜区', icon: '▣', group: 'zone' },
-            { label: '文本', icon: 'A', group: 'annotate' },
+            { label: '封装', icon: '□', toolType: 'place_footprint' },
+            { label: '走线', icon: '⬡', toolType: 'route' },
+            { label: '过孔', icon: '◎', toolType: 'place_via' },
+            { label: '铜区', icon: '▣', toolType: 'place_zone' },
+            { label: '文本', icon: 'A', toolType: 'place_text' },
           ].map((tool) => (
             <button
               key={tool.label}
               title={tool.label}
+              onClick={() => setCurrentTool(tool.toolType as any)}
               style={{
                 width: 32,
                 height: 28,
-                backgroundColor: 'transparent',
+                backgroundColor: currentTool === tool.toolType ? THEME.accent.primary : 'transparent',
                 border: 'none',
                 borderRadius: 4,
-                color: THEME.text.secondary,
+                color: currentTool === tool.toolType ? '#fff' : THEME.text.secondary,
                 fontSize: 14,
                 cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                if (currentTool !== tool.toolType) {
+                  e.currentTarget.style.backgroundColor = THEME.hover.default;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentTool !== tool.toolType) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
               }}
             >
               {tool.icon}
@@ -522,23 +828,51 @@ function App() {
         {/* 视图工具 */}
         <div style={{ display: 'flex', gap: 2 }}>
           {[
-            { label: '放大', icon: '🔍+' },
-            { label: '缩小', icon: '🔍-' },
-            { label: '适应', icon: '⊞' },
-            { label: '网格', icon: '▦' },
+            {
+              label: '放大',
+              icon: '🔍+',
+              action: () => setZoom(Math.min(zoom * 1.2, 10))
+            },
+            {
+              label: '缩小',
+              icon: '🔍-',
+              action: () => setZoom(Math.max(zoom / 1.2, 0.1))
+            },
+            {
+              label: '适应',
+              icon: '⊞',
+              action: () => setZoom(1)
+            },
+            {
+              label: snapToGrid ? '网格(开)' : '网格(关)',
+              icon: '▦',
+              action: () => setSnapToGrid(!snapToGrid),
+              active: snapToGrid
+            },
           ].map((tool) => (
             <button
               key={tool.label}
               title={tool.label}
+              onClick={tool.action}
               style={{
                 width: 32,
                 height: 28,
-                backgroundColor: 'transparent',
+                backgroundColor: tool.active ? THEME.accent.primary : 'transparent',
                 border: 'none',
                 borderRadius: 4,
-                color: THEME.text.secondary,
+                color: tool.active ? '#fff' : THEME.text.secondary,
                 fontSize: 14,
                 cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                if (!tool.active) {
+                  e.currentTarget.style.backgroundColor = THEME.hover.default;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!tool.active) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
               }}
             >
               {tool.icon}
@@ -710,20 +1044,26 @@ function App() {
               borderBottom: `1px solid ${THEME.border.dark}`,
               flexShrink: 0,
             }}>
-              {['消息', 'DRC', 'ERC', ' BOM'].map((tab, i) => (
+              {[
+                { id: 'messages', label: '消息' },
+                { id: 'drc', label: 'DRC' },
+                { id: 'erc', label: 'ERC' },
+                { id: 'bom', label: 'BOM' }
+              ].map((tab) => (
                 <button
-                  key={tab}
+                  key={tab.id}
+                  onClick={() => setActiveBottomTab(tab.id as any)}
                   style={{
                     padding: '2px 10px',
-                    backgroundColor: i === 0 ? THEME.bg.panel : 'transparent',
+                    backgroundColor: activeBottomTab === tab.id ? THEME.bg.panel : 'transparent',
                     border: 'none',
-                    borderBottom: i === 0 ? `2px solid ${THEME.accent.primary}` : 'none',
-                    color: i === 0 ? THEME.text.primary : THEME.text.muted,
+                    borderBottom: activeBottomTab === tab.id ? `2px solid ${THEME.accent.primary}` : 'none',
+                    color: activeBottomTab === tab.id ? THEME.text.primary : THEME.text.muted,
                     fontSize: 10,
                     cursor: 'pointer',
                   }}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -736,8 +1076,27 @@ function App() {
               fontFamily: 'Consolas, Monaco, monospace',
               color: THEME.text.secondary,
             }}>
-              <div>[20:25:00] 系统就绪</div>
-              <div>[20:25:01] 等待 KiCad 连接...</div>
+              {activeBottomTab === 'messages' && bottomPanelMessages.map((msg, idx) => (
+                <div key={idx}>{msg}</div>
+              ))}
+              {activeBottomTab === 'drc' && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ color: THEME.accent.primary, marginBottom: 4 }}>DRC 检查结果</div>
+                  <div>点击菜单「工具 → 设计规则检查」运行 DRC</div>
+                </div>
+              )}
+              {activeBottomTab === 'erc' && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ color: THEME.accent.primary, marginBottom: 4 }}>ERC 电气规则检查</div>
+                  <div>ERC 功能开发中...</div>
+                </div>
+              )}
+              {activeBottomTab === 'bom' && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ color: THEME.accent.primary, marginBottom: 4 }}>BOM 物料清单</div>
+                  <div>点击菜单「工具 → 导出BOM」导出物料清单</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -821,43 +1180,91 @@ function App() {
                 }}>
                   常用操作
                 </div>
-                <button style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: THEME.accent.primary,
-                  border: 'none',
-                  borderRadius: 4,
-                  color: '#fff',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  marginBottom: 8,
-                }}>
+                <button
+                  onClick={async () => {
+                    if (currentProject?.id) {
+                      try {
+                        setActiveBottomTab('drc');
+                        addMessage('开始运行 DRC 检查...');
+                        const result = await drcApi.runDRC(currentProject.id);
+                        addMessage(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
+                        alert(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
+                      } catch (e) {
+                        console.error('DRC failed:', e);
+                        addMessage('DRC检查失败');
+                      }
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: THEME.accent.primary,
+                    border: 'none',
+                    borderRadius: 4,
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    marginBottom: 8,
+                  }}
+                >
                   运行 DRC
                 </button>
-                <button style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: THEME.bg.tertiary,
-                  border: `1px solid ${THEME.border.default}`,
-                  borderRadius: 4,
-                  color: THEME.text.primary,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  marginBottom: 8,
-                }}>
+                <button
+                  onClick={async () => {
+                    if (currentProject?.id) {
+                      try {
+                        setActiveBottomTab('bom');
+                        addMessage('开始导出 Gerber...');
+                        const result = await exportApi.exportGerber(currentProject.id);
+                        addMessage('Gerber导出成功');
+                        alert('Gerber导出成功！');
+                      } catch (e) {
+                        console.error('Gerber export failed:', e);
+                        addMessage('Gerber导出失败');
+                      }
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: THEME.bg.tertiary,
+                    border: `1px solid ${THEME.border.default}`,
+                    borderRadius: 4,
+                    color: THEME.text.primary,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    marginBottom: 8,
+                  }}
+                >
                   导出 Gerber
                 </button>
-                <button style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: THEME.bg.tertiary,
-                  border: `1px solid ${THEME.border.default}`,
-                  borderRadius: 4,
-                  color: THEME.text.primary,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}>
+                <button
+                  onClick={async () => {
+                    if (currentProject?.id) {
+                      try {
+                        setActiveBottomTab('bom');
+                        addMessage('开始导出 BOM...');
+                        const result = await exportApi.exportBOM(currentProject.id);
+                        addMessage('BOM导出成功');
+                        alert('BOM导出成功！');
+                      } catch (e) {
+                        console.error('BOM export failed:', e);
+                        addMessage('BOM导出失败');
+                      }
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: THEME.bg.tertiary,
+                    border: `1px solid ${THEME.border.default}`,
+                    borderRadius: 4,
+                    color: THEME.text.primary,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
                   导出 BOM
                 </button>
               </div>

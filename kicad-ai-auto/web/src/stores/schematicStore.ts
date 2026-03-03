@@ -44,8 +44,8 @@ interface SchematicStoreState {
   clearSelection: () => void;
   
   // 工具状态
-  currentTool: 'select' | 'place_symbol' | 'place_wire' | 'place_label' | 'place_power';
-  setCurrentTool: (tool: 'select' | 'place_symbol' | 'place_wire' | 'place_label' | 'place_power') => void;
+  currentTool: 'select' | 'place_symbol' | 'place_wire' | 'place_label' | 'place_power' | 'place_footprint' | 'route' | 'place_via' | 'rotate' | 'mirror';
+  setCurrentTool: (tool: 'select' | 'place_symbol' | 'place_wire' | 'place_label' | 'place_power' | 'place_footprint' | 'route' | 'place_via' | 'rotate' | 'mirror') => void;
   
   // 画布状态
   zoom: number;
@@ -59,6 +59,8 @@ interface SchematicStoreState {
   updateComponent: (id: string, updates: Partial<SchematicComponent>) => void;
   updateComponentPosition: (id: string, position: Point2D) => void;
   updateComponentRotation: (id: string, rotation: number) => void;
+  rotateSelectedComponents: (angle: number) => void;
+  mirrorSelectedComponents: () => void;
 
   addWire: (wire: Wire) => void;
   removeWire: (id: string) => void;
@@ -329,6 +331,40 @@ export const useSchematicStore = create<SchematicStoreState>()(
         const newComponents = schematicData.components.map(c =>
           c.id === id ? { ...c, rotation } : c
         );
+
+        set({
+          schematicData: { ...schematicData, components: newComponents }
+        });
+      },
+
+      rotateSelectedComponents: (angle: number) => {
+        const { schematicData, selectedIds } = get();
+        if (!schematicData || selectedIds.length === 0) return;
+
+        get().pushHistory();
+        const newComponents = schematicData.components.map(c => {
+          if (selectedIds.includes(c.id)) {
+            return { ...c, rotation: (c.rotation || 0) + angle };
+          }
+          return c;
+        });
+
+        set({
+          schematicData: { ...schematicData, components: newComponents }
+        });
+      },
+
+      mirrorSelectedComponents: () => {
+        const { schematicData, selectedIds } = get();
+        if (!schematicData || selectedIds.length === 0) return;
+
+        get().pushHistory();
+        const newComponents = schematicData.components.map(c => {
+          if (selectedIds.includes(c.id)) {
+            return { ...c, mirror: !c.mirror };
+          }
+          return c;
+        });
 
         set({
           schematicData: { ...schematicData, components: newComponents }
