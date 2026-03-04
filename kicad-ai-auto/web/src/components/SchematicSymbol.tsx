@@ -3,9 +3,11 @@
  * 根据元件类型渲染真实的电路符号，而不是简单的矩形框
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Group, Rect, Line, Text, Circle, Shape } from 'react-konva';
 import Konva from 'konva';
+import KiCadSymbolRenderer from './KiCadSymbolRenderer';
+import { symbolApi, SymbolGraphicsData } from '../services/api';
 
 interface Pin {
   id: string;
@@ -19,10 +21,11 @@ interface SchematicComponent {
   id: string;
   name: string;
   model: string;
-  reference?: string;
+  reference: string;  // 修改为required，用于识别元件类型
   value?: string;
   position: { x: number; y: number };
   rotation?: number;
+  mirror?: boolean;
   pins?: Pin[];
   footprint?: string;
   category?: string;
@@ -38,18 +41,45 @@ interface SchematicSymbolProps {
   draggable?: boolean;
 }
 
-// 比例因子
+// 比例因子 - 保留用于未来缩放功能
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SCALE = 1;
 
 /**
  * 根据元件信息确定符号类型
+ * 修复：添加reference参数来识别元件类型
  */
 function getSymbolType(component: SchematicComponent): string {
   const name = (component.name || '').toLowerCase();
   const model = (component.model || '').toLowerCase();
+  const reference = (component.reference || '').toLowerCase();
   const category = (component.category || '').toLowerCase();
   const symbolName = (component.symbolName || '').toLowerCase();
   const symbolLibrary = (component.symbol_library || '').toLowerCase();
+
+  // 修复：优先使用reference判断元件类型（R=电阻, C=电容, U=IC, D=二极管等）
+  if (reference) {
+    // 电阻：R开头（R1, R2, R5等）
+    if (/^r\d*/.test(reference)) return 'resistor';
+    // 电容：C开头
+    if (/^c\d*/.test(reference)) return 'capacitor';
+    // 电感：L开头
+    if (/^l\d*/.test(reference)) return 'inductor';
+    // 二极管：D开头
+    if (/^d\d*/.test(reference)) return 'diode';
+    // LED：LED开头或包含led
+    if (reference.startsWith('led')) return 'led';
+    // IC/芯片：U或IC开头
+    if (/^u\d*/.test(reference) || reference.startsWith('ic')) return 'ic';
+    // 连接器：J或CON开头
+    if (/^j\d*/.test(reference) || reference.startsWith('con')) return 'connector';
+    // 晶振：Y或X开头
+    if (/^[yx]\d*/.test(reference)) return 'crystal';
+    // 电源：VCC, VDD, 3V3等
+    if (reference.startsWith('vcc') || reference.startsWith('vdd') || reference.includes('3v3')) return 'power_vcc';
+    // 地：GND
+    if (reference.startsWith('gnd')) return 'power_gnd';
+  }
   
   // 优先使用 symbol_library
   if (symbolLibrary) {
@@ -111,27 +141,19 @@ function getSymbolType(component: SchematicComponent): string {
 
 /**
  * 渲染电阻符号 - KiCad标准 (矩形，垂直放置)
- * 符号定义: rectangle from (-1.016, -2.54) to (1.016, 2.54)
- * 引脚: Pin1在上方(0, 3.81), Pin2在下方(0, -3.81)
+ * 修复：统一尺寸，与KiCad符号协调
  */
 const ResistorSymbol: React.FC<{ selected: boolean }> = ({ selected }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
-  const strokeWidth = selected ? 2 : 0.254;
-  const scale = 20; // 缩放因子
-  
-  // KiCad标准电阻是矩形，垂直放置
-  // 矩形尺寸: 宽2.032, 高5.08 (单位mm)
-  const rectWidth = 1.016 * 2 * scale;  // 约40px
-  const rectHeight = 2.54 * 2 * scale;  // 约100px
-  
+  const strokeWidth = selected ? 2 : 1.5;
+  // 修复：缩小尺寸，与电容一致
+  const rectWidth = 20;   // 宽度
+  const rectHeight = 14;  // 高度，与电容的lineGap(12)接近
+  const leadLength = 10;  // 引线长度
+
   return (
     <>
-      {/* 引线 - 上方 */}
-      <Line points={[0, -rectHeight/2, 0, -rectHeight/2 - 30]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      {/* 引线 - 下方 */}
-      <Line points={[0, rectHeight/2, 0, rectHeight/2 + 30]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      
-      {/* 电阻本体 - 矩形 (KiCad标准) */}
+      {/* 电阻本体 - 矩形 */}
       <Rect
         x={-rectWidth/2}
         y={-rectHeight/2}
@@ -141,63 +163,55 @@ const ResistorSymbol: React.FC<{ selected: boolean }> = ({ selected }) => {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
-      {/* 引脚 - 上方 Pin1 */}
-      <Circle x={0} y={-rectHeight/2 - 30} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
-      {/* 引脚 - 下方 Pin2 */}
-      <Circle x={0} y={rectHeight/2 + 30} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
+
+      {/* 引线 - 上方 */}
+      <Line points={[0, -rectHeight/2, 0, -rectHeight/2 - leadLength]} stroke={strokeColor} strokeWidth={strokeWidth} />
+      {/* 引线 - 下方 */}
+      <Line points={[0, rectHeight/2, 0, rectHeight/2 + leadLength]} stroke={strokeColor} strokeWidth={strokeWidth} />
     </>
   );
 };
 
 /**
  * 渲染电容符号 - KiCad标准 (垂直两条平行线)
- * 符号定义: 两条水平线，垂直放置
- * 线1: (-2.032, 0.762) 到 (2.032, 0.762), stroke width 0.508
- * 线2: (-2.032, -0.762) 到 (2.032, -0.762), stroke width 0.508
- * 引脚: Pin1在上方(0, 3.81), Pin2在下方(0, -3.81)
+ * 统一尺寸：与电阻、二极管保持一致
  */
 const CapacitorSymbol: React.FC<{ selected: boolean; polarized?: boolean }> = ({ selected, polarized }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
-  const strokeWidth = selected ? 2 : 0.508;
-  const scale = 15; // 缩放因子
-  
-  // KiCad标准电容是两条水平平行线，垂直放置
-  const lineWidth = 2.032 * 2 * scale;  // 约60px
-  const lineGap = 0.762 * 2 * scale;    // 约23px
-  const pinLength = 2.794 * scale;      // 引线长度
-  
+  const strokeWidth = selected ? 2 : 1.5;
+  // 统一尺寸：与电阻、二极管一致
+  const lineWidth = 24;      // 极板宽度
+  const lineGap = 12;        // 极板间距
+  const pinLength = 12;      // 引线长度
+
   return (
     <>
+      {/* 电容极板 - 上方水平线 */}
+      <Line
+        points={[-lineWidth/2, -lineGap/2, lineWidth/2, -lineGap/2]}
+        stroke={strokeColor}
+        strokeWidth={polarized ? strokeWidth * 1.5 : strokeWidth}
+      />
+      {/* 电容极板 - 下方水平线 */}
+      <Line
+        points={[-lineWidth/2, lineGap/2, lineWidth/2, lineGap/2]}
+        stroke={strokeColor}
+        strokeWidth={strokeWidth}
+      />
+
       {/* 引线 - 上方 */}
       <Line points={[0, -lineGap/2, 0, -lineGap/2 - pinLength]} stroke={strokeColor} strokeWidth={strokeWidth} />
       {/* 引线 - 下方 */}
       <Line points={[0, lineGap/2, 0, lineGap/2 + pinLength]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      
-      {/* 极性标记 (电解电容) - 上方极板加粗 */}
+
+      {/* 极性标记 (电解电容) */}
       {polarized && (
-        <>
-          <Text text="+" x={-lineWidth/2 - 15} y={-lineGap/2 - 5} fontSize={12} fill={strokeColor} fontWeight="bold" />
-        </>
+        <Text text="+" x={-lineWidth/2 - 12} y={-lineGap/2 - 6} fontSize={10} fill={strokeColor} fontWeight="bold" />
       )}
-      
-      {/* 电容极板 - 上方水平线 */}
-      <Line 
-        points={[-lineWidth/2, -lineGap/2, lineWidth/2, -lineGap/2]} 
-        stroke={strokeColor} 
-        strokeWidth={polarized ? strokeWidth * 2 : strokeWidth} 
-      />
-      {/* 电容极板 - 下方水平线 */}
-      <Line 
-        points={[-lineWidth/2, lineGap/2, lineWidth/2, lineGap/2]} 
-        stroke={strokeColor} 
-        strokeWidth={strokeWidth} 
-      />
-      
-      {/* 引脚 - 上方 Pin1 */}
-      <Circle x={0} y={-lineGap/2 - pinLength} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
-      {/* 引脚 - 下方 Pin2 */}
-      <Circle x={0} y={lineGap/2 + pinLength} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
+
+      {/* 引脚端点 */}
+      <Circle x={0} y={-lineGap/2 - pinLength} radius={3} fill="#ffcc00" />
+      <Circle x={0} y={lineGap/2 + pinLength} radius={3} fill="#ffcc00" />
     </>
   );
 };
@@ -280,57 +294,58 @@ const LEDSymbol: React.FC<{ selected: boolean; color?: string }> = ({ selected, 
 const DiodeSymbol: React.FC<{ selected: boolean }> = ({ selected }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
   const strokeWidth = selected ? 2 : 1.5;
-  
+
   return (
     <>
-      {/* 二极管三角形 */}
+      {/* 二极管三角形 - 统一尺寸 */}
       <Shape
         sceneFunc={(context, shape) => {
           context.beginPath();
-          context.moveTo(-15, -12);
-          context.lineTo(-15, 12);
-          context.lineTo(5, 0);
+          context.moveTo(-12, -12);
+          context.lineTo(-12, 12);
+          context.lineTo(12, 0);
           context.closePath();
           context.fillStrokeShape(shape);
         }}
-        fill={selected ? '#00ff00' : 'transparent'}
+        fill="transparent"
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
       {/* 阴极线 */}
-      <Line points={[5, -12, 5, 12]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      
+      <Line points={[12, -12, 12, 12]} stroke={strokeColor} strokeWidth={strokeWidth} />
+
       {/* 左引线 (阳极) */}
-      <Line points={[-30, 0, -15, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
+      <Line points={[-24, 0, -12, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
       {/* 右引线 (阴极) */}
-      <Line points={[5, 0, 30, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      
-      {/* 引脚 */}
-      <Circle x={-30} y={0} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
-      <Circle x={30} y={0} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
+      <Line points={[12, 0, 24, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
     </>
   );
 };
 
 /**
  * 渲染IC/芯片符号 (矩形框+引脚)
+ * 修复：使用更粗的线宽和明显的填充色
  */
-const ICSymbol: React.FC<{ 
-  selected: boolean; 
+const ICSymbol: React.FC<{
+  selected: boolean;
   pins?: Pin[];
   componentName?: string;
 }> = ({ selected, pins = [], componentName }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
-  const fillColor = selected ? '#1a4a7a' : '#1a2a3a';
-  const strokeWidth = selected ? 2 : 1;
+  // 修复：使用透明背景，与其他符号保持一致
+  const fillColor = selected ? '#1a4a7a' : 'transparent';
+  const strokeWidth = selected ? 3 : 2;
   
-  // 根据引脚数量确定尺寸
+  // 根据引脚数量确定尺寸 - 修复：统一尺寸，与其他符号保持一致
   const pinCount = pins.length || 8;
   const leftPins = pins.filter(p => p.position?.x && p.position.x < 0).length || Math.ceil(pinCount / 2);
   const rightPins = pins.filter(p => p.position?.x && p.position.x > 0).length || Math.floor(pinCount / 2);
-  
-  const width = 80;
-  const height = Math.max(60, Math.max(leftPins, rightPins) * 15 + 20);
+
+  // 修复：基础尺寸缩小，与电阻/二极管(24x24)保持一致
+  const baseWidth = 36;
+  const baseHeight = 30;
+  const width = baseWidth;
+  const height = Math.max(baseHeight, Math.max(leftPins, rightPins) * 12 + 16);
   
   // 缺口标记 (IC方向)
   const notchRadius = 6;
@@ -445,69 +460,64 @@ const ICSymbol: React.FC<{
 const CrystalSymbol: React.FC<{ selected: boolean }> = ({ selected }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
   const strokeWidth = selected ? 2 : 1.5;
-  
+
   return (
     <>
       {/* 左引线 */}
-      <Line points={[-30, 0, -10, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
+      <Line points={[-24, 0, -12, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
       {/* 右引线 */}
-      <Line points={[10, 0, 30, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
-      
-      {/* 晶振外壳 */}
+      <Line points={[12, 0, 24, 0]} stroke={strokeColor} strokeWidth={strokeWidth} />
+
+      {/* 晶振外壳 - 统一透明背景 */}
       <Rect
-        x={-10}
-        y={-15}
-        width={20}
-        height={30}
-        fill={selected ? '#1a4a7a' : 'transparent'}
+        x={-12}
+        y={-12}
+        width={24}
+        height={24}
+        fill="transparent"
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* 内部晶体 */}
-      <Line points={[-5, -10, -5, 10]} stroke={strokeColor} strokeWidth={2} />
-      <Line points={[5, -10, 5, 10]} stroke={strokeColor} strokeWidth={2} />
-      
-      {/* 引脚 */}
-      <Circle x={-30} y={0} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
-      <Circle x={30} y={0} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
+      <Line points={[-6, -8, -6, 8]} stroke={strokeColor} strokeWidth={2} />
+      <Line points={[6, -8, 6, 8]} stroke={strokeColor} strokeWidth={2} />
     </>
   );
 };
 
 /**
  * 渲染连接器符号
+ * 修复：统一尺寸，与KiCad符号协调
  */
 const ConnectorSymbol: React.FC<{ selected: boolean; pins?: number }> = ({ selected, pins = 2 }) => {
   const strokeColor = selected ? '#ffffff' : '#00ff00';
-  const fillColor = selected ? '#1a4a7a' : '#1a2a3a';
   const strokeWidth = selected ? 2 : 1;
-  const pinCount = Math.max(2, Math.min(pins, 10));
-  const height = pinCount * 12 + 10;
-  
+  const pinCount = Math.max(2, Math.min(pins, 4)); // 最多显示4个引脚
+  // 修复：统一尺寸，与其他符号保持一致
+  const pinSpacing = 12;
+  const width = 24;  // 缩小宽度，与二极管一致
+  const height = pinCount * pinSpacing + 10;
+
   return (
     <>
-      {/* 连接器外壳 */}
+      {/* 连接器外壳 - 改为透明背景，与其他无源元件一致 */}
       <Rect
-        x={-20}
+        x={-width/2}
         y={-height/2}
-        width={40}
+        width={width}
         height={height}
-        fill={fillColor}
+        fill="transparent"
         stroke={strokeColor}
         strokeWidth={strokeWidth}
         cornerRadius={2}
       />
-      
-      {/* 引脚 */}
+
+      {/* 引脚 - 简化，不使用黄色圆点 */}
       {[...Array(pinCount)].map((_, i) => {
-        const py = -height/2 + 10 + i * 12;
+        const py = -height/2 + 8 + i * pinSpacing;
         return (
-          <Group key={i}>
-            <Line points={[-30, py, -20, py]} stroke={strokeColor} strokeWidth={1} />
-            <Circle x={-30} y={py} radius={3} fill="#ffcc00" stroke={strokeColor} strokeWidth={1} />
-            <Text text={`${i + 1}`} x={-15} y={py - 4} fontSize={8} fill="#aaaaaa" />
-          </Group>
+          <Line key={i} points={[-width/2 - 12, py, -width/2, py]} stroke={strokeColor} strokeWidth={1} />
         );
       })}
     </>
@@ -566,6 +576,8 @@ const GNDSymbol: React.FC<{ selected: boolean }> = ({ selected }) => {
 
 /**
  * 主组件 - 根据元件类型渲染对应符号
+ *
+ * 注意：传入的position是毫米坐标(mm)，需要乘以MM_TO_PX转换为像素坐标
  */
 const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
   component,
@@ -575,11 +587,124 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
   draggable = true,
 }) => {
   const symbolType = getSymbolType(component);
-  const x = component.position?.x || 0;
-  const y = component.position?.y || 0;
+
+  // KiCad符号数据
+  const [kicadSymbol, setKicadSymbol] = useState<SymbolGraphicsData | null>(null);
+  // 修复：默认使用硬编码符号，避免异步加载导致闪烁
+  const [useKiCadRenderer, setUseKiCadRenderer] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 尝试从KiCad库获取符号 - 修复：加载完成后才切换渲染器，避免空白
+  useEffect(() => {
+    let mounted = true;
+    const loadKiCadSymbol = async () => {
+      // 先显示硬编码符号，避免空白
+      setUseKiCadRenderer(false);
+      setIsLoading(true);
+
+      // 优先使用symbol_library
+      if (component.symbol_library) {
+        const parts = component.symbol_library.split(':');
+        if (parts.length === 2) {
+          try {
+            const data = await symbolApi.getSymbolGraphics(parts[0], parts[1]);
+            if (mounted && data.success) {
+              setKicadSymbol(data);
+              setUseKiCadRenderer(true);
+              setIsLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.warn(`[SchematicSymbol] Failed to load KiCad symbol: ${component.symbol_library}`, err);
+          }
+        }
+      }
+
+      // 尝试根据名称查找符号
+      try {
+        const data = await symbolApi.findSymbol(component.name, component.model);
+        if (mounted && data) {
+          setKicadSymbol(data);
+          setUseKiCadRenderer(true);
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn(`[SchematicSymbol] Failed to find symbol for: ${component.name}`, err);
+      }
+
+      // 回退到硬编码符号
+      if (mounted) {
+        setUseKiCadRenderer(false);
+        setIsLoading(false);
+      }
+    };
+
+    loadKiCadSymbol();
+    return () => { mounted = false; };
+  }, [component.symbol_library, component.name, component.model]);
+
+  // 毫米到像素的转换因子（与SchematicEditor一致）
+  const MM_TO_PX = 0.5;
+
+  // 将毫米坐标转换为像素坐标
+  const x = (component.position?.x || 0) * MM_TO_PX;
+  const y = (component.position?.y || 0) * MM_TO_PX;
   const rotation = component.rotation || 0;
-  
-  // 渲染符号
+  const mirror = component.mirror || false;
+
+  // 调试日志 - 打印关键信息
+  const hasKiCadGraphics = kicadSymbol?.graphics?.length > 0;
+  console.log(`[SchematicSymbol] Component ${component.id}: symbolType=${symbolType}, useKiCad=${useKiCadRenderer}, hasGraphics=${hasKiCadGraphics}, isLoading=${isLoading}, mmPos=(${component.position?.x}, ${component.position?.y}), pxPos=(${x}, ${y}), name=${component.name}`);
+  if (kicadSymbol && !hasKiCadGraphics) {
+    console.warn(`[SchematicSymbol] KiCad symbol ${kicadSymbol.library}:${kicadSymbol.name} has no graphics, falling back to hardcoded symbol`);
+  }
+
+  // 修复：只有在成功加载KiCad符号且graphics不为空后才使用KiCad渲染器，否则使用硬编码符号
+  // 注意：KiCadSymbolRenderer使用MM_TO_PX=2，这里scale=5使得整体1mm=10px
+  if (useKiCadRenderer && kicadSymbol && hasKiCadGraphics && !isLoading) {
+    return (
+      <Group
+        x={x}
+        y={y}
+        rotation={rotation}
+        draggable={draggable}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        onTap={onClick}
+      >
+        <KiCadSymbolRenderer
+          library={kicadSymbol.library}
+          name={kicadSymbol.name}
+          x={0}
+          y={0}
+          rotation={0}
+          mirror={mirror}
+          scale={2}
+          selected={selected}
+          graphicsData={kicadSymbol}
+        />
+        {/* 标签 */}
+        <Text
+          text={component.reference || ''}
+          x={-30}
+          y={-50}
+          fontSize={10}
+          fill={selected ? '#ffffff' : '#cccccc'}
+          fontStyle="bold"
+        />
+        <Text
+          text={component.value || component.model || ''}
+          x={-30}
+          y={-35}
+          fontSize={9}
+          fill={selected ? '#cccccc' : '#888888'}
+        />
+      </Group>
+    );
+  }
+
+  // 渲染符号（回退到硬编码）
   const renderSymbol = () => {
     switch (symbolType) {
       case 'resistor':
@@ -609,6 +734,19 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
       }
       case 'power_gnd':
         return <GNDSymbol selected={selected} />;
+      case 'passive':
+        // 默认无源元件显示为简单矩形
+        return (
+          <Rect
+            x={-30}
+            y={-20}
+            width={60}
+            height={40}
+            fill="transparent"
+            stroke={selected ? '#ffffff' : '#00ff00'}
+            strokeWidth={2}
+          />
+        );
       case 'ic':
       case 'power_ic':
       case 'mcu':
@@ -645,40 +783,45 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
       onTap={onClick}
       draggable={draggable}
       onDragEnd={onDragEnd}
+      visible={true}
     >
+      {/* 移除调试背景框，保持简洁 */}
       {/* 符号本体 */}
       {renderSymbol()}
-      
+
       {/* 位号 (Reference) */}
       <Text
-        text={component.reference || ''}
+        text={component.reference || 'REF?'}
         x={-30}
         y={labelPos.refY}
         fontSize={11}
         fill={selected ? '#ffffff' : '#00aaff'}
         fontStyle="bold"
+        background="#1a1a1a"
       />
-      
+
       {/* 值/型号 */}
       <Text
-        text={component.value || component.model || ''}
+        text={component.value || component.model || 'VALUE?'}
         x={-30}
         y={labelPos.valueY}
         fontSize={9}
         fill={selected ? '#cccccc' : '#888888'}
+        background="#1a1a1a"
       />
-      
+
       {/* 封装信息 */}
       {component.footprint && (
         <Text
           text={component.footprint}
           x={-30}
           y={labelPos.valueY + 12}
-          fontSize={7}
-          fill="#666666"
+          fontSize={9}
+          fill="#888888"
+          fontStyle="italic"
         />
       )}
-      
+
       {/* 符号库信息 */}
       {component.symbol_library && (
         <Text
