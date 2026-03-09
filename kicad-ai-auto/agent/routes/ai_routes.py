@@ -4,8 +4,15 @@ AI Routes - AI 智能项目创建 API
 
 import logging
 import os
+import sys
 import json
 from pathlib import Path
+
+# 添加 deprecated 目录到 Python 路径
+_deprecated_path = Path(__file__).parent.parent / 'deprecated'
+if str(_deprecated_path) not in sys.path:
+    sys.path.insert(0, str(_deprecated_path))
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -27,7 +34,10 @@ from glm4_client import get_glm4_client, is_glm4_available
 # 导入新的原理图生成器
 from schematic_generator import generate_standard_schematic, SchematicGenerator
 
-# 导入智能封装查找器
+# Import Token management
+from models.user import deduct_token
+
+# Import smart footprint finder
 from smart_footprint_finder import find_footprint, get_footprint_finder
 
 # 导入电路增强器
@@ -345,6 +355,8 @@ class SchematicData(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
+    token_used: Optional[int] = None  # 真实Token消耗
+    model_used: Optional[str] = None  # 使用的模型
     spec: ProjectSpec
     schematic: SchematicData
     pcb: Optional[Dict[str, Any]] = None  # PCB 数据（可选）
@@ -352,7 +364,13 @@ class AnalyzeResponse(BaseModel):
 
 def _generate_dynamic_project(
     requirements: str, answers: Optional[Dict[str, str]] = None
-) -> tuple:
+) -> tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    根据用户输入动态生成项目方案
+
+    Returns:
+        tuple: (components, schematic_data, pcb_data)
+    """
     """
     根据用户输入动态生成项目方案
 
@@ -1579,7 +1597,15 @@ def mock_ai_analyze(
         powerSymbols=schematic_power_symbols
     )
 
-    return AnalyzeResponse(spec=spec, schematic=schematic)
+    # 模拟AI生成，固定消耗500 token
+    mock_token_used = 500
+    
+    return AnalyzeResponse(
+        spec=spec, 
+        schematic=schematic,
+        token_used=mock_token_used,
+        model_used="mock"
+    )
 
 
 # ========== PCB 数据生成函数 ==========
@@ -2178,6 +2204,13 @@ async def analyze_requirements(request: AnalyzeRequest):
             logger.info(f"PCB 生成成功: {pcb_data.width}x{pcb_data.height}mm, {len(pcb_data.components)} 个元件")
 
             # 返回兼容格式（包含 spec 和 pcb）
+            # PCB生成消耗少量token
+            pcb_token = 50 * 3  # PCB生成固定消耗50 token
+            try:
+                deduct_token(1, "ai_pcb_generate", pcb_token, "pcb_generator", is_test=False)
+            except Exception as e:
+                logger.error(f"记录PCB生成Token失败: {e}")
+            
             return AnalyzeResponse(
                 spec=ProjectSpec(
                     name="PCB Project",
@@ -2192,11 +2225,13 @@ async def analyze_requirements(request: AnalyzeRequest):
                     netLabels=[],
                     powerSymbols=[]
                 ),
-                pcb=pcb_data.model_dump()
+                pcb=pcb_data.model_dump(),
+                token_used=pcb_token,
+                model_used="pcb_generator"
             )
         except Exception as e:
             logger.error(f"PCB 生成失败: {e}")
-            return {"detail": f"PCB 生成失败: {str(e)}"}
+            logger.error(f"PCB 生成失败: {e}"); raise HTTPException(status_code=500, detail=f"PCB 生成失败: {str(e)}")
 
     # ========== Schematic Only 或 Full 模式 ==========
     # 验证需求不为空 (仅在非 PCB Only 模式下)
@@ -2388,10 +2423,31 @@ async def analyze_requirements(request: AnalyzeRequest):
                     powerSymbols=schematic_power_symbols,
                 )
 
+                # 提取 token 使用信息
+                usage = project_spec.get("usage", {})
+                token_used = usage.get("total_tokens", 0) if usage else 0
+                
                 logger.info(
-                    f"GLM-4 生成方案成功: {spec.name}, {len(components)} 个元件"
+                    f"Kimi 生成方案成功: {spec.name}, {len(components)} 个元件, 消耗Token: {token_used}"
                 )
-                return AnalyzeResponse(spec=spec, schematic=schematic)
+                
+                # 记录token消耗（从虚拟余额中扣除）
+                try:
+                    # 获取当前用户（从请求中或使用默认用户）
+                    from fastapi import Request
+                    # 默认用户ID为1（管理员）
+                    user_id = 1
+                    deduct_token(user_id, "ai_analyze", token_used * 3, "kimi", is_test=False)
+                    logger.info(f"Token消耗已记录: user={user_id}, action=ai_analyze, token={token_used}, model=kimi")
+                except Exception as e:
+                    logger.error(f"记录Token消耗失败: {e}")
+                
+                return AnalyzeResponse(
+                    spec=spec, 
+                    schematic=schematic,
+                    token_used=token_used,
+                    model_used="kimi"
+                )
             except Exception as glm_error:
                 # GLM调用失败，记录详细错误信息
                 error_msg = str(glm_error)
@@ -2416,13 +2472,13 @@ async def analyze_requirements(request: AnalyzeRequest):
                             "detail": "AI服务暂时不可用：智谱AI API余额不足或请求频率过高，请前往 https://open.bigmodel.cn/ 充值或稍后重试"
                         }
                 elif "timeout" in error_msg.lower() or "超时" in error_msg:
-                    return {"detail": "AI服务响应超时，请稍后重试"}
+                    raise HTTPException(status_code=504, detail="AI服务响应超时，请稍后重试")
                 elif (
                     "json" in error_msg.lower()
                     or "解析" in error_msg
                     or "parse" in error_msg.lower()
                 ):
-                    return {"detail": "AI返回的数据格式错误，请重试"}
+                    raise HTTPException(status_code=502, detail="AI返回的数据格式错误，请重试")
                 else:
                     # 其他错误，尝试回退到模拟实现
                     logger.warning("准备回退到模拟AI分析...")
@@ -2432,7 +2488,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                         return result
                     except Exception as mock_err:
                         logger.error(f"回退到模拟AI也失败: {mock_err}")
-                        return {"detail": f"AI分析失败: {error_msg}"}
+                        raise HTTPException(status_code=500, detail=f"AI分析失败: {error_msg}")
         else:
             # 没有配置 API Key，使用模拟实现
             logger.warning("未配置 ZHIPU_API_KEY，使用模拟AI分析")
@@ -2448,7 +2504,7 @@ async def analyze_requirements(request: AnalyzeRequest):
             return result
         except Exception as mock_error:
             logger.error(f"模拟AI分析也失败: {mock_error}")
-            return {"detail": f"AI分析失败: {error_msg}"}
+            raise HTTPException(status_code=500, detail=f"AI分析失败: {error_msg}")
 
 
 @router.get("/health")

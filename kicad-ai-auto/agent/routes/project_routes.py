@@ -4,7 +4,7 @@
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import uuid4
@@ -593,6 +593,15 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
     schematicData: Optional[Dict[str, Any]] = None
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Project name cannot be empty')
+        if len(v.strip()) > 100:
+            raise ValueError('Project name cannot exceed 100 characters')
+        return v.strip()
 
 
 class ProjectUpdate(BaseModel):
@@ -634,21 +643,73 @@ class PCBDataUpdate(BaseModel):
 # ========== 项目 CRUD ==========
 
 
-@router.get("")
-async def list_projects():
-    """列出所有项目（去重）"""
+@router.get("", 
+    summary="列出所有项目",
+    description="获取项目列表，支持分页、搜索和排序",
+    response_description="项目列表"
+)
+async def list_projects(
+    page: int = 1,
+    page_size: int = 50,
+    search: str = None,
+    sort: str = "updatedAt",
+    filter: str = None,
+):
+    """
+    列出所有项目（去重）
+    
+    Args:
+        page: 页码 (默认 1)
+        page_size: 每页数量 (默认 50，最大 100)
+        search: 搜索关键词（匹配项目名称）
+        sort: 排序字段 (createdAt/updatedAt/name)
+        filter: 过滤条件 (active/completed)
+    
+    Returns:
+        项目列表数据
+    
+    Raises:
+        HTTPException: page 或 page_size 无效时返回 400
+    """
+    # 验证分页参数
+    if page < 1:
+        raise HTTPException(status_code=400, detail="page must be >= 1")
+    if page_size < 1:
+        raise HTTPException(status_code=400, detail="page_size must be >= 1")
+    if page_size > 100:
+        raise HTTPException(status_code=400, detail="page_size must be <= 100")
+    
     projects = list(_projects.values())
-    # 根据项目名称去重，保留最新创建的项目
+    
+    # 搜索过滤
+    if search:
+        projects = [p for p in projects if search.lower() in p.get('name', '').lower()]
+    
+    # 状态过滤
+    if filter:
+        projects = [p for p in projects if p.get('status') == filter]
+    
+    # 排序
+    reverse = True  # 默认降序
+    if sort:
+        projects.sort(key=lambda x: x.get(sort, ''), reverse=reverse)
+    
+    # 去重，保留最新
     seen = {}
     for project in projects:
         name = project.get('name', '')
         if name not in seen:
             seen[name] = project
         else:
-            # 保留更新日期更新的
             if project.get('updatedAt', '') > seen[name].get('updatedAt', ''):
                 seen[name] = project
-    return list(seen.values())
+    
+    all_projects = list(seen.values())
+    
+    # 分页
+    start = (page - 1) * page_size
+    end = start + page_size
+    return all_projects[start:end]
 
 
 @router.delete("/clear-all")
@@ -661,8 +722,27 @@ async def clear_all_projects():
     return {"success": True, "message": "All projects cleared"}
 
 
-@router.post("", response_model=ProjectResponse)
+@router.post("", 
+    response_model=ProjectResponse,
+    summary="创建新项目",
+    description="创建一个新的 PCB 设计项目",
+    status_code=201
+)
 async def create_project(project: ProjectCreate):
+    """
+    创建新项目
+    
+    Args:
+        project: 项目创建请求体
+        
+    Returns:
+        创建成功的项目信息
+        
+    Raises:
+        HTTPException: 
+            - 400: 项目名称无效
+            - 409: 项目名称已存在
+    """
     """创建新项目"""
     # 检查项目名称是否已存在（避免覆盖现有项目）
     existing_projects = _projects.values()
@@ -1126,15 +1206,112 @@ async def get_drc_report(project_id: str):
 
 @router.post("/{project_id}/export/gerber")
 async def export_gerber(project_id: str):
-    """导出 Gerber 文件"""
+    """导出 Gerber 文件 - 直接生成Gerber文件"""
+    import os
+    
     if project_id not in _projects:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # 简化的导出响应 - 实际应该调用 KiCad
-    return {
-        "success": True,
-        "data": {"files": [f"{project_id}-F_Cu.gbr", f"{project_id}-B_Cu.gbr"]},
-    }
+    logger.info(f"Starting Gerber export for project: {project_id}")
+
+    output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+    os.makedirs(output_dir, exist_ok=True)
+
+    pcb_info = _pcb_data.get(project_id, {})
+    footprints = pcb_info.get("footprints", [])
+    board_width = pcb_info.get("boardWidth", 80)
+    board_height = pcb_info.get("boardHeight", 60)
+
+    if not footprints:
+        schematic = _schematic_data.get(project_id, {})
+        components = schematic.get("components", [])
+        if components:
+            for i, comp in enumerate(components):
+                fp = {
+                    "reference": comp.get("reference", f"U{i+1}"),
+                    "value": comp.get("model", ""),
+                    "footprint": comp.get("package", "R_0805"),
+                    "position": comp.get("position", {"x": 50, "y": 50}),
+                }
+                footprints.append(fp)
+
+    if not footprints:
+        raise HTTPException(status_code=400, detail="No PCB data available for export")
+
+    try:
+        def gerber_header(layer_name):
+            return f"G04 Created by KiCad AI Auto Gerber Exporter *\nG01*\nG04 Layer: {layer_name} *\n%FSLAX46Y46*%\n%MOMM*%\n%IPPOS*%\nG04 Gerber X2 format *\n%ASAXB*%\nG54D10*\nG75*\n"
+        
+        def gerber_footer():
+            return "M02*\n"
+        
+        def format_coord(x, y):
+            return f"X{int(x*1000):07d}Y{int(y*1000):07d}D01*\n"
+        
+        exported_files = []
+        
+        # F.Cu layer
+        gerber_content = gerber_header("F.Cu")
+        gerber_content += "G54D11*\n"
+        
+        for fp in footprints:
+            pos = fp.get("position", {"x": 0, "y": 0})
+            x, y = pos.get("x", 0), pos.get("y", 0)
+            x_mm = x / 10
+            y_mm = (board_height * 10 - y) / 10
+            gerber_content += format_coord(x_mm - 0.4, y_mm - 0.4)
+            gerber_content += format_coord(x_mm + 0.4, y_mm - 0.4)
+            gerber_content += format_coord(x_mm + 0.4, y_mm + 0.4)
+            gerber_content += format_coord(x_mm - 0.4, y_mm + 0.4)
+            gerber_content += format_coord(x_mm - 0.4, y_mm - 0.4)
+            gerber_content += "D02*\n"
+        
+        gerber_content += gerber_footer()
+        
+        output_file = os.path.join(output_dir, f"{project_id}-F_Cu.gbr")
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(gerber_content)
+        exported_files.append(os.path.basename(output_file))
+        
+        # B.Cu layer
+        gerber_content = gerber_header("B.Cu")
+        gerber_content += gerber_footer()
+        
+        output_file = os.path.join(output_dir, f"{project_id}-B_Cu.gbr")
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(gerber_content)
+        exported_files.append(os.path.basename(output_file))
+        
+        # Edge.Cuts
+        gerber_content = gerber_header("Edge.Cuts")
+        gerber_content += "G54D11*\n"
+        gerber_content += "G75*\n"
+        gerber_content += f"X{int(0)*1000:07d}Y{int(0)*1000:07d}D02*\n"
+        gerber_content += f"X{int(board_width*10)*1000:07d}Y{int(0)*1000:07d}D01*\n"
+        gerber_content += f"X{int(board_width*10)*1000:07d}Y{int(board_height*10)*1000:07d}D01*\n"
+        gerber_content += f"X{int(0)*1000:07d}Y{int(board_height*10)*1000:07d}D01*\n"
+        gerber_content += f"X{int(0)*1000:07d}Y{int(0)*1000:07d}D01*\n"
+        gerber_content += "D02*\n"
+        gerber_content += gerber_footer()
+        
+        output_file = os.path.join(output_dir, f"{project_id}-Edge_Cuts.gbr")
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(gerber_content)
+        exported_files.append(os.path.basename(output_file))
+        
+        logger.info(f"Gerber export completed: {exported_files}")
+        
+        return {
+            "success": True,
+            "data": {"files": exported_files, "output_dir": output_dir}
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in Gerber export: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+    raise HTTPException(status_code=500, detail="Gerber export failed")
 
 
 @router.post("/{project_id}/export/drill")
@@ -1195,7 +1372,7 @@ async def export_bom(project_id: str):
     )
 
     # 生成BOM CSV - 使用固定的输出目录
-    output_dir = r"C:\KiCadWebEditor\output"
+    output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
     logger.info(f"Creating output directory: {output_dir}")
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{project_id}-bom.csv")
@@ -1244,8 +1421,126 @@ async def export_bom(project_id: str):
 
 @router.post("/{project_id}/export/step")
 async def export_step(project_id: str):
-    """导出 STEP 模型"""
+    """导出 STEP 3D模型"""
+    import os
+    import subprocess
+
     if project_id not in _projects:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    return {"files": [f"{project_id}.step"]}
+    logger.info(f"Starting STEP export for project: {project_id}")
+
+    # 获取项目信息
+    project = _projects.get(project_id, {})
+    project_name = project.get("name", project_id)
+
+    output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 检查是否有KiCad IPC连接
+    kicad_cli_path = os.environ.get("KICAD_CLI_PATH", "E:/Program Files/KiCad/9.0/bin/kicad-cli.exe")
+
+    # 查找项目的KiCad文件
+    project_dir = os.path.join(os.environ.get("PROJECTS_DIR", os.path.join(os.getcwd(), "projects")), project_id)
+    pcb_file = None
+
+    # 搜索可能的PCB文件
+    for ext in [".kicad_pcb", ".pcb"]:
+        for root, dirs, files in os.walk(project_dir):
+            for f in files:
+                if f.endswith(ext):
+                    pcb_file = os.path.join(root, f)
+                    break
+            if pcb_file:
+                break
+        if pcb_file:
+            break
+
+    # 如果找到PCB文件，使用kicad-cli导出
+    if pcb_file and os.path.exists(pcb_file):
+        output_file = os.path.join(output_dir, f"{project_id}.step")
+
+        try:
+            result = subprocess.run(
+                [kicad_cli_path, "pcb", "export", "step",
+                 "-o", output_file,
+                 "--subst-models",
+                 pcb_file],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+
+            if result.returncode == 0 and os.path.exists(output_file):
+                logger.info(f"STEP export successful: {output_file}")
+                return {"files": [os.path.basename(output_file)]}
+            else:
+                logger.error(f"STEP export failed: {result.stderr}")
+                raise HTTPException(status_code=500, detail=f"STEP export failed: {result.stderr}")
+        except subprocess.TimeoutExpired:
+            logger.error("STEP export timeout")
+            raise HTTPException(status_code=500, detail="STEP export timeout")
+        except Exception as e:
+            logger.error(f"STEP export error: {e}")
+            raise HTTPException(status_code=500, detail=f"STEP export error: {str(e)}")
+    else:
+        # Canvas模式：没有真实的KiCad文件
+        # 创建一个提示文件说明情况
+        logger.warning(f"No KiCad PCB file found for project: {project_id}, generating placeholder")
+
+        # 检查PCB数据是否存在
+        pcb_info = _pcb_data.get(project_id, {})
+        footprints = pcb_info.get("footprints", [])
+
+        if footprints:
+            # 有PCB数据但没有文件，生成说明文件
+            placeholder_content = f"""STEP 3D Model Export - Placeholder
+=====================================
+
+Project: {project_name}
+Project ID: {project_id}
+
+This is a placeholder file because the system is running in Canvas mode
+without an active KiCad connection.
+
+To export a real STEP 3D model:
+
+1. Open the project in KiCad PCB Editor
+2. Go to File -> Export -> STEP
+3. Or use: kicad-cli pcb export step -o output.step input.kicad_pcb
+
+PCB Summary:
+- Footprints: {len(footprints)}
+- Board dimensions: {pcb_info.get('boardWidth', 'N/A')} x {pcb_info.get('boardHeight', 'N/A')} mm
+"""
+            placeholder_file = os.path.join(output_dir, f"{project_id}.step.txt")
+            with open(placeholder_file, "w", encoding="utf-8") as f:
+                f.write(placeholder_content)
+
+            return {
+                "files": [f"{project_id}.step.txt"],
+                "warning": "STEP export requires KiCad connection. Generated placeholder file.",
+                "note": "To get real STEP file, open project in KiCad and export manually"
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="No PCB data available. Please generate PCB layout first."
+            )
+
+
+# ========== 导出格式端点 ==========
+@router.get("/export/formats")
+async def get_export_formats():
+    """获取支持的导出格式列表"""
+    return {
+        "formats": [
+            {"id": "gerber", "name": "Gerber", "description": "PCB制造文件"},
+            {"id": "drill", "name": "Drill", "description": "钻孔文件"},
+            {"id": "bom", "name": "BOM", "description": "物料清单"},
+            {"id": "pickplace", "name": "Pick and Place", "description": "贴片坐标文件"},
+            {"id": "pdf", "name": "PDF", "description": "PDF文档"},
+            {"id": "svg", "name": "SVG", "description": "SVG矢量图"},
+            {"id": "step", "name": "STEP", "description": "3D模型"},
+        ]
+    }
