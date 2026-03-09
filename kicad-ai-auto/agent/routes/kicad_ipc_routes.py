@@ -100,15 +100,15 @@ async def execute_action(
     request: ExecuteActionRequest, manager: KiCadIPCManager = Depends(get_kicad_manager)
 ):
     """执行 KiCad 动作"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected. Please start KiCad with IPC server."}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
         result = manager.execute_action(request.action_name, request.params)
-        return result
+        return {"success": True, "connected": True, **result} if isinstance(result, dict) else {"success": True, "connected": True, "result": str(result)}
     except Exception as e:
         logger.error(f"Error executing action: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "connected": True, "message": str(e)}
 
 
 @router.post("/footprint")
@@ -139,10 +139,11 @@ async def get_items(
     manager: KiCadIPCManager = Depends(get_kicad_manager),
 ):
     """获取 PCB 上的项目列表"""
+    # 如果未连接，返回友好错误而不是500
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected. Please start KiCad with IPC server.", "items": []}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
         status = manager.get_board_status()
         items = status.get("items", [])
 
@@ -152,24 +153,24 @@ async def get_items(
         if layer:
             items = [item for item in items if item.get("layer") == layer]
 
-        return {"success": True, "count": len(items), "items": items}
+        return {"success": True, "connected": True, "count": len(items), "items": items}
     except Exception as e:
         logger.error(f"Error getting items: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "connected": False, "message": str(e), "items": []}
 
 
 @router.get("/selection")
 async def get_selection(manager: KiCadIPCManager = Depends(get_kicad_manager)):
     """获取当前选中的项目"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected", "selection": []}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
         status = manager.get_board_status()
-        return {"success": True, "selection": status.get("selection", [])}
+        return {"success": True, "connected": True, "selection": status.get("selection", [])}
     except Exception as e:
         logger.error(f"Error getting selection: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "connected": False, "message": str(e), "selection": []}
 
 
 @router.post("/screenshot")
@@ -177,24 +178,23 @@ async def take_screenshot(
     manager: KiCadIPCManager = Depends(get_kicad_manager),
 ):
     """使用 KiCad CLI 导出截图"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected"}
+    
     temp_file_path = None
-    operation_success = False
-
     try:
-        # 始终使用安全的临时文件，不接受用户提供的路径
         with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as temp_file:
             temp_file_path = temp_file.name
         output_path = temp_file_path
 
         success = manager.get_screenshot_via_cli(output_path)
         if success:
-            operation_success = True
-            return {"success": True, "path": output_path, "message": "Screenshot saved"}
+            return {"success": True, "connected": True, "path": output_path, "message": "Screenshot saved"}
         else:
-            raise HTTPException(status_code=500, detail="Screenshot failed")
+            return {"success": False, "connected": True, "message": "Screenshot generation failed"}
     except Exception as e:
         logger.error(f"Error taking screenshot: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "connected": True, "message": str(e)}
     finally:
         # 仅当操作失败且是我们创建的临时文件时，才清理它
         if temp_file_path and not operation_success:
@@ -299,45 +299,48 @@ async def save_board(manager: KiCadIPCManager = Depends(get_kicad_manager)):
 @router.get("/statistics")
 async def get_statistics(manager: KiCadIPCManager = Depends(get_kicad_manager)):
     """获取板子统计信息"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected", "tracks": 0, "footprints": 0}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
         result = manager.get_board_statistics()
-        return result
+        return {"success": True, "connected": True, **result}
     except Exception as e:
         logger.error(f"Error getting statistics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "connected": False, "message": str(e)}
 
+
+class SelectItemsRequest(BaseModel):
+    item_ids: List[str]
 
 @router.post("/select")
 async def select_items(
-    item_ids: List[str], manager: KiCadIPCManager = Depends(get_kicad_manager)
+    request: SelectItemsRequest, manager: KiCadIPCManager = Depends(get_kicad_manager)
 ):
     """选择项目"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected"}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
-        result = manager.select_items(item_ids)
-        return result
+        result = manager.select_items(request.item_ids)
+        return {"success": True, **result} if isinstance(result, dict) else {"success": True, "result": str(result)}
     except Exception as e:
         logger.error(f"Error selecting items: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "message": str(e)}
 
 
 @router.post("/clear-selection")
 async def clear_selection(manager: KiCadIPCManager = Depends(get_kicad_manager)):
     """清除选择"""
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected"}
+    
     try:
-        if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad not connected")
-
         result = manager.clear_selection()
-        return result
+        return {"success": True, **result}
     except Exception as e:
         logger.error(f"Error clearing selection: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "message": str(e)}
 
 
 # ========== WebSocket 实时通信 ==========
@@ -479,3 +482,185 @@ async def broadcast_status_task(manager: KiCadIPCManager):
         except Exception as e:
             logger.error(f"Broadcast error: {e}")
             await asyncio.sleep(5.0)
+
+
+# ========== 自动布线相关模型 ==========
+
+
+class AutoRouteRequest(BaseModel):
+    """自动布线请求"""
+    net_class: str = "default"  # 网络类名称
+    ripup_days: bool = False     # 是否允许拆线重布
+    stability: int = 50          # 稳定性参数 (0-100)
+    max_iterations: int = 100    # 最大迭代次数
+
+
+class RoutingRule(BaseModel):
+    """布线规则"""
+    name: str
+    description: str
+    min_trace_width: float = 0.2  # 最小走线宽度 (mm)
+    max_trace_width: float = 2.0   # 最大走线宽度 (mm)
+    default_trace_width: float = 0.25  # 默认走线宽度 (mm)
+    min_clearance: float = 0.2     # 最小间距 (mm)
+    via_diameter: float = 0.8      # 过孔直径 (mm)
+    via_drill: float = 0.4        # 过孔钻孔 (mm)
+    impedance_controlled: bool = False  # 阻抗控制
+
+
+# ========== 自动布线路由 ==========
+
+
+@router.post("/auto-route")
+async def auto_route(
+    request: AutoRouteRequest,
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    执行自动布线
+    
+    使用KiCad内置的FreeRouting进行自动布线
+    """
+    try:
+        if not manager.is_connected():
+            raise HTTPException(status_code=400, detail="KiCad未连接，请先启动KiCad并启用IPC服务器")
+
+        logger.info(f"Starting auto-routing with net_class={request.net_class}")
+        
+        # 执行自动布线
+        result = manager.auto_route(
+            net_class=request.net_class,
+            ripup_days=request.ripup_days,
+            stability=request.stability,
+            max_iterations=request.max_iterations,
+        )
+        
+        # 如果布线失败，返回错误信息
+        if not result.get("success", False):
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "自动布线失败")
+            )
+        
+        return {
+            "success": True,
+            "message": result.get("message", "Auto-routing completed"),
+            "result": result,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in auto-route: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/routing-rules")
+async def get_routing_rules(
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    获取当前布线路由规则
+    """
+    # 先检查连接状态
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected. Start KiCad with IPC server.", "rules": {}}
+    
+    try:
+        # 尝试获取规则，如果方法不存在则返回默认值
+        if hasattr(manager, 'get_routing_rules'):
+            rules = manager.get_routing_rules()
+            return {"success": True, "connected": True, "rules": rules}
+        else:
+            # 默认布线规则
+            return {"success": True, "connected": True, "rules": {"default": "standard"}}
+    except Exception as e:
+        logger.error(f"Error getting routing rules: {e}")
+        return {"success": False, "connected": True, "message": str(e), "rules": {}}
+
+
+@router.post("/routing-rules")
+async def set_routing_rules(
+    rules: RoutingRule,
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    设置布线路由规则
+    """
+    try:
+        if not manager.is_connected():
+            raise HTTPException(status_code=400, detail="KiCad not connected")
+
+        result = manager.set_routing_rules(
+            name=rules.name,
+            min_trace_width=rules.min_trace_width,
+            max_trace_width=rules.max_trace_width,
+            default_trace_width=rules.default_trace_width,
+            min_clearance=rules.min_clearance,
+            via_diameter=rules.via_diameter,
+            via_drill=rules.via_drill,
+            impedance_controlled=rules.impedance_controlled,
+        )
+        
+        return {
+            "success": True,
+            "message": f"Routing rule '{rules.name}' updated",
+            "result": result,
+        }
+    except Exception as e:
+        logger.error(f"Error setting routing rules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/clear-tracks")
+async def clear_all_tracks(
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    清除所有走线
+    """
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected"}
+    
+    try:
+        result = manager.clear_all_tracks()
+        return {"success": True, "connected": True, "message": "All tracks cleared", "result": str(result)}
+    except Exception as e:
+        logger.error(f"Error clearing tracks: {e}")
+        return {"success": False, "connected": True, "message": str(e)}
+
+
+@router.get("/ratsnest")
+async def get_ratsnest(
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    获取鼠线(未布线连接)信息
+    """
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected", "ratsnest": []}
+    
+    try:
+        result = manager.get_ratsnest()
+        return {"success": True, "connected": True, "ratsnest": result}
+    except Exception as e:
+        logger.error(f"Error getting ratsnest: {e}")
+        return {"success": False, "connected": True, "message": str(e), "ratsnest": []}
+
+
+@router.post("/show-ratsnest")
+async def show_ratsnest(
+    show: bool = True,
+    manager: KiCadIPCManager = Depends(get_kicad_manager),
+):
+    """
+    显示/隐藏鼠线
+    """
+    if not manager.is_connected():
+        return {"success": False, "connected": False, "message": "KiCad not connected"}
+    
+    try:
+        result = manager.show_ratsnest(show)
+        return {"success": True, "connected": True, "message": f"Ratsnest {'shown' if show else 'hidden'}"}
+    except Exception as e:
+        logger.error(f"Error showing ratsnest: {e}")
+        return {"success": False, "connected": True, "message": str(e)}

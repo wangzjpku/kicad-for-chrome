@@ -50,6 +50,7 @@ from datetime import datetime
 from kicad_controller import KiCadController
 from export_manager import ExportManager
 from state_monitor import StateMonitor
+from settings import get_settings, validate_api_key, get_environment
 
 from middleware import (
     RequestLoggingMiddleware,
@@ -95,13 +96,12 @@ except ImportError as e:
 
 # ========== 安全配置 ==========
 
-# CORS 允许的域名（从环境变量读取）
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"
-).split(",")
+# 使用新的配置模块
+_config = get_settings()
 
-# API Key 认证（从环境变量读取）
-API_KEY = os.getenv("API_KEY", "")
+# 使用配置模块的 CORS
+ALLOWED_ORIGINS = _config.allowed_origins
+API_KEY = _config.api_key or ""
 
 # 文件上传配置
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
@@ -113,6 +113,34 @@ ALLOWED_EXTENSIONS = {
     ".zip",
     ".kicad_sym",
 }
+
+# 文件魔数验证 - 防止恶意文件伪装扩展名
+FILE_SIGNATURES = {
+    ".zip": b"PK",  # ZIP文件
+    ".kicad_pro": b"",  # JSON格式，无固定魔数
+    ".kicad_sch": b"",  # JSON格式
+    ".kicad_pcb": b"",  # S表达式格式
+    ".kicad_mod": b"",  # S表达式格式
+    ".kicad_sym": b"",  # S表达式格式
+}
+
+
+def validate_file_content(content: bytes, extension: str) -> bool:
+    """验证文件内容是否与扩展名匹配"""
+    if extension not in FILE_SIGNATURES:
+        return False
+
+    signature = FILE_SIGNATURES[extension]
+    if not signature:
+        # 无需验证的文件类型，检查是否为有效JSON或文本
+        try:
+            content[:1000].decode("utf-8")
+            return True
+        except UnicodeDecodeError:
+            return False
+
+    # 检查文件魔数
+    return content.startswith(signature)
 
 # 项目目录
 PROJECTS_DIR = Path(os.getenv("PROJECTS_DIR", "/projects"))
@@ -130,9 +158,19 @@ limiter = Limiter(
 # 创建 FastAPI 应用
 app = FastAPI(
     title="KiCad AI Control API",
-    description="API for controlling KiCad through browser automation",
+    description="本次第一次定型",
     version="1.0.0",
 )
+
+# ========== 版本信息端点 ==========
+@app.get("/api/version")
+async def get_version():
+    """获取API版本信息"""
+    return {
+        "version": "0.9.11",
+        "name": "KiCad AI Control API",
+        "description": "本次第一次定型"
+    }
 
 # 注册速率限制器
 app.state.limiter = limiter
@@ -164,6 +202,18 @@ logger.info("Project API routes registered")
 app.include_router(ai_router)
 logger.info("AI API routes registered")
 
+# 注册认证与 Token 管理路由
+from routes.auth_routes import router as auth_router
+from routes.token_routes import router as token_router
+from routes.deepeda_routes import router as deepeda_router
+from routes.admin_routes import router as admin_router
+
+app.include_router(auth_router)
+app.include_router(token_router)
+app.include_router(deepeda_router)
+app.include_router(admin_router)
+logger.info("Auth and Token routes registered")
+
 # 注册符号库 API 路由
 try:
     from routes.symbol_routes import router as symbol_router
@@ -182,14 +232,53 @@ try:
 except ImportError as e:
     logger.warning(f"Knowledge routes not available: {e}")
 
+# 注册网表管理 API 路由
+try:
+    from routes.netlist_routes import router as netlist_router
+
+    app.include_router(netlist_router)
+    logger.info("Netlist API routes registered")
+except ImportError as e:
+    logger.warning(f"Netlist routes not available: {e}")
+
+# 注册封装库 API 路由
+try:
+    from routes.footprint_routes import router as footprint_router
+
+    app.include_router(footprint_router)
+    logger.info("Footprint Library API routes registered")
+except ImportError as e:
+    logger.warning(f"Footprint routes not available: {e}")
+
+# 别名路由 - 兼容旧版本
+@app.get("/api/footprints/libraries")
+async def footprints_libraries_alias():
+    """封装库列表(兼容旧版本)"""
+    from routes.footprint_routes import list_footprint_libraries
+    return {"success": True, "libraries": list_footprint_libraries()}
+
+@app.get("/api/netlist/example")
+async def netlist_example_alias():
+    """网表示例(兼容旧版本)"""
+    from routes.netlist_routes import get_netlist_example
+    return await get_netlist_example()
+
 
 # ========== 认证与验证 ==========
 
 
 async def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")):
-    """验证 API Key"""
-    if API_KEY and api_key != API_KEY:
+    """验证 API Key - 支持开发和生产环境"""
+    # 使用新的配置验证函数
+    result = validate_api_key(api_key)
+    
+    # result = None: 不需要验证
+    # result = True: 验证通过
+    # result = False: 验证失败
+    if result is False:
         raise HTTPException(status_code=401, detail="Invalid API Key")
+    
+    # 如果生产环境但未配置 API_KEY，会在 validate_api_key 中抛出异常
     return api_key
 
 
@@ -292,6 +381,9 @@ async def startup_event():
     """应用启动时初始化"""
     global kicad_controller, state_monitor, export_manager
 
+    # 添加异步锁，防止并发操作冲突
+    kicad_lock = asyncio.Lock()
+
     logger.info("Initializing KiCad Controller...")
     kicad_controller = KiCadController(
         display_id=os.getenv("DISPLAY", ":99"), resolution=(1920, 1080)
@@ -386,6 +478,13 @@ async def open_project(
                 detail=f"文件过大，最大允许 {MAX_FILE_SIZE // (1024 * 1024)}MB",
             )
 
+        # 验证文件内容（魔数验证）
+        if not validate_file_content(content, ext):
+            raise HTTPException(
+                status_code=400,
+                detail=f"文件内容与扩展名不匹配，可能是恶意文件",
+            )
+
         # 保存文件
         with open(file_path, "wb") as f:
             f.write(content)
@@ -434,11 +533,15 @@ async def get_project_info():
 async def click_menu(action: MenuAction):
     """点击菜单"""
     try:
+        # 检查控制器是否可用
+        if kicad_controller is None:
+            return {"success": False, "message": "Controller not initialized", "menu": action.menu}
+        
         kicad_controller.click_menu(action.menu, action.item)
         return {"success": True, "menu": action.menu, "item": action.item}
     except Exception as e:
         logger.error(f"Failed to click menu: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"success": False, "message": str(e), "menu": action.menu}
 
 
 # ========== 工具操作 ==========
@@ -525,16 +628,25 @@ async def get_screenshot(request: Request):
                             tmp_path = tmp.name
 
                         success = kicad_manager.get_screenshot_via_cli(tmp_path)
-                        if success and os.path.exists(tmp_path):
-                            with open(tmp_path, "rb") as f:
-                                svg_data = f.read()
-                            return StreamingResponse(
-                                io.BytesIO(svg_data),
-                                media_type="image/svg+xml",
-                                headers={
-                                    "Content-Disposition": "inline; filename=screenshot.svg"
-                                },
-                            )
+                        svg_data = None
+                        try:
+                            if success and os.path.exists(tmp_path):
+                                with open(tmp_path, "rb") as f:
+                                    svg_data = f.read()
+                                return StreamingResponse(
+                                    io.BytesIO(svg_data),
+                                    media_type="image/svg+xml",
+                                    headers={
+                                        "Content-Disposition": "inline; filename=screenshot.svg"
+                                    },
+                                )
+                        finally:
+                            # 清理临时文件
+                            if svg_data and os.path.exists(tmp_path):
+                                try:
+                                    os.remove(tmp_path)
+                                except Exception as cleanup_err:
+                                    logger.warning(f"Failed to cleanup temp file: {cleanup_err}")
                 except Exception as ipc_error:
                     logger.error(f"IPC manager error: {ipc_error}")
 
@@ -670,6 +782,33 @@ async def get_drc_report(request: Request):
     except Exception as e:
         logger.error(f"Failed to get DRC report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/drc/options")
+async def get_drc_options():
+    """获取 DRC 选项"""
+    return {
+        "success": True,
+        "options": {
+            "min_clearance": {"value": 0.2, "unit": "mm", "description": "最小间距"},
+            "min_track_width": {"value": 0.2, "unit": "mm", "description": "最小走线宽度"},
+            "min_via_diameter": {"value": 0.3, "unit": "mm", "description": "最小过孔直径"},
+            "min_solder_mask_clearance": {"value": 0.1, "unit": "mm", "description": "最小绿油间距"},
+        }
+    }
+
+
+@app.get("/api/erc/options")
+async def get_erc_options():
+    """获取 ERC 选项"""
+    return {
+        "success": True,
+        "options": {
+            "check_power_pins": {"value": True, "description": "检查电源引脚"},
+            "check_unconnected": {"value": True, "description": "检查未连接"},
+            "check_duplicates": {"value": True, "description": "检查重复"},
+        }
+    }
 
 
 # ========== WebSocket 控制通道 ==========

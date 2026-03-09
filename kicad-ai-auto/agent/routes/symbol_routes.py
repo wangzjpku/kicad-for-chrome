@@ -54,6 +54,37 @@ async def search_symbols(
     }
 
 
+# 别名端点 - library的简写形式
+@router.get("/libraries/{lib_name}")
+async def get_library_alias(lib_name: str):
+    """获取指定符号库的简写形式"""
+    parser = get_symbol_parser()
+    symbols = parser.list_symbols(lib_name)
+    return {
+        "success": True,
+        "library": lib_name,
+        "symbols": [symbol_to_dict(s) for s in symbols],
+        "count": len(symbols)
+    }
+
+# 别名端点 - 支持query参数
+@router.get("/search-by-query")
+async def search_symbols_by_query(
+    query: str = Query(..., description="搜索关键词"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+):
+    """搜索符号(使用query参数)"""
+    parser = get_symbol_parser()
+    results = parser.search_symbols(query, limit)
+
+    return {
+        "success": True,
+        "keyword": query,
+        "symbols": [symbol_to_dict(s) for s in results],
+        "count": len(results),
+    }
+
+
 @router.get("/{lib_name}/{symbol_name}")
 async def get_symbol(lib_name: str, symbol_name: str):
     """获取指定符号的详细信息"""
