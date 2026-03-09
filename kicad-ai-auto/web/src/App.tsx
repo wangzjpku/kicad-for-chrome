@@ -12,6 +12,8 @@ import { Project } from './types';
 import { usePCBStore } from './stores/pcbStore';
 import { useSchematicStore } from './stores/schematicStore';
 import { exportApi, drcApi } from './services/api';
+import AdminPanel from './pages/AdminPanel';
+import UserBar from './components/UserBar';
 
 type EditorType = 'pcb' | 'schematic';
 type ViewType = 'project-list' | 'editor';
@@ -61,6 +63,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(true);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -497,19 +500,7 @@ function App() {
             <span style={{ fontSize: 12, color: THEME.text.muted }}>
               后端服务: <span style={{ color: THEME.accent.success }}>●</span> 已连接
             </span>
-            <div style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: THEME.bg.tertiary,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              color: THEME.text.secondary,
-            }}>
-              U
-            </div>
+            <UserBar onOpenAdmin={() => setShowAdminPanel(true)} />
           </div>
         </header>
 
@@ -1286,6 +1277,11 @@ function App() {
           defaultExpanded={false}
         />
       </div>
+
+      {/* ===== 运维管理后台 ===== */}
+      {showAdminPanel && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 }
