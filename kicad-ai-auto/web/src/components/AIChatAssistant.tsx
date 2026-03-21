@@ -7,7 +7,7 @@
  * 3. 实时反馈修改结果
  *
  * 作者：AI Assistant
- * 版本：1.1
+ * 版本：1.2
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -61,27 +61,56 @@ interface AIChatAssistantProps {
   defaultExpanded?: boolean;
 }
 
+// 构建欢迎消息，包含项目规格（元件列表）
+const buildWelcomeMessage = (schematicData: SchematicData | null): Message => {
+  // 从 schematicData 构建元件列表
+  let componentsList = '';
+  if (schematicData && 'components' in schematicData && Array.isArray(schematicData.components)) {
+    const comps = schematicData.components;
+    if (comps.length > 0) {
+      componentsList = '\n\n📦 当前电路包含 ' + comps.length + ' 个元件：\n';
+      comps.forEach((c: SchematicComponent, i: number) => {
+        const ref = c.reference || c.symbolName || '未知';
+        const value = c.value || '';
+        const fp = c.footprint || '';
+        componentsList += `${i + 1}. ${ref}${value ? ' - ' + value : ''}${fp ? ' (' + fp + ')' : ''}\n`;
+      });
+    }
+  }
+
+  const welcomeContent = '您好！我是电路设计AI助手。' + componentsList + '\n\n您可以：\n\n📋 描述电路需求，我来帮您生成：\n• "帮我做一个5V稳压电源" → 使用LM7805模板\n• "做一个3.3V降压电路" → 使用AMS1117模板\n• "帮我画一个STM32最小系统"\n\n✏️ 或者直接修改：\n• "把R1移到(100, 200)"\n• "删除电容C3"\n• "在(50, 50)添加一个电容"\n• "连接C1到U1"\n\n⚠️ 注意：如果AI没有响应，请检查后端是否配置了 ZHIPU_API_KEY 环境变量（智谱AI API）。';
+
+  return {
+    id: 'welcome',
+    role: 'system',
+    content: welcomeContent,
+    timestamp: new Date()
+  };
+};
+
 const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   schematicData,
   projectSpec,
   onModifySchematic,
   defaultExpanded = true
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'system',
-      content: '您好！我是电路设计AI助手。您可以：\n\n📋 描述电路需求，我来帮您生成：\n• "帮我做一个5V稳压电源" → 使用LM7805模板\n• "做一个3.3V降压电路" → 使用AMS1117模板\n• "帮我画一个STM32最小系统"\n\n✏️ 或者直接修改：\n• "把R1移到(100, 200)"\n• "删除电容C3"\n• "在(50, 50)添加一个电容"\n• "连接C1到U1"\n\n⚠️ 注意：如果AI没有响应，请检查后端是否配置了 ZHIPU_API_KEY 环境变量（智谱AI API）。',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // 初始化欢迎消息
+  useEffect(() => {
+    if (!initialized && schematicData) {
+      setMessages([buildWelcomeMessage(schematicData as SchematicData | null)]);
+      setInitialized(true);
+    }
+  }, [schematicData, initialized]);
 
   // 使用 KiCad IPC
   const {
@@ -101,15 +130,18 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     removeFootprint,
     updateFootprintPosition,
     addTrack,
-    removeTrack,
     addVia,
-    removeVia,
     savePCBData,
   } = usePCBStore();
 
-  // 确保 pcbData 存在（如果没有，则初始化）
+  // 获取 projectId 用于判断是否加载了项目
+  const { projectId: storeProjectId } = usePCBStore();
+
+  // 确保 pcbData 存在（如果没有项目数据，则初始化）
+  // 重要：只有当没有 projectId（即没有加载项目数据）时才初始化空数据
+  // 避免覆盖从后端加载的真实项目数据
   useEffect(() => {
-    if (!pcbData) {
+    if (!pcbData && !storeProjectId) {
       console.log('[AIChat] Initializing empty PCB data');
       setPCBData({
         id: 'ai-generated',
@@ -137,18 +169,15 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         },
       });
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pcbData, storeProjectId]);
 
-  // 使用原理图 Store (如果可用)
+  // 使用原理图 Store (如果可用) - 用于未来扩展
   const schematicStore = useSchematicStore();
-  const storeSchematicData = schematicStore.schematicData;
-
-  // 检测当前模式：PCB模式还是原理图模式
-  const isPCBMode = pcbData !== null;
-  const isSchematicMode = storeSchematicData !== null;
+  void schematicStore; // 预留接口
 
   // 元件类型到封装的映射
-  const getFootprintForType = (type?: string, value?: string): { libraryName: string; footprintName: string; fullFootprintName: string } => {
+  const getFootprintForType = (type?: string, _value?: string): { libraryName: string; footprintName: string; fullFootprintName: string } => {
     const typeLower = type?.toLowerCase() || '';
     if (typeLower.includes('capacitor') || typeLower.includes('电容') || typeLower.includes('c')) {
       return {
@@ -208,10 +237,16 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const executeModifications = useCallback(async (modifications: Modification[]) => {
     if (!modifications || modifications.length === 0) return;
 
+    // 获取最新的状态
+    const currentPcbData = usePCBStore.getState().pcbData;
+    const currentStoreSchematicData = useSchematicStore.getState().schematicData;
+    const currentIsPCBMode = currentPcbData !== null;
+    const currentIsSchematicMode = currentStoreSchematicData !== null;
+
     console.log('[AIChat] executeModifications called:', modifications);
-    console.log('[AIChat] isPCBMode:', isPCBMode, 'isSchematicMode:', isSchematicMode);
-    console.log('[AIChat] pcbData:', pcbData ? 'loaded' : 'null');
-    console.log('[AIChat] storeSchematicData:', storeSchematicData ? 'loaded' : 'null');
+    console.log('[AIChat] isPCBMode:', currentIsPCBMode, 'isSchematicMode:', currentIsSchematicMode);
+    console.log('[AIChat] pcbData:', currentPcbData ? 'loaded' : 'null');
+    console.log('[AIChat] storeSchematicData:', currentStoreSchematicData ? 'loaded' : 'null');
 
     setIsExecuting(true);
     const results: string[] = [];
@@ -221,7 +256,7 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         switch (mod.action) {
           case 'add_component': {
             // 根据模式创建不同的数据结构
-            if (isPCBMode) {
+            if (currentIsPCBMode) {
               // 获取正确的封装信息
               const footprintInfo = getFootprintForType(mod.type, mod.value);
               const refPrefix = getReferencePrefix(mod.type);
@@ -274,7 +309,7 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               console.log('[AIChat] Calling addFootprint:', footprint);
               addFootprint(footprint);
               results.push(`已添加元件 ${footprint.reference} 到 PCB 画布`);
-            } else if (isSchematicMode) {
+            } else if (currentIsSchematicMode) {
               // 原理图模式
               const component: SchematicComponent = {
                 id: generateId('sch-comp'),
@@ -313,15 +348,15 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             }
 
             // Canvas 模式 - 根据模式删除
-            if (isPCBMode && pcbData?.footprints) {
-              const existingFp = pcbData.footprints.find(
+            if (currentIsPCBMode && currentPcbData?.footprints) {
+              const existingFp = currentPcbData.footprints.find(
                 fp => fp.reference === targetId || fp.id === targetId
               );
               if (existingFp) {
                 removeFootprint(existingFp.id);
                 results.push(`已从 PCB 画布删除元件 ${targetId}`);
               }
-            } else if (isSchematicMode && storeSchematicData?.components) {
+            } else if (currentIsSchematicMode && currentStoreSchematicData?.components) {
               const components = 'components' in schematicData ? schematicData.components : [];
               const existingComp = components.find(
                 c => c.reference === targetId || c.id === targetId
@@ -348,15 +383,15 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             }
 
             // Canvas 模式 - 根据模式移动
-            if (isPCBMode && pcbData?.footprints) {
-              const existingFp = pcbData.footprints.find(
+            if (currentIsPCBMode && currentPcbData?.footprints) {
+              const existingFp = currentPcbData.footprints.find(
                 fp => fp.reference === targetId || fp.id === targetId
               );
               if (existingFp) {
                 updateFootprintPosition(existingFp.id, newPosition);
                 results.push(`已将 PCB 中元件 ${targetId} 移动到 (${newPosition.x}, ${newPosition.y})`);
               }
-            } else if (isSchematicMode && storeSchematicData?.components) {
+            } else if (currentIsSchematicMode && currentStoreSchematicData?.components) {
               const components = 'components' in schematicData ? schematicData.components : [];
               const existingComp = components.find(
                 c => c.reference === targetId || c.id === targetId
@@ -375,8 +410,8 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             const value = mod.value || '';
 
             // Canvas 模式 - 更新前端 Store
-            if (pcbData?.footprints && targetId) {
-              const existingFp = pcbData.footprints.find(
+            if (currentPcbData?.footprints && targetId) {
+              const existingFp = currentPcbData.footprints.find(
                 fp => fp.reference === targetId || fp.id === targetId
               );
               if (existingFp) {
@@ -428,18 +463,18 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             const fromRef = mod.from || '';
             const toRef = mod.to || '';
 
-            if (!pcbData?.footprints || pcbData.footprints.length === 0) {
+            if (!currentPcbData?.footprints || currentPcbData.footprints.length === 0) {
               results.push(`错误：PCB 上没有元件`);
               break;
             }
 
-            console.log('[AIChat] Available footprints:', pcbData.footprints.map(fp => fp.reference));
+            console.log('[AIChat] Available footprints:', currentPcbData.footprints.map(fp => fp.reference));
 
             // 灵活的元件匹配函数
             const findFootprint = (ref: string) => {
               const refUpper = ref.toUpperCase();
               // 尝试直接匹配、IC/U 互换匹配、或者数字匹配
-              return pcbData.footprints.find(fp => {
+              return currentPcbData.footprints.find(fp => {
                 const fpRef = fp.reference.toUpperCase();
                 // 完全匹配
                 if (fpRef === refUpper) return true;
@@ -458,11 +493,11 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             const toFp = findFootprint(toRef);
 
             if (!fromFp) {
-              results.push(`错误：找不到元件 ${fromRef}，可用元件: ${pcbData.footprints.map(fp => fp.reference).join(', ')}`);
+              results.push(`错误：找不到元件 ${fromRef}，可用元件: ${currentPcbData.footprints.map(fp => fp.reference).join(', ')}`);
               break;
             }
             if (!toFp) {
-              results.push(`错误：找不到元件 ${toRef}，可用元件: ${pcbData.footprints.map(fp => fp.reference).join(', ')}`);
+              results.push(`错误：找不到元件 ${toRef}，可用元件: ${currentPcbData.footprints.map(fp => fp.reference).join(', ')}`);
               break;
             }
 
@@ -571,6 +606,64 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               results.push(`已添加 ${templateData.tracks.length} 条走线`);
             }
 
+            // 同时生成原理图符号（ISS-20260322-002 修复）
+            if (schematicStore.addComponent) {
+              const idPrefix = `sch-${Date.now()}`;
+              for (let i = 0; i < template.components.length; i++) {
+                const comp = template.components[i];
+                // 映射模板组件类型到 KiCad 符号库
+                const symbolLibraryMap: Record<string, { lib: string; symbol: string }> = {
+                  'Regulator_Linear': { lib: 'Regulator_Linear', symbol: comp.name },
+                  'Capacitor_SMD': { lib: 'Device', symbol: comp.type === 'capacitor' ? 'C' : comp.type === 'resistor' ? 'R' : comp.name },
+                  'Device': { lib: 'Device', symbol: comp.type === 'capacitor' ? 'C' : comp.type === 'resistor' ? 'R' : comp.name },
+                };
+                const libInfo = symbolLibraryMap[comp.library] || { lib: comp.library || 'Device', symbol: comp.name };
+                const schematicComp: SchematicComponent = {
+                  id: `${idPrefix}-${i}`,
+                  libraryName: libInfo.lib,
+                  symbolName: libInfo.symbol,
+                  fullSymbolName: `${libInfo.lib}:${libInfo.symbol}`,
+                  reference: comp.reference,
+                  value: comp.name,
+                  position: comp.position ? { x: comp.position.x * 4, y: comp.position.y * 4 } : { x: 100 + i * 150, y: 100 },
+                  rotation: 0,
+                  mirror: false,
+                  unit: 1,
+                  fields: {},
+                  footprint: comp.footprint,
+                  pins: [],
+                };
+                schematicStore.addComponent(schematicComp);
+              }
+              results.push(`已生成 ${template.components.length} 个原理图符号`);
+            }
+
+            // 生成原理图导线（从模板 nets）
+            if (schematicStore.addWire && template.nets && template.nets.length > 0) {
+              let wireCount = 0;
+              for (const net of template.nets) {
+                const conns = net.connections;
+                if (conns.length < 2) continue;
+                // 相邻连接点之间画线
+                for (let i = 1; i < conns.length; i++) {
+                  const prevComp = template.components.find(c => c.id === conns[i - 1].componentId);
+                  const currComp = template.components.find(c => c.id === conns[i].componentId);
+                  if (!prevComp || !currComp) continue;
+                  const wire: import('../types').Wire = {
+                    id: `wire-${Date.now()}-${wireCount}`,
+                    points: [
+                      { x: (prevComp.position?.x ?? 100) * 4 + 50, y: (prevComp.position?.y ?? 100) * 4 },
+                      { x: (currComp.position?.x ?? 100) * 4 + 50, y: (currComp.position?.y ?? 100) * 4 },
+                    ],
+                    netId: net.name,
+                  };
+                  schematicStore.addWire(wire);
+                  wireCount++;
+                }
+              }
+              results.push(`已生成 ${wireCount} 条原理图导线`);
+            }
+
             results.push(`✅ 已应用模板: ${template.name}`);
             results.push(`   描述: ${template.description}`);
             break;
@@ -593,12 +686,23 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       console.warn('Save PCB failed:', e);
     }
 
+    // 保存原理图数据
+    try {
+      if (schematicStore.saveSchematicData) {
+        await schematicStore.saveSchematicData();
+      }
+    } catch (e) {
+      console.warn('Save schematic failed:', e);
+    }
+
     setIsExecuting(false);
 
     // 返回执行结果
     return results;
-  }, [connected, pcbData, createFootprint, moveItem, deleteItem, createTrack, createVia,
-      addFootprint, removeFootprint, updateFootprintPosition, addTrack, addVia, savePCBData, onModifySchematic]);
+    // 使用 usePCBStore.getState() 获取最新状态，因此不需要将 pcbData 等加入依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, createFootprint, moveItem, deleteItem, createTrack, createVia,
+      addFootprint, removeFootprint, updateFootprintPosition, addTrack, addVia, savePCBData, onModifySchematic, schematicData]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -619,13 +723,17 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       }];
     }
 
-    // 2. 检测模板关键词
+    // 2. 检测模板关键词（精确芯片型号优先匹配）
     const templatePatterns = [
-      // 电源相关
-      { pattern: /5V.*稳压|稳压.*5V|7805/i, templateId: 'lm7805' },
-      { pattern: /3\.3V.*降压|降压.*3\.3V|AMS1117/i, templateId: 'ams1117-3.3' },
-      // 单片机相关
+      // 精确芯片型号（最高优先级）
+      { pattern: /AMS1117/i, templateId: 'ams1117-3.3' },
+      { pattern: /CH340[CGEK]/i, templateId: 'ch340-usb-serial' },
       { pattern: /STM32|单片机|最小系统/i, templateId: 'stm32-minimal' },
+      { pattern: /ESP32/i, templateId: 'esp32-minimal' },
+      { pattern: /NE555|555.*振荡|振荡器.*555/i, templateId: 'ne555-oscillator' },
+      { pattern: /NPN|三极管.*LED|LED.*驱动/i, templateId: 'npn-led-driver' },
+      // 通用电源关键词
+      { pattern: /5V.*稳压|稳压.*5V|7805/i, templateId: 'lm7805' },
     ];
 
     for (const tp of templatePatterns) {
@@ -644,25 +752,39 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    // 前端预处理：检测连接指令
+    // 前端预处理：检测连接指令和模板需求
     const preModifications = preprocessMessage(inputValue);
-    if (preModifications && pcbData) {
-      console.log('[AIChat] 前端预处理检测到连接指令:', preModifications);
-      // 直接执行连接操作
-      const results = await executeModifications(preModifications);
+    // 使用 getState 获取最新状态避免闭包问题
+    const currentPcbData = usePCBStore.getState().pcbData;
+    // apply_template 不需要现有PCB数据，connect_components 需要
+    const isApplyTemplate = preModifications?.[0]?.action === 'apply_template';
+    if (preModifications && (currentPcbData || isApplyTemplate)) {
+      const mod = preModifications[0];
+      console.log('[AIChat] 前端预处理检测到操作:', mod.action, mod.id || mod.from);
 
-      const resultMsg: Message = {
+      const userMsg: Message = {
         id: `user-${Date.now()}`,
         role: 'user',
         content: inputValue,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, resultMsg]);
+      setMessages(prev => [...prev, userMsg]);
+
+      // 直接执行操作
+      const results = await executeModifications(preModifications);
+
+      // 构建回复消息
+      let assistantContent = '';
+      if (mod.action === 'connect_components') {
+        assistantContent = `好的，我已添加了从 ${mod.from} 到 ${mod.to} 的走线。`;
+      } else if (mod.action === 'apply_template') {
+        assistantContent = `好的，我已根据您的需求应用了相应的电路模板。`;
+      }
 
       const assistantMsg: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: `好的，我已添加了从 ${preModifications[0].from} 到 ${preModifications[0].to} 的走线。`,
+        content: assistantContent,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMsg]);
