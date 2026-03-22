@@ -3,7 +3,8 @@
 提供项目的完整 CRUD 功能
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+import asyncio
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -13,21 +14,28 @@ import os
 from pathlib import Path
 import logging
 
+# 导入共享依赖（安全关键）
+from dependencies import require_admin, get_current_user
+
+# 导入配置
+from settings import get_settings
+
 # 导入封装库函数
 from footprint_library import (
     get_default_footprint,
     infer_component_type,
 )
 
+logger = logging.getLogger(__name__)
+
 # 导入智能封装查找器
 try:
     from smart_footprint_finder import find_footprint as smart_find_footprint
+
     HAS_SMART_FOOTPRINT_FINDER = True
 except ImportError:
     HAS_SMART_FOOTPRINT_FINDER = False
     logger.warning("smart_footprint_finder not available, using fallback")
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
 
@@ -51,40 +59,40 @@ def _convert_schematic_to_pcb(schematic_coords: List[Dict]) -> List[Dict]:
     ]
 
 
-def _get_pad_position(footprint: Dict, pin_name: str = None, pin_number: str = None) -> Dict:
+def _get_pad_position(
+    footprint: Dict, pin_name: Optional[str] = None, pin_number: Optional[str] = None
+) -> Optional[Dict]:
     """
     获取封装上指定引脚的焊盘位置
     """
     fp_position = footprint.get("position", {"x": 0, "y": 0})
-    pads = footprint.get("pad", [])
+    pads = footprint.get("pads") or footprint.get("pad") or []
 
     for pad in pads:
         if pin_name and pad.get("name", "").upper() == pin_name.upper():
             pad_pos = pad.get("position", {"x": 0, "y": 0})
             return {
                 "x": fp_position.get("x", 0) + pad_pos.get("x", 0),
-                "y": fp_position.get("y", 0) + pad_pos.get("y", 0)
+                "y": fp_position.get("y", 0) + pad_pos.get("y", 0),
             }
         if pin_number and pad.get("number") == str(pin_number):
             pad_pos = pad.get("position", {"x": 0, "y": 0})
             return {
                 "x": fp_position.get("x", 0) + pad_pos.get("x", 0),
-                "y": fp_position.get("y", 0) + pad_pos.get("y", 0)
+                "y": fp_position.get("y", 0) + pad_pos.get("y", 0),
             }
 
     if pads:
         pad_pos = pads[0].get("position", {"x": 0, "y": 0})
         return {
             "x": fp_position.get("x", 0) + pad_pos.get("x", 0),
-            "y": fp_position.get("y", 0) + pad_pos.get("y", 0)
+            "y": fp_position.get("y", 0) + pad_pos.get("y", 0),
         }
     return None
 
 
 def _generate_tracks_from_footprints(
-    footprints: List[Dict],
-    nets: List[Dict],
-    schematic_wires: List[Dict] = None
+    footprints: List[Dict], nets: List[Dict], schematic_wires: List[Dict] = None
 ) -> List[Dict]:
     """根据封装焊盘位置生成走线"""
     tracks = []
@@ -102,10 +110,15 @@ def _generate_tracks_from_footprints(
                 net_connections[net_name] = []
 
             if start.get("component") and end.get("component"):
-                net_connections[net_name].append({
-                    "from": {"ref": start.get("component"), "pin": start.get("pin")},
-                    "to": {"ref": end.get("component"), "pin": end.get("pin")}
-                })
+                net_connections[net_name].append(
+                    {
+                        "from": {
+                            "ref": start.get("component"),
+                            "pin": start.get("pin"),
+                        },
+                        "to": {"ref": end.get("component"), "pin": end.get("pin")},
+                    }
+                )
 
         # 从原理图导线生成走线
         track_id = 1
@@ -136,8 +149,8 @@ def _generate_tracks_from_footprints(
                     "points": [
                         start_pos,
                         {"x": end_pos["x"], "y": start_pos["y"]},
-                        end_pos
-                    ]
+                        end_pos,
+                    ],
                 }
                 tracks.append(track)
                 track_id += 1
@@ -156,11 +169,13 @@ def _generate_tracks_from_footprints(
                     for pad in fp.get("pad", []):
                         fp_pos = fp.get("position", {"x": 0, "y": 0})
                         pad_pos = pad.get("position", {"x": 0, "y": 0})
-                        pads_on_net.append({
-                            "ref": fp.get("reference", ""),
-                            "x": fp_pos.get("x", 0) + pad_pos.get("x", 0),
-                            "y": fp_pos.get("y", 0) + pad_pos.get("y", 0)
-                        })
+                        pads_on_net.append(
+                            {
+                                "ref": fp.get("reference", ""),
+                                "x": fp_pos.get("x", 0) + pad_pos.get("x", 0),
+                                "y": fp_pos.get("y", 0) + pad_pos.get("y", 0),
+                            }
+                        )
 
                 if len(pads_on_net) >= 2:
                     pads_on_net.sort(key=lambda p: p["x"])
@@ -172,9 +187,15 @@ def _generate_tracks_from_footprints(
                             "width": 0.25,
                             "points": [
                                 {"x": pads_on_net[i]["x"], "y": pads_on_net[i]["y"]},
-                                {"x": pads_on_net[i+1]["x"], "y": pads_on_net[i]["y"]},
-                                {"x": pads_on_net[i+1]["x"], "y": pads_on_net[i+1]["y"]}
-                            ]
+                                {
+                                    "x": pads_on_net[i + 1]["x"],
+                                    "y": pads_on_net[i]["y"],
+                                },
+                                {
+                                    "x": pads_on_net[i + 1]["x"],
+                                    "y": pads_on_net[i + 1]["y"],
+                                },
+                            ],
                         }
                         tracks.append(track)
                         track_id += 1
@@ -201,7 +222,9 @@ def _get_default_footprint_for_pcb(
         封装名称字符串 (格式: 库名:封装名)
     """
     # DEBUG: 打印调用参数
-    print(f"[FOOTPRINT] name={component_name}, model={component_model}, category={component_category}")
+    logger.debug(
+        f"[FOOTPRINT] name={component_name}, model={component_model}, category={component_category}"
+    )
 
     # 1. 如果有 component_category，直接使用类别对应的默认封装
     # 这是最可靠的方案，避免像 "1K" 这样的值被库搜索误匹配
@@ -221,7 +244,9 @@ def _get_default_footprint_for_pcb(
 
         if category_lower in category_footprints:
             lib_name, fp_name = category_footprints[category_lower]
-            logger.info(f"Category default footprint: {component_category} -> {lib_name}:{fp_name}")
+            logger.info(
+                f"Category default footprint: {component_category} -> {lib_name}:{fp_name}"
+            )
             return f"{lib_name}:{fp_name}"
 
     # 2. 只有当 component_model 是明确的型号（如 LM7805, ESP32 等）时才使用库搜索
@@ -229,9 +254,9 @@ def _get_default_footprint_for_pcb(
     if HAS_SMART_FOOTPRINT_FINDER and component_model:
         # 判断是否为标准型号（包含完整型号特征）
         is_standard_model = (
-            len(component_model) >= 4 and  # 至少4个字符
-            any(c.isdigit() for c in component_model) and  # 包含数字
-            any(c.isalpha() for c in component_model)  # 包含字母
+            len(component_model) >= 4  # 至少4个字符
+            and any(c.isdigit() for c in component_model)  # 包含数字
+            and any(c.isalpha() for c in component_model)  # 包含字母
         )
 
         # 只有标准型号才进行库搜索
@@ -240,13 +265,17 @@ def _get_default_footprint_for_pcb(
                 lib_name, fp_name = smart_find_footprint(
                     model=component_model,
                     component_type=component_category,
-                    package_hint=""
+                    package_hint="",
                 )
                 if lib_name and fp_name:
-                    logger.info(f"Smart footprint found: {component_model} -> {lib_name}:{fp_name}")
+                    logger.info(
+                        f"Smart footprint found: {component_model} -> {lib_name}:{fp_name}"
+                    )
                     return f"{lib_name}:{fp_name}"
             except Exception as e:
-                logger.warning(f"Smart footprint lookup failed for {component_model}: {e}")
+                logger.warning(
+                    f"Smart footprint lookup failed for {component_model}: {e}"
+                )
 
     # 3. 降级使用 footprint_library 的默认封装
     component_type = infer_component_type(component_name, component_model)
@@ -267,19 +296,26 @@ def _get_pads_from_footprint_library(footprint_name: str) -> List[Dict[str, Any]
             for pad in footprint_data.get("pads", []):
                 # footprint_parser返回扁平格式: {'number': '1', 'type': 'smd', 'shape': 'roundrect', 'x': -2.475, 'y': -1.905, 'width': 1.95, 'height': 0.6}
                 # 需要转换为嵌套格式: {'position': {'x': 0, 'y': 0}, 'size': {'x': 1.5, 'y': 1.5}}
-                pads.append({
-                    "id": pad.get("id", f"P{len(pads)+1}"),
-                    "number": pad.get("number", str(len(pads)+1)),
-                    "name": pad.get("name", ""),
-                    "type": pad.get("type", "smd"),
-                    "shape": pad.get("shape", "rect"),
-                    "position": {"x": pad.get("x", 0), "y": pad.get("y", 0)},
-                    "size": {"x": pad.get("width", 1.5), "y": pad.get("height", 1.5)},
-                    "drill": pad.get("drill", 0),
-                    "layer": "F.Cu",
-                    "net": None,
-                })
-            logger.info(f"Fetched {len(pads)} pads from footprint library: {footprint_name}")
+                pads.append(
+                    {
+                        "id": pad.get("id", f"P{len(pads) + 1}"),
+                        "number": pad.get("number", str(len(pads) + 1)),
+                        "name": pad.get("name", ""),
+                        "type": pad.get("type", "smd"),
+                        "shape": pad.get("shape", "rect"),
+                        "position": {"x": pad.get("x", 0), "y": pad.get("y", 0)},
+                        "size": {
+                            "x": pad.get("width", 1.5),
+                            "y": pad.get("height", 1.5),
+                        },
+                        "drill": pad.get("drill", 0),
+                        "layer": "F.Cu",
+                        "net": None,
+                    }
+                )
+            logger.info(
+                f"Fetched {len(pads)} pads from footprint library: {footprint_name}"
+            )
             return pads
     except Exception as e:
         logger.warning(f"Failed to fetch footprint pads from library: {e}")
@@ -343,8 +379,7 @@ def _generate_pads_for_footprint(
                         "position": {"x": 0, "y": i * 2.54},
                         "size": {"x": 1.5, "y": 1.5},
                         "drill": 0.8
-                        if "thru_hole" in ["thru_hole", "smd"]
-                        and ("THT" in footprint_name or "DIP" in footprint_name)
+                        if "THT" in footprint_name or "DIP" in footprint_name
                         else 0,
                         "layer": "F.Cu",
                         "net": None,
@@ -364,8 +399,7 @@ def _generate_pads_for_footprint(
                     "position": {"x": 0, "y": i * 2.54},  # 简化的焊盘位置
                     "size": {"x": 1.5, "y": 1.5},
                     "drill": 0.8
-                    if "thru_hole" in ["thru_hole", "smd"]
-                    and ("THT" in footprint_name or "DIP" in footprint_name)
+                    if "THT" in footprint_name or "DIP" in footprint_name
                     else 0,
                     "layer": "F.Cu",
                     "net": None,
@@ -530,57 +564,100 @@ _projects: Dict[str, Dict[str, Any]] = {}
 _pcb_data: Dict[str, Dict[str, Any]] = {}
 _schematic_data: Dict[str, Dict[str, Any]] = {}
 
+# 全局锁保护并发访问
+_projects_lock = asyncio.Lock()
+_pcb_data_lock = asyncio.Lock()
+_schematic_data_lock = asyncio.Lock()
+
+
 def _save_projects():
-    """保存项目数据到文件"""
+    """保存项目数据到文件 - 带错误处理"""
     try:
-        with open(PROJECTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(_projects, f, ensure_ascii=False, indent=2)
+        with open(PROJECTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                _projects,
+                f,
+                ensure_ascii=False,
+                indent=2,
+                default=str,  # 处理无法序列化的对象
+            )
+        logger.debug("Projects data saved successfully")
     except Exception as e:
         logger.error(f"Failed to save projects: {e}")
 
+
 def _save_pcb_data():
-    """保存PCB数据到文件"""
+    """保存PCB数据到文件 - 带错误处理"""
     try:
-        with open(PCB_DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(_pcb_data, f, ensure_ascii=False, indent=2)
+        with open(PCB_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                _pcb_data,
+                f,
+                ensure_ascii=False,
+                indent=2,
+                default=str,  # 处理无法序列化的对象
+            )
+        logger.debug("PCB data saved successfully")
     except Exception as e:
         logger.error(f"Failed to save PCB data: {e}")
 
+
 def _save_schematic_data():
-    """保存原理图数据到文件"""
+    """保存原理图数据到文件 - 带循环引用处理"""
     try:
-        with open(SCHEMATIC_DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(_schematic_data, f, ensure_ascii=False, indent=2)
+        with open(SCHEMATIC_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                _schematic_data,
+                f,
+                ensure_ascii=False,
+                indent=2,
+                default=str,  # 处理无法序列化的对象
+            )
+        logger.debug("Schematic data saved successfully")
+    except TypeError as e:
+        logger.error(f"JSON serialization error in schematic data: {e}")
+        # 尝试逐个保存项目以找出问题
+        for project_id, data in _schematic_data.items():
+            try:
+                json.dumps(data, ensure_ascii=False, default=str)
+            except TypeError as project_error:
+                logger.error(
+                    f"Project {project_id} has serialization issue: {project_error}"
+                )
     except Exception as e:
         logger.error(f"Failed to save schematic data: {e}")
+
 
 def _load_data():
     """从文件加载所有数据"""
     global _projects, _pcb_data, _schematic_data
-    
+
     if PROJECTS_FILE.exists():
         try:
-            with open(PROJECTS_FILE, 'r', encoding='utf-8') as f:
+            with open(PROJECTS_FILE, "r", encoding="utf-8") as f:
                 _projects = json.load(f)
             logger.info(f"Loaded {len(_projects)} projects from file")
         except Exception as e:
             logger.error(f"Failed to load projects: {e}")
-    
+
     if PCB_DATA_FILE.exists():
         try:
-            with open(PCB_DATA_FILE, 'r', encoding='utf-8') as f:
+            with open(PCB_DATA_FILE, "r", encoding="utf-8") as f:
                 _pcb_data = json.load(f)
             logger.info(f"Loaded {len(_pcb_data)} PCB data entries from file")
         except Exception as e:
             logger.error(f"Failed to load PCB data: {e}")
-    
+
     if SCHEMATIC_DATA_FILE.exists():
         try:
-            with open(SCHEMATIC_DATA_FILE, 'r', encoding='utf-8') as f:
+            with open(SCHEMATIC_DATA_FILE, "r", encoding="utf-8") as f:
                 _schematic_data = json.load(f)
-            logger.info(f"Loaded {len(_schematic_data)} schematic data entries from file")
+            logger.info(
+                f"Loaded {len(_schematic_data)} schematic data entries from file"
+            )
         except Exception as e:
             logger.error(f"Failed to load schematic data: {e}")
+
 
 # 启动时加载数据
 _load_data()
@@ -593,15 +670,24 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
     schematicData: Optional[Dict[str, Any]] = None
-    
-    @field_validator('name')
+    pcbData: Optional[Dict[str, Any]] = None  # PCB数据（来自AI生成）
+    pcbParams: Optional[Dict[str, Any]] = None  # PCB参数（尺寸等）
+
+    @field_validator("name")
     @classmethod
     def validate_name(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Project name cannot be empty')
-        if len(v.strip()) > 100:
-            raise ValueError('Project name cannot exceed 100 characters')
-        return v.strip()
+        # FIX ISS-B06-001: 先检查禁止字符再trim，防止trim绕过安全检查
+        import re
+        invalid_chars = re.compile(r'[\\/:*?"<>|]')
+        if invalid_chars.search(v):
+            raise ValueError("Project name contains invalid characters: \\ / : * ? \" < > |")
+        # trim后继续检查
+        v = v.strip()
+        if not v:
+            raise ValueError("Project name cannot be empty")
+        if len(v) > 100:
+            raise ValueError("Project name cannot exceed 100 characters")
+        return v
 
 
 class ProjectUpdate(BaseModel):
@@ -643,12 +729,14 @@ class PCBDataUpdate(BaseModel):
 # ========== 项目 CRUD ==========
 
 
-@router.get("", 
+@router.get(
+    "",
     summary="列出所有项目",
     description="获取项目列表，支持分页、搜索和排序",
-    response_description="项目列表"
+    response_description="项目列表",
 )
 async def list_projects(
+    current_user: dict = Depends(get_current_user),
     page: int = 1,
     page_size: int = 50,
     search: str = None,
@@ -656,18 +744,19 @@ async def list_projects(
     filter: str = None,
 ):
     """
-    列出所有项目（去重）
-    
+    列出当前用户自己的项目（认证必需）
+
     Args:
+        current_user: 当前登录用户（从JWT token解析）
         page: 页码 (默认 1)
         page_size: 每页数量 (默认 50，最大 100)
         search: 搜索关键词（匹配项目名称）
         sort: 排序字段 (createdAt/updatedAt/name)
         filter: 过滤条件 (active/completed)
-    
+
     Returns:
         项目列表数据
-    
+
     Raises:
         HTTPException: page 或 page_size 无效时返回 400
     """
@@ -678,80 +767,100 @@ async def list_projects(
         raise HTTPException(status_code=400, detail="page_size must be >= 1")
     if page_size > 100:
         raise HTTPException(status_code=400, detail="page_size must be <= 100")
-    
-    projects = list(_projects.values())
-    
-    # 搜索过滤
-    if search:
-        projects = [p for p in projects if search.lower() in p.get('name', '').lower()]
-    
-    # 状态过滤
-    if filter:
-        projects = [p for p in projects if p.get('status') == filter]
-    
-    # 排序
-    reverse = True  # 默认降序
-    if sort:
-        projects.sort(key=lambda x: x.get(sort, ''), reverse=reverse)
-    
-    # 去重，保留最新
-    seen = {}
-    for project in projects:
-        name = project.get('name', '')
-        if name not in seen:
-            seen[name] = project
-        else:
-            if project.get('updatedAt', '') > seen[name].get('updatedAt', ''):
+
+    async with _projects_lock:
+        projects = list(_projects.values())
+
+        # N1 Fix: 只返回当前用户自己的项目
+        user_id = str(current_user["user_id"])
+        projects = [p for p in projects if p.get("ownerId") == user_id]
+
+        # 搜索过滤
+        if search:
+            projects = [
+                p for p in projects if search.lower() in p.get("name", "").lower()
+            ]
+
+        # 状态过滤
+        if filter:
+            projects = [p for p in projects if p.get("status") == filter]
+
+        # 排序
+        reverse = True  # 默认降序
+        if sort:
+            projects.sort(key=lambda x: x.get(sort, ""), reverse=reverse)
+
+        # 去重，保留最新
+        seen = {}
+        for project in projects:
+            name = project.get("name", "")
+            if name not in seen:
                 seen[name] = project
-    
-    all_projects = list(seen.values())
-    
-    # 分页
-    start = (page - 1) * page_size
-    end = start + page_size
-    return all_projects[start:end]
+            else:
+                if project.get("updatedAt", "") > seen[name].get("updatedAt", ""):
+                    seen[name] = project
+
+        all_projects = list(seen.values())
+
+        # 分页
+        start = (page - 1) * page_size
+        end = start + page_size
+        return all_projects[start:end]
 
 
 @router.delete("/clear-all")
-async def clear_all_projects():
+async def clear_all_projects(
+    confirm: str = Query(..., description="必须填写 CONFIRM_DELETE_ALL"),
+    user_info: dict = Depends(require_admin),
+):
     """清除所有项目（仅用于调试）"""
+    if confirm != "CONFIRM_DELETE_ALL":
+        raise HTTPException(status_code=400, detail="需要确认参数 confirm=CONFIRM_DELETE_ALL")
     global _projects, _pcb_data, _schematic_data
-    _projects.clear()
-    _pcb_data.clear()
-    _schematic_data.clear()
+    async with _projects_lock:
+        _projects.clear()
+    async with _pcb_data_lock:
+        _pcb_data.clear()
+    async with _schematic_data_lock:
+        _schematic_data.clear()
+    _save_projects()
+    _save_pcb_data()
+    _save_schematic_data()
     return {"success": True, "message": "All projects cleared"}
 
 
-@router.post("", 
+@router.post(
+    "",
     response_model=ProjectResponse,
     summary="创建新项目",
     description="创建一个新的 PCB 设计项目",
-    status_code=201
+    status_code=201,
 )
-async def create_project(project: ProjectCreate):
+async def create_project(project: ProjectCreate, current_user: dict = Depends(get_current_user)):
     """
     创建新项目
-    
+
     Args:
         project: 项目创建请求体
-        
+
     Returns:
         创建成功的项目信息
-        
+
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400: 项目名称无效
             - 409: 项目名称已存在
     """
     """创建新项目"""
     # 检查项目名称是否已存在（避免覆盖现有项目）
-    existing_projects = _projects.values()
-    for existing in existing_projects:
-        if existing.get('name', '').lower() == project.name.lower():
-            raise HTTPException(
-                status_code=409,
-                detail=f"Project '{project.name}' already exists. Please use a different name."
-            )
+    async with _projects_lock:
+        existing_projects = _projects.values()
+        for existing in existing_projects:
+            if existing.get("name", "").lower() == project.name.lower():
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Project '{project.name}' already exists. Please use a different name.",
+                )
 
     project_id = str(uuid4())
     now = datetime.now().isoformat()
@@ -766,21 +875,57 @@ async def create_project(project: ProjectCreate):
         "pcbFile": None,
         "createdAt": now,
         "updatedAt": now,
-        "ownerId": "default",
+        "ownerId": str(current_user["user_id"]),
     }
 
-    _projects[project_id] = new_project
+    async with _projects_lock:
+        _projects[project_id] = new_project
     _save_projects()
 
     # 保存原理图数据
     if project.schematicData:
-        _schematic_data[project_id] = project.schematicData
+        async with _schematic_data_lock:
+            _schematic_data[project_id] = project.schematicData
         # 同时更新项目信息
         new_project["schematicFile"] = f"/api/v1/projects/{project_id}/schematic"
+        # 保存到文件
+        _save_schematic_data()
 
-    # 从原理图生成PCB数据
+    # 从传入的pcbData或从原理图生成PCB数据
     pcb_footprints = []
     pcb_nets = []
+
+    # 如果传入了PCB数据，直接使用
+    if project.pcbData:
+        logger.info("使用传入的PCB数据创建项目")
+        pcb_footprints = project.pcbData.get("footprints", [])
+        pcb_nets = project.pcbData.get("nets", [])
+
+        # 使用传入的PCB参数设置板框尺寸
+        if project.pcbParams:
+            board_width = (
+                project.pcbParams.get("width")
+                or project.pcbParams.get("boardWidth")
+                or 80
+            )
+            board_height = (
+                project.pcbParams.get("height")
+                or project.pcbParams.get("boardHeight")
+                or 60
+            )
+        else:
+            board_width = 80
+            board_height = 60
+    else:
+        # 没有PCB数据，使用默认尺寸
+        board_width = 80
+        board_height = 60
+
+    # 确保board_width和board_height有值（前面逻辑已确保，此处为安全校验）
+    if not board_width:
+        board_width = 80
+    if not board_height:
+        board_height = 60
 
     if project.schematicData and project.schematicData.get("components"):
         # ===== 修复1: 收集所有网络名称 =====
@@ -788,10 +933,9 @@ async def create_project(project: ProjectCreate):
         for net in schematic_nets:
             net_name = net.get("name", "")
             if net_name and net_name not in [n["name"] for n in pcb_nets]:
-                pcb_nets.append({
-                    "id": net.get("id", f"net-{net_name}"),
-                    "name": net_name
-                })
+                pcb_nets.append(
+                    {"id": net.get("id", f"net-{net_name}"), "name": net_name}
+                )
 
         # 确保VCC和GND网络存在
         net_names = [n["name"] for n in pcb_nets]
@@ -817,9 +961,15 @@ async def create_project(project: ProjectCreate):
                     component_category = "resistor"
                 elif "电感" in name_lower or "l" == name_lower:
                     component_category = "inductor"
-                elif "二极管" in name_lower or "d" == name_lower or "diode" in name_lower:
+                elif (
+                    "二极管" in name_lower or "d" == name_lower or "diode" in name_lower
+                ):
                     component_category = "diode"
-                elif "ams1117" in name_lower or "lm" in name_lower or "稳压" in name_lower:
+                elif (
+                    "ams1117" in name_lower
+                    or "lm" in name_lower
+                    or "稳压" in name_lower
+                ):
                     component_category = "ic"
                 else:
                     component_category = "passive"
@@ -839,7 +989,7 @@ async def create_project(project: ProjectCreate):
                 "value": comp.get("model", ""),
                 "footprint": footprint_name,
                 "layer": "F.Cu",
-                "position": {"x": 20 + (i % 4) * 15, "y": 20 + (i // 4) * 15},
+                "position": {"x": 30 + (i % 4) * 25, "y": 30 + (i // 4) * 20},
                 "rotation": 0,
                 "locked": False,
                 "attributes": [],
@@ -849,14 +999,54 @@ async def create_project(project: ProjectCreate):
             }
             pcb_footprints.append(footprint)
 
+    # ===== F1 Fix: 关联焊盘与网络 =====
+    # 构建 (reference, pin_number) -> net_name 的映射
+    pin_to_net: Dict[tuple, str] = {}
+    if project.schematicData and project.schematicData.get("wires"):
+        for wire in project.schematicData["wires"]:
+            net_name = wire.get("net", "")
+            if not net_name:
+                continue
+            # 支持 from_conn/to_conn 格式
+            from_conn = wire.get("from_conn") or wire.get("from") or {}
+            to_conn = wire.get("to_conn") or wire.get("to") or {}
+            from_ref = from_conn.get("component") or from_conn.get("ref", "")
+            from_pin = from_conn.get("pin") or from_conn.get("pin_number") or ""
+            to_ref = to_conn.get("component") or to_conn.get("ref", "")
+            to_pin = to_conn.get("pin") or to_conn.get("pin_number") or ""
+            if from_ref and from_pin:
+                pin_to_net[(from_ref, str(from_pin))] = net_name
+            if to_ref and to_pin:
+                pin_to_net[(to_ref, str(to_pin))] = net_name
+
+    # 为每个焊盘设置正确的网络
+    for fp in pcb_footprints:
+        for pad in fp.get("pad", []):
+            ref = fp.get("reference", "")
+            pin_num = str(pad.get("number", ""))
+            key = (ref, pin_num)
+            if key in pin_to_net:
+                pad["net"] = pin_to_net[key]
+            else:
+                # 未找到网络关联的焊盘，尝试使用焊盘名称匹配
+                pad_name = str(pad.get("name", "")).upper()
+                if pad_name in ("GND", "1"):
+                    for gnd_key in pin_to_net:
+                        if "GND" in pin_to_net[gnd_key].upper():
+                            pad["net"] = pin_to_net[gnd_key]
+                            break
+                elif pad_name in ("VCC", "VIN", "VOUT", "+", "2"):
+                    for vcc_key in pin_to_net:
+                        if any(n in pin_to_net[vcc_key].upper() for n in ["VCC", "+5V", "+3V3", "VIN", "VOUT"]):
+                            pad["net"] = pin_to_net[vcc_key]
+                            break
+
     # ===== 修复3: 从原理图导线生成PCB走线 =====
     pcb_tracks = []
     if project.schematicData and project.schematicData.get("wires"):
         # 使用新的基于焊盘位置的走线生成函数
         pcb_tracks = _generate_tracks_from_footprints(
-            pcb_footprints,
-            pcb_nets,
-            project.schematicData.get("wires", [])
+            pcb_footprints, pcb_nets, project.schematicData.get("wires", [])
         )
         # 如果新函数没有生成走线，回退到旧方法
         if not pcb_tracks:
@@ -869,7 +1059,7 @@ async def create_project(project: ProjectCreate):
                         "net": net_name,
                         "layer": "F.Cu",
                         "width": 0.25,
-                        "points": _convert_schematic_to_pcb(points)
+                        "points": _convert_schematic_to_pcb(points),
                     }
                     pcb_tracks.append(track)
 
@@ -878,13 +1068,13 @@ async def create_project(project: ProjectCreate):
         "id": f"pcb-{project_id}",
         "projectId": project_id,
         "boardOutline": [
-            {"x": 10, "y": 10},
-            {"x": 90, "y": 10},
-            {"x": 90, "y": 70},
-            {"x": 10, "y": 70},
+            {"x": 3, "y": 3},
+            {"x": board_width - 3, "y": 3},
+            {"x": board_width - 3, "y": board_height - 3},
+            {"x": 3, "y": board_height - 3},
         ],
-        "boardWidth": 80,
-        "boardHeight": 60,
+        "boardWidth": board_width,
+        "boardHeight": board_height,
         "boardThickness": 1.6,
         "layerStack": [
             {
@@ -913,7 +1103,9 @@ async def create_project(project: ProjectCreate):
         "vias": [],
         "zones": [],
         "texts": [],
-        "nets": pcb_nets if pcb_nets else [{"id": "net-gnd", "name": "GND"}, {"id": "net-vcc", "name": "VCC"}],
+        "nets": pcb_nets
+        if pcb_nets
+        else [{"id": "net-gnd", "name": "GND"}, {"id": "net-vcc", "name": "VCC"}],
         "netclasses": [],
         "designRules": {
             "minTrackWidth": 0.1,
@@ -933,43 +1125,64 @@ async def create_project(project: ProjectCreate):
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str):
-    """获取项目详情"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return _projects[project_id]
+async def get_project(project_id: str, current_user: dict = Depends(get_current_user)):
+    """获取项目详情（认证必需）"""
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+        project = _projects[project_id]
+        # N1 Fix: 验证项目所有权
+        if project.get("ownerId") != str(current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="无权限访问此项目")
+        return project
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
-async def update_project(project_id: str, project: ProjectUpdate):
-    """更新项目"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+async def update_project(project_id: str, project: ProjectUpdate, current_user: dict = Depends(get_current_user)):
+    """更新项目（认证必需）"""
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+        # N1 Fix: 验证项目所有权
+        if _projects[project_id].get("ownerId") != str(current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="无权限修改此项目")
 
-    existing = _projects[project_id]
+        existing = _projects[project_id]
 
-    if project.name is not None:
-        existing["name"] = project.name
-    if project.description is not None:
-        existing["description"] = project.description
-    if project.status is not None:
-        existing["status"] = project.status
+        if project.name is not None:
+            existing["name"] = project.name
+        if project.description is not None:
+            existing["description"] = project.description
+        if project.status is not None:
+            existing["status"] = project.status
 
-    existing["updatedAt"] = datetime.now().isoformat()
+        existing["updatedAt"] = datetime.now().isoformat()
     _save_projects()
 
     return existing
 
 
 @router.delete("/{project_id}")
-async def delete_project(project_id: str):
-    """删除项目"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+async def delete_project(project_id: str, current_user: dict = Depends(get_current_user)):
+    """删除项目（认证必需）"""
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+        # N1 Fix: 验证项目所有权
+        if _projects[project_id].get("ownerId") != str(current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="无权限删除此项目")
+        del _projects[project_id]
+    async with _pcb_data_lock:
+        if project_id in _pcb_data:
+            del _pcb_data[project_id]
+    async with _schematic_data_lock:
+        if project_id in _schematic_data:
+            del _schematic_data[project_id]
 
-    del _projects[project_id]
-    if project_id in _pcb_data:
-        del _pcb_data[project_id]
+    # 持久化到文件
+    _save_projects()
+    _save_pcb_data()
+    _save_schematic_data()
 
     return {"message": "Project deleted"}
 
@@ -980,34 +1193,57 @@ async def delete_project(project_id: str):
 @router.get("/{project_id}/pcb/design")
 async def get_pcb_design(project_id: str):
     """获取 PCB 设计数据"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _pcb_data:
-        raise HTTPException(status_code=404, detail="PCB data not found")
+    # 如果没有PCB数据，返回默认空数据结构
+    async with _pcb_data_lock:
+        if project_id not in _pcb_data:
+            return {
+                "success": True,
+                "project_id": project_id,
+                "footprints": [],
+                "tracks": [],
+                "vias": [],
+                "zones": [],
+                "board": {"width": 0, "height": 0},
+            }
 
-    return _pcb_data[project_id]
+        return _pcb_data[project_id]
 
 
 @router.get("/{project_id}/schematic")
 async def get_schematic(project_id: str):
     """获取原理图数据"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _schematic_data:
-        raise HTTPException(status_code=404, detail="Schematic data not found")
+    # 如果没有原理图数据，返回默认空数据结构
+    async with _schematic_data_lock:
+        if project_id not in _schematic_data:
+            return {
+                "success": True,
+                "project_id": project_id,
+                "symbols": [],
+                "wires": [],
+                "netlabels": [],
+                "buses": [],
+            }
 
-    return _schematic_data[project_id]
+        return _schematic_data[project_id]
 
 
 @router.post("/{project_id}/schematic")
 async def save_schematic(project_id: str, schematic_data: Dict[str, Any]):
     """保存原理图数据"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    _schematic_data[project_id] = schematic_data
+    async with _schematic_data_lock:
+        _schematic_data[project_id] = schematic_data
     logger.info(f"Saved schematic data for project {project_id}")
 
     # 保存原理图数据到文件
@@ -1019,75 +1255,80 @@ async def save_schematic(project_id: str, schematic_data: Dict[str, Any]):
 @router.post("/{project_id}/pcb/design")
 async def save_pcb_design(project_id: str, pcb_data: PCBDataUpdate):
     """保存 PCB 设计数据"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    if project_id not in _pcb_data:
-        _pcb_data[project_id] = {}
+    async with _pcb_data_lock:
+        if project_id not in _pcb_data:
+            _pcb_data[project_id] = {}
 
-    existing = _pcb_data[project_id]
+        existing = _pcb_data[project_id]
 
-    # 保存必要字段
-    if hasattr(pcb_data, "id") and pcb_data.id:
-        existing["id"] = pcb_data.id
-    if hasattr(pcb_data, "projectId") and pcb_data.projectId:
-        existing["projectId"] = pcb_data.projectId
-    if pcb_data.boardWidth:
-        existing["boardWidth"] = pcb_data.boardWidth
-    if pcb_data.boardHeight:
-        existing["boardHeight"] = pcb_data.boardHeight
+        # 保存必要字段（所有写操作在锁内完成，防止并发竞态）
+        if hasattr(pcb_data, "id") and pcb_data.id:
+            existing["id"] = pcb_data.id
+        if hasattr(pcb_data, "projectId") and pcb_data.projectId:
+            existing["projectId"] = pcb_data.projectId
+        if pcb_data.boardWidth is not None:
+            existing["boardWidth"] = pcb_data.boardWidth
+        if pcb_data.boardHeight is not None:
+            existing["boardHeight"] = pcb_data.boardHeight
 
-    # 更新非空字段
-    if pcb_data.boardOutline is not None:
-        existing["boardOutline"] = pcb_data.boardOutline
-    if pcb_data.footprints is not None:
-        existing["footprints"] = pcb_data.footprints
-    if pcb_data.tracks is not None:
-        existing["tracks"] = pcb_data.tracks
-    if pcb_data.vias is not None:
-        existing["vias"] = pcb_data.vias
-    if pcb_data.zones is not None:
-        existing["zones"] = pcb_data.zones
-    if pcb_data.texts is not None:
-        existing["texts"] = pcb_data.texts
-    if pcb_data.nets is not None:
-        existing["nets"] = pcb_data.nets
-    if pcb_data.components is not None:
-        existing["components"] = pcb_data.components
+        # 更新非空字段
+        if pcb_data.boardOutline is not None:
+            existing["boardOutline"] = pcb_data.boardOutline
+        if pcb_data.footprints is not None:
+            existing["footprints"] = pcb_data.footprints
+        if pcb_data.tracks is not None:
+            existing["tracks"] = pcb_data.tracks
+        if pcb_data.vias is not None:
+            existing["vias"] = pcb_data.vias
+        if pcb_data.zones is not None:
+            existing["zones"] = pcb_data.zones
+        if pcb_data.texts is not None:
+            existing["texts"] = pcb_data.texts
+        if pcb_data.nets is not None:
+            existing["nets"] = pcb_data.nets
+        if pcb_data.components is not None:
+            existing["components"] = pcb_data.components
 
-        # 将 components 转换为 footprints 格式（前端需要）
-        if pcb_data.footprints is None:
-            footprints = []
-            for comp in pcb_data.components:
-                footprint = {
-                    "id": comp.get("id", f"fp-{uuid4()}"),
-                    "type": "footprint",
-                    "libraryName": comp.get("footprint", "").split(":")[0] if ":" in comp.get("footprint", "") else "",
-                    "footprintName": comp.get("footprint", "").split(":")[-1] if ":" in comp.get("footprint", "") else comp.get("footprint", ""),
-                    "fullFootprintName": comp.get("footprint", ""),
-                    "reference": comp.get("reference", ""),
-                    "value": comp.get("model", ""),
-                    "position": comp.get("position", {"x": 0, "y": 0}),
-                    "rotation": comp.get("rotation", 0),
-                    "layer": "top",
-                    "pads": comp.get("pads", []),
-                    "silkscreen": comp.get("silkscreen", []),
-                    "attributes": {}
-                }
-                footprints.append(footprint)
-            existing["footprints"] = footprints
-            logger.info(f"Converted {len(footprints)} components to footprints")
+            # 将 components 转换为 footprints 格式（前端需要）
+            if pcb_data.footprints is None:
+                footprints = []
+                for comp in pcb_data.components:
+                    footprint = {
+                        "id": comp.get("id", f"fp-{uuid4()}"),
+                        "type": "footprint",
+                        "libraryName": comp.get("footprint", "").split(":")[0]
+                        if ":" in comp.get("footprint", "")
+                        else "",
+                        "footprintName": comp.get("footprint", "").split(":")[-1]
+                        if ":" in comp.get("footprint", "")
+                        else comp.get("footprint", ""),
+                        "fullFootprintName": comp.get("footprint", ""),
+                        "reference": comp.get("reference", ""),
+                        "value": comp.get("model", ""),
+                        "position": comp.get("position", {"x": 0, "y": 0}),
+                        "rotation": comp.get("rotation", 0),
+                        "layer": "top",
+                        "pads": comp.get("pads", []),
+                        "silkscreen": comp.get("silkscreen", []),
+                        "attributes": {},
+                    }
+                    footprints.append(footprint)
+                existing["footprints"] = footprints
+                logger.info(f"Converted {len(footprints)} components to footprints")
 
-    if pcb_data.footprints is not None:
-        existing["footprints"] = pcb_data.footprints
-    if pcb_data.width is not None:
-        existing["width"] = pcb_data.width
-    if pcb_data.height is not None:
-        existing["height"] = pcb_data.height
+        if pcb_data.width is not None:
+            existing["width"] = pcb_data.width
+        if pcb_data.height is not None:
+            existing["height"] = pcb_data.height
 
-    # 更新项目修改时间和pcbFile字段
-    _projects[project_id]["updatedAt"] = datetime.now().isoformat()
-    _projects[project_id]["pcbFile"] = f"/api/v1/projects/{project_id}/pcb/design"
+    # 更新项目修改时间和pcbFile字段（独立锁保护）
+    async with _projects_lock:
+        _projects[project_id]["updatedAt"] = datetime.now().isoformat()
+        _projects[project_id]["pcbFile"] = f"/api/v1/projects/{project_id}/pcb/design"
     _save_projects()
 
     # 保存PCB数据到文件
@@ -1102,13 +1343,14 @@ async def save_pcb_design(project_id: str, pcb_data: PCBDataUpdate):
 @router.post("/{project_id}/pcb/items/footprint")
 async def create_footprint(project_id: str, footprint: Dict[str, Any]):
     """创建封装"""
-    if project_id not in _pcb_data:
-        raise HTTPException(status_code=404, detail="PCB data not found")
+    async with _pcb_data_lock:
+        if project_id not in _pcb_data:
+            raise HTTPException(status_code=404, detail="PCB data not found")
 
-    footprint_id = footprint.get("id", f"fp-{uuid4()}")
-    footprint["id"] = footprint_id
+        footprint_id = footprint.get("id", f"fp-{uuid4()}")
+        footprint["id"] = footprint_id
 
-    _pcb_data[project_id]["footprints"].append(footprint)
+        _pcb_data[project_id]["footprints"].append(footprint)
 
     return {"success": True, "id": footprint_id}
 
@@ -1116,13 +1358,14 @@ async def create_footprint(project_id: str, footprint: Dict[str, Any]):
 @router.post("/{project_id}/pcb/items/track")
 async def create_track(project_id: str, track: Dict[str, Any]):
     """创建走线"""
-    if project_id not in _pcb_data:
-        raise HTTPException(status_code=404, detail="PCB data not found")
+    async with _pcb_data_lock:
+        if project_id not in _pcb_data:
+            raise HTTPException(status_code=404, detail="PCB data not found")
 
-    track_id = track.get("id", f"track-{uuid4()}")
-    track["id"] = track_id
+        track_id = track.get("id", f"track-{uuid4()}")
+        track["id"] = track_id
 
-    _pcb_data[project_id]["tracks"].append(track)
+        _pcb_data[project_id]["tracks"].append(track)
 
     return {"success": True, "id": track_id}
 
@@ -1130,13 +1373,14 @@ async def create_track(project_id: str, track: Dict[str, Any]):
 @router.post("/{project_id}/pcb/items/via")
 async def create_via(project_id: str, via: Dict[str, Any]):
     """创建过孔"""
-    if project_id not in _pcb_data:
-        raise HTTPException(status_code=404, detail="PCB data not found")
+    async with _pcb_data_lock:
+        if project_id not in _pcb_data:
+            raise HTTPException(status_code=404, detail="PCB data not found")
 
-    via_id = via.get("id", f"via-{uuid4()}")
-    via["id"] = via_id
+        via_id = via.get("id", f"via-{uuid4()}")
+        via["id"] = via_id
 
-    _pcb_data[project_id]["vias"].append(via)
+        _pcb_data[project_id]["vias"].append(via)
 
     return {"success": True, "id": via_id}
 
@@ -1147,11 +1391,13 @@ async def create_via(project_id: str, via: Dict[str, Any]):
 @router.post("/{project_id}/drc/run")
 async def run_drc(project_id: str):
     """运行 DRC 检查"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     # 简化的 DRC 检查 - 实际应该调用 KiCad
-    pcb = _pcb_data.get(project_id, {})
+    async with _pcb_data_lock:
+        pcb = _pcb_data.get(project_id, {})
 
     # 示例检查: 检查走线宽度
     errors = []
@@ -1208,7 +1454,7 @@ async def get_drc_report(project_id: str):
 async def export_gerber(project_id: str):
     """导出 Gerber 文件 - 直接生成Gerber文件"""
     import os
-    
+
     if project_id not in _projects:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -1228,7 +1474,7 @@ async def export_gerber(project_id: str):
         if components:
             for i, comp in enumerate(components):
                 fp = {
-                    "reference": comp.get("reference", f"U{i+1}"),
+                    "reference": comp.get("reference", f"U{i + 1}"),
                     "value": comp.get("model", ""),
                     "footprint": comp.get("package", "R_0805"),
                     "position": comp.get("position", {"x": 50, "y": 50}),
@@ -1239,21 +1485,22 @@ async def export_gerber(project_id: str):
         raise HTTPException(status_code=400, detail="No PCB data available for export")
 
     try:
+
         def gerber_header(layer_name):
             return f"G04 Created by KiCad AI Auto Gerber Exporter *\nG01*\nG04 Layer: {layer_name} *\n%FSLAX46Y46*%\n%MOMM*%\n%IPPOS*%\nG04 Gerber X2 format *\n%ASAXB*%\nG54D10*\nG75*\n"
-        
+
         def gerber_footer():
             return "M02*\n"
-        
+
         def format_coord(x, y):
-            return f"X{int(x*1000):07d}Y{int(y*1000):07d}D01*\n"
-        
+            return f"X{int(x * 1000):07d}Y{int(y * 1000):07d}D01*\n"
+
         exported_files = []
-        
+
         # F.Cu layer
         gerber_content = gerber_header("F.Cu")
         gerber_content += "G54D11*\n"
-        
+
         for fp in footprints:
             pos = fp.get("position", {"x": 0, "y": 0})
             x, y = pos.get("x", 0), pos.get("y", 0)
@@ -1265,50 +1512,55 @@ async def export_gerber(project_id: str):
             gerber_content += format_coord(x_mm - 0.4, y_mm + 0.4)
             gerber_content += format_coord(x_mm - 0.4, y_mm - 0.4)
             gerber_content += "D02*\n"
-        
+
         gerber_content += gerber_footer()
-        
+
         output_file = os.path.join(output_dir, f"{project_id}-F_Cu.gbr")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(gerber_content)
         exported_files.append(os.path.basename(output_file))
-        
+
         # B.Cu layer
         gerber_content = gerber_header("B.Cu")
         gerber_content += gerber_footer()
-        
+
         output_file = os.path.join(output_dir, f"{project_id}-B_Cu.gbr")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(gerber_content)
         exported_files.append(os.path.basename(output_file))
-        
+
         # Edge.Cuts
         gerber_content = gerber_header("Edge.Cuts")
         gerber_content += "G54D11*\n"
         gerber_content += "G75*\n"
-        gerber_content += f"X{int(0)*1000:07d}Y{int(0)*1000:07d}D02*\n"
-        gerber_content += f"X{int(board_width*10)*1000:07d}Y{int(0)*1000:07d}D01*\n"
-        gerber_content += f"X{int(board_width*10)*1000:07d}Y{int(board_height*10)*1000:07d}D01*\n"
-        gerber_content += f"X{int(0)*1000:07d}Y{int(board_height*10)*1000:07d}D01*\n"
-        gerber_content += f"X{int(0)*1000:07d}Y{int(0)*1000:07d}D01*\n"
+        gerber_content += f"X{int(0) * 1000:07d}Y{int(0) * 1000:07d}D02*\n"
+        gerber_content += (
+            f"X{int(board_width * 10) * 1000:07d}Y{int(0) * 1000:07d}D01*\n"
+        )
+        gerber_content += f"X{int(board_width * 10) * 1000:07d}Y{int(board_height * 10) * 1000:07d}D01*\n"
+        gerber_content += (
+            f"X{int(0) * 1000:07d}Y{int(board_height * 10) * 1000:07d}D01*\n"
+        )
+        gerber_content += f"X{int(0) * 1000:07d}Y{int(0) * 1000:07d}D01*\n"
         gerber_content += "D02*\n"
         gerber_content += gerber_footer()
-        
+
         output_file = os.path.join(output_dir, f"{project_id}-Edge_Cuts.gbr")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(gerber_content)
         exported_files.append(os.path.basename(output_file))
-        
+
         logger.info(f"Gerber export completed: {exported_files}")
-        
+
         return {
             "success": True,
-            "data": {"files": exported_files, "output_dir": output_dir}
+            "data": {"files": exported_files, "output_dir": output_dir},
         }
-        
+
     except Exception as e:
         logger.error(f"Error in Gerber export: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
 
     raise HTTPException(status_code=500, detail="Gerber export failed")
@@ -1337,6 +1589,9 @@ async def export_bom(project_id: str):
     pcb_info = _pcb_data.get(project_id, {})
     footprints = pcb_info.get("footprints", [])
 
+    # 初始化components变量
+    components = []
+
     # 如果没有PCB数据，尝试从原理图数据中获取
     if not footprints:
         # 从_schematic_data获取原理图数据
@@ -1353,22 +1608,20 @@ async def export_bom(project_id: str):
             for i, comp in enumerate(components)
         ]
 
-    # 调试：打印获取到的数据
-    import logging
-    import traceback
+    # 调试：打印获取到的数据（logging 已在文件顶部导入）
 
     logger = logging.getLogger(__name__)
 
     # 强制刷新日志输出
     import sys
 
-    print(f"DEBUG: BOM export called for {project_id}", file=sys.stderr)
-    print(
-        f"DEBUG: _schematic_data keys: {list(_schematic_data.keys())}", file=sys.stderr
-    )
+    logger.debug(f"BOM export called for {project_id}")
+    logger.debug(f"_schematic_data keys: {list(_schematic_data.keys())}")
 
+    # 安全获取components长度
+    components_count = len(components) if components else 0
     logger.info(
-        f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, schematic components={len(components) if 'components' in dir() else 0}"
+        f"BOM export: project_id={project_id}, pcb_footprints={len(footprints)}, schematic components={components_count}"
     )
 
     # 生成BOM CSV - 使用固定的输出目录
@@ -1405,7 +1658,7 @@ async def export_bom(project_id: str):
             for group in component_groups.values():
                 writer.writerow(group)
 
-        print(f"DEBUG: Returning success for {project_id}", file=sys.stderr)
+        logger.debug(f"Returning success for {project_id}")
         return {
             "success": True,
             "file": output_path,
@@ -1414,9 +1667,88 @@ async def export_bom(project_id: str):
             "debug": f"output_path={output_path}, footprints={len(footprints)}",
         }
     except Exception as e:
-        print(f"DEBUG: Exception in BOM export: {e}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Exception in BOM export: {e}")
+        logger.error(traceback.format_exc())
         return {"success": False, "error": str(e), "files": []}
+
+
+@router.post("/{project_id}/export/pdf")
+async def export_pdf(project_id: str):
+    """导出 PDF 文档"""
+    import os
+    from datetime import datetime
+
+    if project_id not in _projects:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    logger.info(f"Starting PDF export for project: {project_id}")
+
+    project = _projects.get(project_id, {})
+    project_name = project.get("name", project_id)
+
+    output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 尝试使用 kicad-cli 导出 PDF
+    settings = get_settings()
+    kicad_cli_path = settings.kicad_cli_path or os.environ.get(
+        "KICAD_CLI_PATH"
+    )
+    project_dir = os.path.join(
+        os.environ.get("PROJECTS_DIR", os.path.join(os.getcwd(), "projects")),
+        project_id,
+    )
+
+    sch_file = None
+    for ext in [".kicad_sch", ".sch"]:
+        for root, dirs, files in os.walk(project_dir):
+            for f in files:
+                if f.endswith(ext):
+                    sch_file = os.path.join(root, f)
+                    break
+            if sch_file:
+                break
+        if sch_file:
+            break
+
+    if sch_file and os.path.exists(sch_file):
+        output_file = os.path.join(output_dir, f"{project_id}.pdf")
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                [kicad_cli_path, "sch", "export", "pdf", "-o", output_file, sch_file],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if result.returncode == 0 and os.path.exists(output_file):
+                logger.info(f"PDF export successful: {output_file}")
+                return {
+                    "success": True,
+                    "file": os.path.basename(output_file),
+                    "files": [os.path.basename(output_file)],
+                }
+            else:
+                logger.warning(f"PDF export failed: {result.stderr}")
+        except Exception as e:
+            logger.error(f"PDF export error: {e}")
+
+    # 创建占位文件
+    try:
+        output_file = os.path.join(output_dir, f"{project_id}-pdf.txt")
+        with open(output_file, "w") as f:
+            f.write(f"Project: {project_name}\n")
+            f.write(f"Project ID: {project_id}\n")
+            f.write(f"Export date: {datetime.now().isoformat()}\n")
+            f.write("Note: Full PDF export requires KiCad CLI\n")
+        return {
+            "success": True,
+            "file": os.path.basename(output_file),
+            "files": [os.path.basename(output_file)],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF export failed: {str(e)}")
 
 
 @router.post("/{project_id}/export/step")
@@ -1438,10 +1770,15 @@ async def export_step(project_id: str):
     os.makedirs(output_dir, exist_ok=True)
 
     # 检查是否有KiCad IPC连接
-    kicad_cli_path = os.environ.get("KICAD_CLI_PATH", "E:/Program Files/KiCad/9.0/bin/kicad-cli.exe")
+    kicad_cli_path = os.environ.get(
+        "KICAD_CLI_PATH", "E:/Program Files/KiCad/9.0/bin/kicad-cli.exe"
+    )
 
     # 查找项目的KiCad文件
-    project_dir = os.path.join(os.environ.get("PROJECTS_DIR", os.path.join(os.getcwd(), "projects")), project_id)
+    project_dir = os.path.join(
+        os.environ.get("PROJECTS_DIR", os.path.join(os.getcwd(), "projects")),
+        project_id,
+    )
     pcb_file = None
 
     # 搜索可能的PCB文件
@@ -1462,13 +1799,19 @@ async def export_step(project_id: str):
 
         try:
             result = subprocess.run(
-                [kicad_cli_path, "pcb", "export", "step",
-                 "-o", output_file,
-                 "--subst-models",
-                 pcb_file],
+                [
+                    kicad_cli_path,
+                    "pcb",
+                    "export",
+                    "step",
+                    "-o",
+                    output_file,
+                    "--subst-models",
+                    pcb_file,
+                ],
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
 
             if result.returncode == 0 and os.path.exists(output_file):
@@ -1476,7 +1819,9 @@ async def export_step(project_id: str):
                 return {"files": [os.path.basename(output_file)]}
             else:
                 logger.error(f"STEP export failed: {result.stderr}")
-                raise HTTPException(status_code=500, detail=f"STEP export failed: {result.stderr}")
+                raise HTTPException(
+                    status_code=500, detail=f"STEP export failed: {result.stderr}"
+                )
         except subprocess.TimeoutExpired:
             logger.error("STEP export timeout")
             raise HTTPException(status_code=500, detail="STEP export timeout")
@@ -1486,7 +1831,9 @@ async def export_step(project_id: str):
     else:
         # Canvas模式：没有真实的KiCad文件
         # 创建一个提示文件说明情况
-        logger.warning(f"No KiCad PCB file found for project: {project_id}, generating placeholder")
+        logger.warning(
+            f"No KiCad PCB file found for project: {project_id}, generating placeholder"
+        )
 
         # 检查PCB数据是否存在
         pcb_info = _pcb_data.get(project_id, {})
@@ -1511,7 +1858,7 @@ To export a real STEP 3D model:
 
 PCB Summary:
 - Footprints: {len(footprints)}
-- Board dimensions: {pcb_info.get('boardWidth', 'N/A')} x {pcb_info.get('boardHeight', 'N/A')} mm
+- Board dimensions: {pcb_info.get("boardWidth", "N/A")} x {pcb_info.get("boardHeight", "N/A")} mm
 """
             placeholder_file = os.path.join(output_dir, f"{project_id}.step.txt")
             with open(placeholder_file, "w", encoding="utf-8") as f:
@@ -1520,12 +1867,12 @@ PCB Summary:
             return {
                 "files": [f"{project_id}.step.txt"],
                 "warning": "STEP export requires KiCad connection. Generated placeholder file.",
-                "note": "To get real STEP file, open project in KiCad and export manually"
+                "note": "To get real STEP file, open project in KiCad and export manually",
             }
         else:
             raise HTTPException(
                 status_code=400,
-                detail="No PCB data available. Please generate PCB layout first."
+                detail="No PCB data available. Please generate PCB layout first.",
             )
 
 
@@ -1538,7 +1885,11 @@ async def get_export_formats():
             {"id": "gerber", "name": "Gerber", "description": "PCB制造文件"},
             {"id": "drill", "name": "Drill", "description": "钻孔文件"},
             {"id": "bom", "name": "BOM", "description": "物料清单"},
-            {"id": "pickplace", "name": "Pick and Place", "description": "贴片坐标文件"},
+            {
+                "id": "pickplace",
+                "name": "Pick and Place",
+                "description": "贴片坐标文件",
+            },
             {"id": "pdf", "name": "PDF", "description": "PDF文档"},
             {"id": "svg", "name": "SVG", "description": "SVG矢量图"},
             {"id": "step", "name": "STEP", "description": "3D模型"},

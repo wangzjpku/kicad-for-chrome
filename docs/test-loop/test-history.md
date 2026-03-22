@@ -1,0 +1,119 @@
+# Test History
+
+## Executed Tests
+<!-- Append test names here to avoid repetition -->
+
+## Standard Tests
+- T1: (not executed)
+- T2: (not executed)
+- T3: (not executed)
+- T4: (not executed)
+- T5: (not executed)
+
+## Boundary Tests
+- B01: 超长/特殊字符输入
+  - B01.1: 项目名特殊字符 → ✅ FIXED (ISS-B01-001, HTTP 422拒绝)
+  - B01.2: 2000+字符AI输入 → ✅ PASS (7 footprints, 8 tracks)
+- B02: 项目名边界验证
+  - B02.1: 空项目名 → ✅ 前端拦截 "Please enter a project name"
+  - B02.2: 重复项目名 → ✅ HTTP 409 Conflict拒绝
+- B03: 项目名最大长度100字符
+  - B03.1: 100字符 → ✅ 创建成功 (浏览器验证, HTTP 201)
+  - B03.2: 101字符 → ✅ HTTP 422拒绝 "Project name cannot exceed 100 characters"
+- B04: SQL注入/XSS安全
+  - B04.1: SQL注入(`'; DROP TABLE`) → ✅ 安全(参数化查询，字符串被存储为字面值)
+  - B04.2: SQL注入(OR 1=1, UNION SELECT, --, ;) → ✅ 安全(全部被存储为字面值，无SQL执行)
+  - B04.3: XSS(`<script>alert`) → ✅ HTTP 422拒绝(Windows `<>` 禁止字符副作用)
+  - B04.4: XSS(onclick=, onerror=) → ✅ 安全(参数化查询，字符串被存储)
+- B05: 仅空格/空白字符输入
+  - B05.1: 纯空格 → ✅ 前端拦截 + HTTP 422 "cannot be empty"
+  - B05.2: 空字符串 → ✅ HTTP 422 "cannot be empty"
+  - B05.3: Tab/换行符 → ✅ HTTP 422 "cannot be empty"
+- B06: 前后空格/trim边界
+  - B06.1: 前导空格 → ✅ HTTP 201, 存储时自动trim
+  - B06.2: 尾随空格 → ✅ HTTP 201, 存储时自动trim
+  - B06.3: 前后空格 → ✅ HTTP 201, 存储时自动trim
+  - 注意: validate_name中strip()在禁止字符检查前 → **FIXED** (禁止字符检查已移至strip之前)
+- B07: Unicode/多语言支持
+  - B07.1: 中文 → ✅ HTTP 201
+  - B07.2: 日文 → ✅ HTTP 201
+  - B07.3: 阿拉伯/俄/希伯来/希腊 → ✅ HTTP 201
+  - B07.4: Emoji → ✅ HTTP 201
+  - B07.5: 中英混合 → ✅ HTTP 201
+- B08: 最短名称边界
+  - B08.1: 1字符名称 → ✅ HTTP 201
+  - B08.2: 2字符名称 → ✅ HTTP 201
+  - B08.3: 单字符中文/韩文/数字 → ✅ HTTP 201
+  - 注意: 系统无最小长度限制(1字符即可)，合理设计
+- B09: 大小写敏感性
+  - B09.1: "B09-Case-Test" → ✅ HTTP 201 (创建成功)
+  - B09.2: "b09-case-test" → ✅ HTTP 409 (已存在，大小写不敏感)
+  - B09.3: "B09-CASE-TEST" → ✅ HTTP 409 (已存在)
+  - 注意: 系统使用case-insensitive重复检测，数据库层行为
+- B10: 特殊符号/保留名/控制字符
+  - B10.1: 尾部单点 (name.) → ✅ HTTP 201
+  - B10.2: 尾部双点 (name..) → ✅ HTTP 201
+  - B10.3: 开头点 (.B10Name) → ✅ HTTP 201
+  - B10.4: @符号 → ✅ HTTP 201
+  - B10.5: #符号 → ✅ HTTP 201
+  - B10.6: $符号 → ✅ HTTP 201
+  - B10.7: %符号 → ✅ HTTP 201
+  - B10.8: &符号 → ✅ HTTP 201
+  - B10.9: +符号 → ✅ HTTP 201
+  - B10.10: =符号 → ✅ HTTP 201
+  - B10.11: _下划线 → ✅ HTTP 201
+  - B10.12: ~符号 → ✅ HTTP 201
+  - B10.13: 括号() → ✅ HTTP 201
+  - B10.14: 感叹号! → ✅ HTTP 201
+  - B10.15: 分号; → ✅ HTTP 201
+  - B10.16: 单引号' → ✅ HTTP 201
+  - B10.17: 反引号` → ✅ HTTP 201
+  - B10.18: ^符号 → ✅ HTTP 201
+  - B10.19: Windows保留名CON → ✅ HTTP 201 (API层不限制，文件系统层面才有限制)
+  - B10.20: Windows保留名PRN → ✅ HTTP 201
+  - B10.21: Windows保留名AUX → ✅ HTTP 201
+  - B10.22: Windows保留名NUL → ✅ HTTP 201
+  - B10.23: Windows保留名COM1 → ✅ HTTP 201
+  - B10.24: Null byte控制符 → ✅ JSON解析层拒绝 (Invalid control character)
+  - 注意: API层仅拒绝Windows禁止字符`\\/:*?"<>|`和控制字符，Windows保留名(CON/PRN/AUX等)不禁用
+- B11: 纯数字/重复模式名称
+  - B11.1: 纯数字"123" → ✅ HTTP 201
+  - B11.2: 单个数字"0" → ✅ HTTP 201
+  - B11.3: 前导零数字"007" → ✅ HTTP 201
+  - B11.4: 重复字母"aaa" → ✅ HTTP 201
+  - B11.5: 重复点"..." → ✅ HTTP 201
+  - B11.6: 连续双连"--" → ✅ HTTP 201
+  - B11.7: 连续双下划线"__" → ✅ HTTP 201
+  - B11.8: 重复模式"ababab" → ✅ HTTP 201
+- B12: 控制字符/多空格边界
+  - B12.1: Tab字符 → ✅ JSON解析层拒绝 (Invalid control character)
+  - B12.2: 换行符 → ✅ JSON解析层拒绝
+  - B12.3: 回车符 → ✅ JSON解析层拒绝
+  - B12.4: 中间多空格"B12-a  b" → ✅ HTTP 201 (存储含多空格)
+  - B12.5: 仅空格 → ✅ HTTP 422 "cannot be empty" (B05确认)
+  - B12.6: 前导多空格"   B12" → ✅ HTTP 201 (自动trim为"B12")
+- B13: 边界长度/零宽字符
+  - B13.1: 99字符全A → ✅ HTTP 201
+  - B13.2: 零宽空格(U+200B) → ✅ HTTP 201 (字符被存储)
+  - B13.3: 零宽连接符(U+200D) → ✅ HTTP 201 (字符被存储)
+  - 注意: 零宽字符Unicode可见性为零但占用长度，可能用于隐藏恶意名称
+  - 100字符: 之前已测试(最大边界)
+  - 101字符: HTTP 422拒绝
+- B14: Unicode特殊字符/同形文字
+  - B14.1: RTL覆盖字符(U+202E) → ✅ HTTP 201 (注意: 可用于伪装文件名，安全建议限制)
+  - B14.2: 希腊Omicron(ο) → ✅ HTTP 201
+  - B14.3: 西里尔a(а) → ✅ HTTP 201 (与Latin外观相同，可用于伪装)
+  - B14.4: 零宽不间断空格(U+202F) → ✅ HTTP 201
+- B15: 重复创建/描述字段
+  - B15.1: 首次创建 → ✅ HTTP 201
+  - B15.2: 完全重复 → ✅ HTTP 409 Conflict
+  - B15.3: 大小写变体重复 → ✅ HTTP 409 (case-insensitive)
+  - B15.4: 带description字段 → ✅ HTTP 201
+- B16: 同形文字攻击(Homograph)测试
+  - B16.1: Latin o only → ✅ HTTP 201
+  - B16.2: Greek omicron (U+03C0) → ✅ HTTP 201 (与Latin字符区分)
+  - B16.3: Cyrillic o (U+043E) → ✅ HTTP 201 (与Latin字符区分)
+  - B16.4: Latin e only → ✅ HTTP 201
+  - B16.5: Cyrillic ie (U+0451) → ✅ HTTP 201 (与Latin字符区分)
+  - 注意: 系统正确区分Latin/Greek/Cyrillic字符，无Homograph攻击风险
+- **边界测试总结: B01-B16 全部通过 ✅**
