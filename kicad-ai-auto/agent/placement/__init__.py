@@ -13,7 +13,8 @@ from .placement_engine import (
     Placement,
     Component,
     BoardConstraints,
-    PlacementResult
+    PlacementResult,
+    PlacementStrategy
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "Placement",
     "Component",
     "BoardConstraints",
-    "PlacementResult"
+    "PlacementResult",
+    "PlacementStrategy"
 ]
