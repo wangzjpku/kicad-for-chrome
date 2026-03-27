@@ -1,694 +1,688 @@
-# AI PCB 设计系统 - 完整开发计划
+# AI PCB 设计系统 - 完整开发计划 (对标 Flux.ai)
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
-**Goal:** 将 kicad-for-chrome 项目迭代为完整的 AI PCB 设计平台，类似 flux.ai，支持自然语言输入 → AI 分析 → 原理图生成 → AI 布局布线 → 完整 PCB 设计。
+> **Goal:** 将 kicad-for-chrome 项目打造为**可商业化**的 AI PCB 设计平台，完全对标 Flux.ai，具备自然语言输入 → AI 分析 → 原理图生成 → AI 布局布线 → 制造文件导出 的完整流程。
 
 **Architecture:**
-- **前端**: React + TypeScript + Konva.js + Zustand，保持现有的编辑器架构
-- **后端**: FastAPI + Python，新增 PCB 布局引擎和元器件推荐系统
-- **AI 层**: 增强现有 AI 分析能力，添加 LLM 驱动的元器件推荐
-- **KiCad 集成**: 充分利用 KiCad 9.0+ IPC API，添加自动布局 API 支持
-
-**Tech Stack:** Python 3.11+, FastAPI, KiCad 9.0+ IPC API (kicad-python), React 18+, Konva.js, Zustand, GLM-4/Kimi API
-
----
-
-## 阶段划分
-
-| 阶段 | 名称 | 目标 | 周期 |
-|------|------|------|------|
-| **Phase 0** | 稳定化 | 修复现有 bug，稳定核心功能 | 1-2周 |
-| **Phase 1** | 原理图增强 | 提升原理图生成质量和完整性 | 2-3周 |
-| **Phase 2** | AI 引擎升级 | 增强 AI 分析和元器件推荐能力 | 3-4周 |
-| **Phase 3** | PCB 布局系统 | 实现 AI 自动布局算法 | 4-6周 |
-| **Phase 4** | PCB 布线系统 | 实现 AI 自动布线算法 | 4-6周 |
-| **Phase 5** | 集成测试 | 端到端测试和优化 | 2-3周 |
+- **前端**: React + TypeScript + Konva.js，保持现有的编辑器架构，新增 AI Copilot UI
+- **后端**: FastAPI + Python，新增 PCB 布局引擎、布线引擎、DFM 规则引擎
+- **AI 层**: LLM 驱动的需求分析、层数判定、元器件推荐、价格优化
+- **KiCad 集成**: KiCad 9.0+ IPC API + kicad-cli 制造文件导出
+- **制造集成**: JLCPCB/LCSC API 实时价格、库存、DFM 检查
 
 ---
 
-## Phase 0: 稳定化
+## Flux.ai 深度分析 (2026-03-27 实地访问)
 
-### Task 0.1: 建立开发环境和测试框架
+### 核心功能发现
 
-**Files:**
-- Create: `kicad-ai-auto/agent/tests/conftest.py`
-- Create: `kicad-ai-auto/agent/tests/__init__.py`
+通过实地访问 flux.ai 网站并分析其产品功能，发现以下关键特性：
 
-**Step 1: Create test structure**
+#### 1. AI Copilot (AI 实习生)
+Flux 的 AI 不是简单的问答，而是**集成在项目中的 AI 助手**：
+- **架构设计**：基于需求头脑风暴系统架构
+- **组件研究**：查找合适元件、比较替代品、解释技术参数
+- **设计评审**：识别潜在问题、改进信号完整性建议
+- **测试调试**：SPICE 仿真验证电路行为
+
+#### 2. 工作流自动化
+```
+Plan → Schematic → Layout → Manufacture
+```
+- **Plan**：理解需求，制定详细计划供用户确认
+- **Schematic**：生成原理图和 BOM，自动遵循最佳实践
+- **Layout**：AI 放置和布线，充分考虑约束条件
+- **Manufacture**：输出可直接生产的文件，供应链感知元件建议
+
+#### 3. 自然语言输入界面 (Mad Libs 风格)
+```
+"Make me a [温度湿度传感器] with [WiFi+蓝牙] powered by [USB-C 5V] for [消费电子]"
+```
+- 结构化引导用户输入
+- 下拉选项确保设计意图清晰
+
+#### 4. 实时元件数据
+- **真实库存**：设计时显示真实可用性
+- **实时价格**：BOM 成本即时计算
+- **替代元件**：自动推荐替代料号避免供应风险
+
+#### 5. 制造集成
+支持的制造商：
+- PCBWay, NextPCB, OSHPark, JLCPCB, SeeedStudio, LionCircuits, Aisler, MacroFab
+
+#### 6. 协作与平台规模
+- **1,099,361** 设计师
+- **6,425,482** 项目
+- **821,334** 元件库
+- 实时协作 + 版本控制
+
+#### 7. 商业模式
+- 免费 2 周试用
+- 付费计划：$20/月 (starter) → $142/月 (pro) → $158/月 (teams)
+- 按使用量计费 (ACU)
+
+### 当前项目与 Flux.ai 差距分析
+
+| 差距领域 | Flux.ai | 当前项目 | 优先级 |
+|---------|---------|---------|--------|
+| **AI 理解深度** | 理解原理图、元件、连接、数据手册 | 仅基础问答 | P0 |
+| **工作流集成** | Plan→Schematic→Layout→Manufacture 全流程 | 分离模块 | P0 |
+| **实时元件数据** | 真实库存/价格/替代 | 静态库 | P1 |
+| **设计评审** | AI 自动检查 DRC/ERC/DFM | 手动触发 | P1 |
+| **供应链集成** | 多制造商直接下单 | 仅导出文件 | P2 |
+| **协作功能** | 实时多人协作 | 单用户 | P2 |
+
+### 迭代策略：通过图像识别和实际操作分析改进
+
+#### Phase A: 逆向工程 Flux UI/UX (1周)
+1. **图像分析**：截取 Flux 界面截图，分析布局、配色、交互模式
+2. **用户流程录制**：观察用户如何使用 Flux 完成设计
+3. **功能映射**：将 Flux 功能映射到当前系统
+
+#### Phase B: 复制核心体验 (2周)
+1. **Mad Libs 需求输入**：实现结构化引导输入
+2. **分步确认流程**：Plan → Schematic → Layout 每步确认
+3. **设计预览**：每步显示 AI 生成结果的预览
+
+#### Phase C:差异化竞争 (持续)
+1. **开源优势**：KiCad 生态、插件扩展
+2. **本地运行**：无需云端，保护知识产权
+3. **成本优势**：免费开源 vs $20+/月
+
+---
+
+## 阶段总览
+
+| 阶段 | 名称 | 目标 | 优先级 | 周期 |
+|------|------|------|--------|------|
+| **Phase 0** | 稳定化 | 修复现有 bug，稳定核心功能 | P0 | 1周 |
+| **Phase 1** | 原理图增强 | 提升原理图生成质量和完整性 | P1 | 2周 |
+| **Phase 2** | AI 分析引擎 | 需求分析、层数判定、元器件推荐 | P1 | 3周 |
+| **Phase 3** | PCB 布局系统 | AI 自动布局算法 | P1 | 3周 |
+| **Phase 4** | PCB 布线系统 | AI 自动布线算法 | P1 | 3周 |
+| **Phase 5** | DFM 规则引擎 | 制造规则检查、DFM 优化 | P2 | 2周 |
+| **Phase 6** | BOM 供应链集成 | 价格、库存、替代元件 | P2 | 2周 |
+| **Phase 7** | 制造文件导出 | Gerber、BOM、位置文件一键导出 | P1 | 1周 |
+| **Phase 8** | AI Copilot UI | 前端 AI 对话界面重构 | P1 | 3周 |
+| **Phase 9** | 集成测试与优化 | 端到端测试、性能优化 | P1 | 2周 |
+
+---
+
+## Phase 0: 稳定化 (1周)
+
+### Task 0.1: BOM 导出 API 错误修复
+- 修复 `project_routes.py` 中 BOM 导出返回 500 错误
+- 验证：所有 BOM 导出测试通过
+
+### Task 0.2: 原理图组件实例生成修复
+- 验证 `_fix_schematic_components()` 正确调用
+- 验证生成的原理图在 KiCad GUI 中正常显示
+
+### Task 0.3: 现有测试通过
+- 运行全部 pytest 测试，确保无回归
+
+---
+
+## Phase 1: 原理图增强 (2周)
+
+### Task 1.1: 符号库检索增强
+- **已完成**: `services/symbol_library.py`
+- 索引所有 KiCad 符号，支持关键字搜索
+
+### Task 1.2: 引脚连接算法改进
+- 改进 `schematic_v2.py` 的引脚连接逻辑
+- 支持多引脚器件的正确连接
+
+### Task 1.3: ERC 验证集成
+- 生成原理图后自动运行 ERC 检查
+- 返回 ERC 结果并在 UI 中显示
+
+---
+
+## Phase 2: AI 分析引擎 (3周) ⭐ 关键
+
+### Task 2.1: 自然语言需求解析
+**Files:** `agent/routes/ai_routes.py`
 
 ```python
-# kicad-ai-auto/agent/tests/__init__.py
-# Test package
+class RequirementsAnalysisResult(BaseModel):
+    circuit_type: str  # "power", "signal", "mixed"
+    complexity: str  # "simple", "moderate", "complex"
+    estimated_layers: int  # 1, 2, 4, 6, ...
+    suggested_components: List[ComponentSpec]
+    design_notes: List[str]
 ```
 
-**Step 2: Create conftest.py with fixtures**
+**API:** `POST /api/v1/ai/analyze-requirements`
+
+```json
+{
+  "requirements": "I need a USB to 3.3V regulator circuit with LED indicator",
+  "target_manufacturer": "JLCPCB",
+  "budget_preference": "basic" // "basic", "standard", "premium"
+}
+```
+
+**返回:**
+```json
+{
+  "circuit_type": "power",
+  "complexity": "simple",
+  "estimated_layers": 2,
+  "components": [
+    {"ref": "U1", "symbol": "Regulator_Linear:AMS1117-3.3", "footprint": "SOT223", "reason": "3.3V regulator"},
+    {"ref": "C1", "symbol": "Device:C", "footprint": "0805", "reason": "Input decoupling"}
+  ],
+  "estimated_cost": 2.50,
+  "design_notes": ["Add TVS diode for USB protection", "Consider 10mil trace width for USB data lines"]
+}
+```
+
+### Task 2.2: 自动层数判定引擎 ⭐
+**Files:** `agent/services/layer_calculator.py`
 
 ```python
-# kicad-ai-auto/agent/tests/conftest.py
-import pytest
-import sys
-from pathlib import Path
+class LayerCalculator:
+    """根据电路复杂度自动判定 PCB 层数"""
 
-# Add agent to path
-agent_path = Path(__file__).parent.parent
-sys.path.insert(0, str(agent_path))
+    def calculate_layers(self, circuit: CircuitAnalysis) -> int:
+        """
+        判定逻辑:
+        - 高频信号 > 5GHz 或差分对 > 4对 → 6层
+        - 高频信号 > 1GHz 或 > 20个高速IO → 4层
+        - 电源 > 3路 或 > 10A电流 → 4层
+        - 普通数字电路 → 2层
+        - 单面THT或简单电路 → 1层
+        """
+```
 
-@pytest.fixture
-def mock_kicad_response():
-    """Mock KiCad IPC response for testing"""
-    return {
-        "status": "connected",
-        "board": {"width": 100, "height": 80}
+### Task 2.3: AI 元器件推荐引擎 ⭐
+**Files:** `agent/services/component_recommender.py` (已创建，需增强)
+
+**增强功能:**
+- 调用 LLM 分析需求
+- 查询 LCSC API 获取实时价格/库存
+- 返回 JLCPCB 基础零件推荐
+
+```python
+async def recommend_components_with_lcsc(
+    requirements: str,
+    lcsc_api_key: str
+) -> List[ComponentRecommendation]:
+    """带供应链数据的元件推荐"""
+    # 1. LLM 分析需求
+    # 2. 查询 LCSC API 获取价格/库存
+    # 3. 优先推荐 JLCPCB 基础零件
+    # 4. 如果缺货，提供替代方案
+```
+
+### Task 2.4: KiCad IPC 原理图生成
+**Files:** `agent/routes/netlist_routes.py`
+
+增强 `kicad_sch_api` 生成，确保:
+- 正确的符号实例块 (symbol instances)
+- 正确的导线连接
+- KiCad GUI 可正常打开
+
+---
+
+## Phase 3: PCB 布局系统 (3周) ⭐ 关键
+
+### Task 3.1: PCB 布局引擎 ⭐
+**Files:** `agent/placement/placement_engine.py` (已创建)
+
+**策略支持:**
+- `GRID`: 基础网格布局
+- `THERMAL_AWARE`: 热管理优化
+- `SIGNAL_INTEGRITY`: 高速信号优化
+- `BALANCED`: 综合策略
+
+### Task 3.2: 约束驱动布局 ⭐
+**Files:** `agent/placement/constraint_placer.py`
+
+```python
+class ConstraintDrivenPlacer:
+    """基于设计约束的智能布局"""
+
+    def place_with_constraints(
+        self,
+        components: List[Component],
+        constraints: List[PlacementConstraint]
+    ) -> PlacementResult:
+        """
+        约束类型:
+        - 相对位置: "U1 必须在 C1 左边"
+        - 间距约束: "U1 和 U2 间距 > 5mm"
+        - 区域约束: "电源元件放在左上角"
+        - Keepout: "这里不能放元件"
+        """
+```
+
+### Task 3.3: 布局质量评分
+```python
+class PlacementScoreCalculator:
+    """评估布局质量的多个维度"""
+
+    def calculate_score(self, placement: PlacementResult) -> Dict[str, float]:
+        """
+        评分维度:
+        - 布线长度估计
+        - 元件分布均匀度
+        - 热分布评分
+        - 信号完整性评分
+        - DFM 可制造性评分
+        """
+```
+
+---
+
+## Phase 4: PCB 布线系统 (3周) ⭐ 关键
+
+### Task 4.1: 布线引擎 ⭐
+**Files:** `agent/routing/routing_engine.py` (已创建)
+
+**功能:**
+- Manhattan 布线 (L-shape)
+- 多层布线 + 自动过孔
+- 差分对布线
+- 蛇形线等长布线
+
+### Task 4.2: 高级布线算法 ⭐
+**Files:** `agent/routing/advanced_routing.py`
+
+```python
+class AdvancedRouter:
+    """高级布线功能"""
+
+    def route_differential_pair(self, net1: Net, net2: Net) -> Route:
+        """差分对等长布线"""
+
+    def route_high_speed(self, net: Net, target_impedance: float) -> Route:
+        """高速信号阻抗控制布线"""
+
+    def route_power_plane(self, net: Net, current_ma: float) -> Zone:
+        """电源平面铺铜"""
+```
+
+### Task 4.3: 自动 DRC 检查
+```python
+async def route_with_drc(
+    nets: List[Net],
+    design_rules: DesignRules
+) -> RoutingResult:
+    """
+    布线 + 实时 DRC 检查
+    - 最小线宽
+    - 最小间距
+    - 最小过孔
+    - 环形圈要求
+    """
+```
+
+---
+
+## Phase 5: DFM 规则引擎 (2周)
+
+### Task 5.1: JLCPCB 制造规则 ⭐
+**Files:** `agent/services/jlcpcb_rules.py`
+
+```python
+class JLCPCBDesignRules:
+    """JLCPCB 设计规则"""
+
+    LAYER_OPTIONS = {
+        "1Layer": {"price": "$5", "turnaround": "2-3 days"},
+        "2Layer": {"price": "$10", "turnaround": "2-3 days"},
+        "4Layer": {"price": "$30", "turnaround": "5-7 days"},
     }
+
+    DESIGN_RULES = {
+        "min_trace_width": 0.1,  # mm
+        "min_trace_spacing": 0.1,
+        "min_hole_size": 0.3,
+        "min_via_drill": 0.3,
+        "min_via_outer": 0.6,
+        "slot_width": 1.0,
+        "edge_clearance": 0.5,
+    }
+
+    # 可选表面处理
+    SURFACE_FINISH = ["HASL", "ENIG", "OSP"]
+
+    # 基材选项
+    BASE_MATERIAL = ["FR-4", "Aluminum", "Rogers"]
 ```
 
-**Step 3: Verify test discovery works**
+### Task 5.2: DFM 检查 API
+**Files:** `agent/routes/drc_routes.py`
 
-Run: `cd kicad-ai-auto/agent && pytest --collect-only`
-Expected: No errors, tests discovered
-
-**Step 4: Commit**
-
-```bash
-git add kicad-ai-auto/agent/tests/
-git commit -m "test: add test framework structure"
+```python
+@router.post("/api/v1/drc/check-design")
+async def check_dfm(design: PCBSchematic) -> DFMReport:
+    """
+    DFM 检查:
+    1. JLCPCB 可制造性规则
+    2. 最小线宽/间距
+    3. 钻孔尺寸检查
+    4. 铜皮最小面积
+    5. 丝印与焊盘距离
+    """
 ```
 
 ---
 
-### Task 0.2: 修复 BOM 导出 API 错误
+## Phase 6: BOM 供应链集成 (2周)
 
-**Files:**
-- Modify: `kicad-ai-auto/agent/routes/project_routes.py`
+### Task 6.1: LCSC API 集成 ⭐
+**Files:** `agent/services/lcsc_fetcher.py` (已有部分)
 
-**Step 1: Write failing test for BOM export**
+**增强功能:**
+- 实时价格查询
+- 库存数量查询
+- 替代元件推荐
+- 批量查询优化
 
+### Task 6.2: BOM 成本优化 ⭐
 ```python
-# kicad-ai-auto/agent/tests/test_project_routes.py
-def test_bom_export_returns_valid_json(project_id):
-    """Test that BOM export returns valid JSON without 500 error"""
-    response = client.post(f"/api/v1/projects/{project_id}/export/bom")
-    assert response.status_code == 200
-    data = response.json()
-    assert "bom" in data or "components" in data
+class BOMOptimizer:
+    """BOM 成本优化"""
+
+    async def optimize_bom(
+        self,
+        components: List[ComponentSpec],
+        preferences: BOMPreferences
+    ) -> BOMOptimizationResult:
+        """
+        优化策略:
+        1. 优先 JLCPCB 基础零件
+        2. 批量采购折扣
+        3. 库存不足时推荐替代品
+        4. 考虑交期影响
+        """
 ```
 
-**Step 2: Run test to verify failure**
-
-Run: `pytest tests/test_project_routes.py::test_bom_export_returns_valid_json -v`
-Expected: FAIL with 500 error
-
-**Step 3: Fix the bug in project_routes.py**
-
-Find the BOM export endpoint and fix the issue with `_pcb_data.get(project_id, {})` → should be `_pcb_data.get(project_id) or {}`
-
-**Step 4: Run test to verify pass**
-
-Run: `pytest tests/test_project_routes.py::test_bom_export_returns_valid_json -v`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add kicad-ai-auto/agent/routes/project_routes.py
-git commit -m "fix: BOM export returns 500 error"
+### Task 6.3: BOM 生成与导出
+```python
+@router.post("/api/v1/bom/generate")
+async def generate_bom(
+    components: List[ComponentSpec],
+    format: str = "csv"  # "csv", "excel", "json"
+) -> BOMDocument:
+    """
+    生成 BOM 文件:
+    - 包含 LCSC 零件号
+    - 包含实时价格
+    - 包含数据手册链接
+    """
 ```
 
 ---
 
-### Task 0.3: 验证原理图组件实例生成
+## Phase 7: 制造文件导出 (1周) ⭐
 
-**Files:**
-- Modify: `kicad-ai-auto/agent/routes/netlist_routes.py`
-
-**Step 1: Write test for schematic component instances**
+### Task 7.1: 一键导出制造文件 ⭐
+**Files:** `agent/routes/export_routes.py`
 
 ```python
-def test_schematic_has_component_instances(schematic_path):
-    """Test that generated schematic contains symbol instances"""
-    # Generate schematic
-    result = generate_schematic(...)
-    content = Path(result["path"]).read_text()
-
-    # Count symbol instances
-    instance_count = content.count("(symbol (lib_id")
-    assert instance_count > 0, "No component instances found"
+@router.post("/api/v1/export/manufacturing")
+async def export_manufacturing_files(
+    project_id: str,
+    options: ManufacturingExportOptions
+) -> ManufacturingPackage:
+    """
+    导出完整制造包:
+    1. Gerber 文件 (各层)
+    2. 钻孔文件 (NPTH + PTH)
+    3. 位置文件 (Pick and Place)
+    4. BOM 文件
+    5. 装配图 (PDF)
+    """
+    return ManufacturingPackage(
+        gerber_zip="path/to/gerber.zip",
+        bom="path/to/bom.csv",
+        pick_place="path/to/pos.csv",
+        drill_files="path/to/drill.zip",
+        views=["path/to/front.pdf", "path/to/back.pdf"]
+    )
 ```
 
-**Step 2: Run test**
-
-Run: `pytest tests/test_netlist_routes.py::test_schematic_has_component_instances -v`
-
-**Step 3: If failing, verify _fix_schematic_components is called**
-
-Check that after `sch.save()`, the `_fix_schematic_components()` function is being called.
-
-**Step 4: Commit**
+### Task 7.2: 直接下单集成 (可选)
+```python
+@router.post("/api/v1/order/jlcpcb")
+async def create_jlcpcb_order(
+    manufacturing_package: ManufacturingPackage,
+    jlcpcb_api_key: str
+) -> OrderStatus:
+    """
+    直接向 JLCPCB 下单:
+    - 上传 Gerber
+    - 选择参数 (层数、尺寸、表面处理)
+    - 自动填入 BOM
+    - 返回价格和交期
+    """
+```
 
 ---
 
-## Phase 1: 原理图增强
+## Phase 8: AI Copilot UI (3周)
 
-### Task 1.1: 增强符号库检索
+### Task 8.1: 前端 AI 对话界面 ⭐
+**Files:** `web/src/components/ai-copilot/`
 
-**Files:**
-- Create: `kicad-ai-auto/agent/services/symbol_library.py`
-- Modify: `kicad-ai-auto/agent/routes/netlist_routes.py`
+```typescript
+// AI Copilot 组件
+interface AICopilotProps {
+  onRequirementsSubmit: (req: string) => Promise<CircuitDesign>;
+  onSuggestionAccept: (suggestion: Suggestion) => void;
+}
 
-**Step 1: Write test for symbol search**
-
-```python
-def test_symbol_search_by_keyword():
-    """Test searching symbols by keyword"""
-    library = SymbolLibrary()
-    results = library.search("USB")
-    assert len(results) > 0
-    assert any("USB" in r["name"] for r in results)
+// 聊天界面功能:
+// 1. 自然语言输入需求
+// 2. AI 逐步确认 (元件选择、参数调整)
+// 3. 显示设计预览
+// 4. 一键生成原理图 + PCB
 ```
 
-**Step 2: Implement SymbolLibrary class**
+### Task 8.2: 设计向导流程
+**Files:** `web/src/pages/design-wizard/`
 
-```python
-# kicad-ai-auto/agent/services/symbol_library.py
-from dataclasses import dataclass
-from typing import List, Optional
-import json
-from pathlib import Path
+```
+Step 1: 需求输入
+  └─> "我想做一个 USB 充电电路，5V 3A"
 
-@dataclass
-class SymbolInfo:
-    name: str
-    library: str
-    unit_count: int
-    pin_count: int
-    keywords: List[str]
+Step 2: AI 分析 + 确认
+  └─> 显示推荐的元件清单
+  └─> 用户可以修改/替换
 
-class SymbolLibrary:
-    def __init__(self, lib_path: Optional[str] = None):
-        self.lib_path = lib_path or "kicad-symbols"
-        self._cache = {}
+Step 3: 参数配置
+  └─> PCB 尺寸 (或 AI 推荐)
+  └─> 层数 (AI 已判定)
+  └─> 制造选项
 
-    def search(self, keyword: str, limit: int = 20) -> List[SymbolInfo]:
-        # Search implementation
-        pass
+Step 4: 生成 + 预览
+  └─> AI 生成原理图
+  └─> AI 布局 + 布线
+  └─> 3D 预览
+
+Step 5: 导出
+  └─> 制造文件下载
+  └─> 直接下单
 ```
 
-**Step 3: Run test**
-
-**Step 4: Commit**
+### Task 8.3: KiCad 协同编辑
+```typescript
+// KiCad IPC 实时同步
+interface KiCadSyncProps {
+  projectId: string;
+  onSchematicChange: (diff: SchematicDiff) => void;
+  onPCBChange: (diff: PCBDiff) => void;
+  syncMode: "realtime" | "ondemand";
+}
+```
 
 ---
 
-### Task 1.2: 改进引脚连接算法
+## Phase 9: 集成测试与优化 (2周)
 
-**Files:**
-- Modify: `kicad-ai-auto/agent/generators/schematic_v2.py`
-
-**Step 1: Write test for pin connection**
-
+### Task 9.1: 端到端测试
 ```python
-def test_connect_pins_creates_valid_wire():
-    """Test that pin connection creates valid wire segment"""
-    generator = SchematicGeneratorV2(project_path)
-    component1 = Component(symbol="Device:R", ref="R1", at=(100, 100))
-    component2 = Component(symbol="Device:C", ref="C1", at=(100, 150))
-
-    wire = generator.connect_pins(component1, "1", component2, "1")
-
-    assert wire.start == (100, 100)
-    assert wire.end == (100, 150)
+def test_full_flow():
+    """
+    完整流程测试:
+    1. 需求输入 → "USB to 3.3V regulator with LED"
+    2. AI 分析 → 确认元件清单
+    3. 生成原理图 → 验证 ERC
+    4. PCB 布局 → 验证无重叠
+    5. PCB 布线 → 验证 DRC
+    6. DFM 检查 → 验证可制造性
+    7. 导出制造文件 → 验证文件完整
+    """
 ```
 
-**Step 2: Run test**
-
-**Step 3: Implement enhanced connection logic**
-
-**Step 4: Commit**
-
----
-
-## Phase 2: AI 引擎升级
-
-### Task 2.1: 创建元器件推荐引擎
-
-**Files:**
-- Create: `kicad-ai-auto/agent/services/component_recommender.py`
-- Create: `kicad-ai-auto/agent/data/component_db.json` (if not exists)
-
-**Step 1: Write test for component recommendation**
-
-```python
-def test_recommend_by_function():
-    """Test recommending components by function"""
-    recommender = ComponentRecommender()
-
-    # Recommend USB connector
-    results = recommender.recommend_by_function("USB type-C connector 5V 3A")
-
-    assert len(results) > 0
-    assert all("USB" in r["symbol"] or "USB" in r["description"] for r in results)
-```
-
-**Step 2: Implement ComponentRecommender**
-
-```python
-# kicad-ai-auto/agent/services/component_recommender.py
-from dataclasses import dataclass
-from typing import List, Dict, Optional
-import json
-from pathlib import Path
-
-@dataclass
-class ComponentRecommendation:
-    symbol: str
-    footprint: str
-    description: str
-    parameters: Dict
-    score: float
-    source: str  # "jlcpcb", "lcsc", "local"
-
-class ComponentRecommender:
-    def __init__(self):
-        self.db_path = Path(__file__).parent.parent / "data" / "component_db.json"
-        self._load_db()
-
-    def _load_db(self):
-        if self.db_path.exists():
-            with open(self.db_path) as f:
-                self.db = json.load(f)
-        else:
-            self.db = {"components": []}
-
-    def recommend_by_function(self, description: str, limit: int = 5) -> List[ComponentRecommendation]:
-        # LLM-powered recommendation logic
-        pass
-```
-
-**Step 3: Run test**
-
-**Step 4: Commit**
-
----
-
-### Task 2.2: 增强 AI 分析路由
-
-**Files:**
-- Modify: `kicad-ai-auto/agent/routes/ai_routes.py`
-
-**Step 1: Write test for enhanced AI analysis**
-
-```python
-def test_ai_analyze_returns_component_recommendations():
-    """Test that AI analysis returns component recommendations"""
-    response = client.post("/api/v1/ai/analyze", json={
-        "requirements": "I need a USB charging circuit for 5V 3A"
-    })
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "components" in data or "recommendations" in data
-```
-
-**Step 2: Enhance ai_analyze endpoint to include recommendations**
-
-**Step 3: Run test**
-
-**Step 4: Commit**
-
----
-
-## Phase 3: PCB 布局系统
-
-### Task 3.1: 创建 PCB 布局引擎
-
-**Files:**
-- Create: `kicad-ai-auto/agent/placement/placement_engine.py`
-- Create: `kicad-ai-auto/agent/placement/__init__.py`
-
-**Step 1: Write test for basic placement**
-
-```python
-def test_place_components_on_board():
-    """Test placing components on PCB board"""
-    engine = PlacementEngine(board_width=100, board_height=80)
-
-    components = [
-        Component(ref="U1", width=20, height=15),
-        Component(ref="C1", width=5, height=5),
-        Component(ref="R1", width=3, height=2),
-    ]
-
-    result = engine.place(components)
-
-    assert len(result.placements) == 3
-    # Verify no overlaps
-    for i, p1 in enumerate(result.placements):
-        for p2 in result.placements[i+1:]:
-            assert not p1.overlaps(p2)
-```
-
-**Step 2: Implement PlacementEngine with basic algorithm**
-
-```python
-# kicad-ai-auto/agent/placement/placement_engine.py
-from dataclasses import dataclass
-from typing import List, Tuple
-import random
-
-@dataclass
-class Placement:
-    ref: str
-    x: float
-    y: float
-    rotation: float = 0
-
-@dataclass
-class Component:
-    ref: str
-    width: float
-    height: float
-
-class PlacementEngine:
-    def __init__(self, board_width: float, board_height: float, margin: float = 5):
-        self.board_width = board_width
-        self.board_height = board_height
-        self.margin = margin
-
-    def place(self, components: List[Component]) -> List[Placement]:
-        # Simple random placement with collision avoidance
-        placements = []
-
-        for comp in sorted(components, key=lambda c: c.width * c.height, reverse=True):
-            pos = self._find_position(placements, comp)
-            placements.append(Placement(ref=comp.ref, x=pos[0], y=pos[1]))
-
-        return placements
-
-    def _find_position(self, existing: List[Placement], comp: Component) -> Tuple[float, float]:
-        # Grid-based placement with margin
-        grid_size = 5
-        for y in range(self.margin, self.board_height - self.margin, grid_size):
-            for x in range(self.margin, self.board_width - self.margin, grid_size):
-                if self._is_valid_position(x, y, comp, existing):
-                    return (x, y)
-        return (self.margin, self.margin)
-
-    def _is_valid_position(self, x: float, y: float, comp: Component, existing: List[Placement]) -> bool:
-        # Check bounds
-        if x + comp.width > self.board_width - self.margin:
-            return False
-        if y + comp.height > self.board_height - self.margin:
-            return False
-
-        # Check overlaps
-        for p in existing:
-            other_comp = next((c for c in existing if c.ref == p.ref), None)
-            if self._overlaps(x, y, comp, p, other_comp):
-                return False
-
-        return True
-
-    def _overlaps(self, x, y, comp1, pos2, comp2) -> bool:
-        if comp2 is None:
-            return False
-        # Simple AABB collision
-        return not (x + comp1.width <= pos2.x or pos2.x + comp2.width <= x or
-                   y + comp1.height <= pos2.y or pos2.y + comp2.height <= y)
-```
-
-**Step 3: Run test**
-
-**Step 4: Commit**
-
----
-
-### Task 3.2: 添加布局优化算法
-
-**Files:**
-- Modify: `kicad-ai-auto/agent/placement/placement_engine.py`
-
-**Step 1: Add thermal-aware placement**
-
-```python
-def test_thermal_aware_placement():
-    """Test that thermal constraints are considered"""
-    engine = PlacementEngine(board_width=100, board_height=80)
-
-    components = [
-        Component(ref="U1", width=20, height=15, thermal_load=1.0),  # High heat
-        Component(ref="C1", width=5, height=5, thermal_load=0.1),
-        Component(ref="R1", width=3, height=2, thermal_load=0.1),
-    ]
-
-    result = engine.place_thermal_aware(components, ambient_temps=[25, 30, 35])
-
-    # High thermal component should be placed near edge/vent
-    assert result.placements[0].ref == "U1"
-```
-
-**Step 2: Run test**
-
-**Step 3: Implement thermal placement**
-
-**Step 4: Commit**
-
----
-
-## Phase 4: PCB 布线系统
-
-### Task 4.1: 创建布线引擎
-
-**Files:**
-- Create: `kicad-ai-auto/agent/routing/routing_engine.py`
-- Create: `kicad-ai-auto/agent/routing/__init__.py`
-
-**Step 1: Write test for basic routing**
-
-```python
-def test_route_between_pads():
-    """Test routing between two pads"""
-    engine = RoutingEngine()
-
-    pad1 = Pad(x=10, y=10, net="VCC")
-    pad2 = Pad(x=50, y=30, net="VCC")
-
-    routes = engine.route([pad1], [pad2])
-
-    assert len(routes) > 0
-    assert routes[0].net == "VCC"
-```
-
-**Step 2: Implement basic routing**
-
-```python
-# kicad-ai-auto/agent/routing/routing_engine.py
-from dataclasses import dataclass
-from typing import List, Tuple, Optional
-
-@dataclass
-class Pad:
-    x: float
-    y: float
-    net: str
-    layer: str = "top"
-
-@dataclass
-class Route:
-    net: str
-    segments: List[Tuple[float, float, float, float]]  # [(x1,y1,x2,y2), ...]
-    layer: str = "top"
-
-class RoutingEngine:
-    def __init__(self, board_width: float = 100, board_height: float = 80):
-        self.board_width = board_width
-        self.board_height = board_height
-        self.grid_size = 2.5  # KiCad default grid
-
-    def route(self, source_pads: List[Pad], target_pads: List[Pad]) -> List[Route]:
-        """Manhattan routing between pads"""
-        routes = []
-
-        for src in source_pads:
-            for tgt in target_pads:
-                if src.net == tgt.net:
-                    route = self._manhattan_route(src, tgt)
-                    routes.append(route)
-
-        return routes
-
-    def _manhattan_route(self, pad1: Pad, pad2: Pad) -> Route:
-        """Create L-shaped Manhattan route"""
-        x1, y1 = pad1.x, pad1.y
-        x2, y2 = pad2.x, pad2.y
-
-        # L-shaped route: horizontal then vertical
-        mid_x = x2
-        segments = [
-            (x1, y1, mid_x, y1),  # Horizontal
-            (mid_x, y1, mid_x, y2),  # Vertical
-        ]
-
-        return Route(net=pad1.net, segments=segments, layer=pad1.layer)
-```
-
-**Step 3: Run test**
-
-**Step 4: Commit**
-
----
-
-### Task 4.2: 添加过孔和多层布线
-
-**Files:**
-- Modify: `kicad-ai-auto/agent/routing/routing_engine.py`
-
-**Step 1: Write test for via insertion**
-
-```python
-def test_insert_via_for_layer_change():
-    """Test that via is inserted when changing layers"""
-    engine = RoutingEngine(layers=["top", "bottom"])
-
-    pad1 = Pad(x=10, y=10, net="VCC", layer="top")
-    pad2 = Pad(x=50, y=30, net="VCC", layer="bottom")
-
-    route = engine.route_with_vias([pad1], [pad2])
-
-    # Should have a via
-    assert any(s.startswith("via") for s in route.segments)
-```
-
-**Step 2: Run test**
-
-**Step 3: Implement via routing**
-
-**Step 4: Commit**
-
----
-
-## Phase 5: 集成测试
-
-### Task 5.1: 端到端 AI PCB 生成测试
-
-**Files:**
-- Create: `kicad-ai-auto/agent/tests/test_e2e_ai_pcb.py`
-
-**Step 1: Write E2E test**
-
-```python
-def test_full_ai_pcb_generation():
-    """Test complete flow: requirements -> schematic -> PCB"""
-    # 1. Send requirements
-    response = client.post("/api/v1/ai/generate-pcb", json={
-        "requirements": "Simple USB to 3.3V regulator circuit",
-        "board_size": {"width": 100, "height": 80}
-    })
-
-    assert response.status_code == 200
-    result = response.json()
-
-    assert "schematic" in result
-    assert "pcb" in result
-    assert "components" in result
-
-    # 2. Verify schematic file exists and has content
-    sch_path = Path(result["schematic"]["path"])
-    assert sch_path.exists()
-
-    # 3. Verify PCB has placements
-    pcb_data = result["pcb"]
-    assert len(pcb_data.get("placements", [])) > 0
-
-    # 4. Verify routes exist
-    assert len(pcb_data.get("routes", [])) > 0
-```
-
-**Step 2: Run test**
-
-**Step 3: Fix any integration issues**
-
-**Step 4: Commit**
-
----
-
-### Task 5.2: 性能测试
-
-**Files:**
-- Create: `kicad-ai-auto/agent/tests/test_performance.py`
-
-**Step 1: Write performance test**
-
+### Task 9.2: 性能基准测试
 ```python
 def test_placement_performance():
-    """Test that placement completes within time limit"""
-    import time
-
-    engine = PlacementEngine(board_width=200, board_height=150)
-    components = [Component(ref=f"R{i}", width=5, height=3) for i in range(50)]
-
-    start = time.time()
-    result = engine.place(components)
-    elapsed = time.time() - start
-
-    assert elapsed < 1.0, f"Placement took {elapsed:.2f}s, expected < 1.0s"
-    assert len(result) == 50
+    """50元件布局 < 500ms"""
+    def test_routing_performance():
+    """100网络布线 < 2s"""
+    def test_full_generation():
+    """完整流程 < 30s"""
 ```
 
-**Step 2: Run test**
+### Task 9.3: 竞品对比测试
+```
+对比项目:
+1. Flux.ai
+2. Cadence Allegro X AI
+3. Altium Copilot
 
-**Step 3: Optimize if needed**
-
-**Step 4: Commit**
+测试指标:
+- 生成时间
+- 布局质量 (布线长度、过孔数)
+- DFM 通过率
+- BOM 成本
+```
 
 ---
 
-## 里程碑检查点
+## 核心 API 端点清单
 
-| 里程碑 | 完成标准 | 验证方式 |
+### AI 分析
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/ai/analyze-requirements` | POST | 自然语言需求分析 |
+| `/api/v1/ai/calculate-layers` | POST | 自动层数判定 |
+| `/api/v1/ai/recommend-components` | POST | AI 元器件推荐 |
+
+### PCB 生成
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/pcb/generate` | POST | 完整 PCB 生成 |
+| `/api/v1/pcb/placement` | POST | 元器件布局 |
+| `/api/v1/pcb/routing` | POST | 走线布线 |
+| `/api/v1/pcb/optimize-placement` | POST | 布局优化 |
+
+### 设计与验证
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/drc/check-design` | POST | DFM 设计规则检查 |
+| `/api/v1/erc/run` | POST | ERC 电气规则检查 |
+| `/api/v1/drc/run` | POST | DRC 设计规则检查 |
+
+### 导出与下单
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/export/manufacturing` | POST | 制造文件导出 |
+| `/api/v1/bom/generate` | POST | BOM 生成 |
+| `/api/v1/order/jlcpcb` | POST | 直接下单 (可选) |
+
+---
+
+## 关键文件结构
+
+```
+kicad-ai-auto/agent/
+├── services/
+│   ├── layer_calculator.py      # ⭐ NEW: 自动层数判定
+│   ├── component_recommender.py  # ✅ EXISTING: 元器件推荐
+│   ├── lcsc_fetcher.py          # ✅ EXISTING: LCSC API
+│   ├── bom_optimizer.py         # ⭐ NEW: BOM 优化
+│   └── jlcpcb_rules.py          # ⭐ NEW: 制造规则
+├── placement/
+│   ├── placement_engine.py      # ✅ EXISTING: 基础布局
+│   └── constraint_placer.py     # ⭐ NEW: 约束驱动布局
+├── routing/
+│   ├── routing_engine.py       # ✅ EXISTING: 基础布线
+│   └── advanced_routing.py     # ⭐ NEW: 高级布线
+├── routes/
+│   ├── ai_routes.py           # ✅ EXISTING: AI 分析
+│   ├── pcb_gen_routes.py      # ✅ EXISTING: PCB 生成
+│   ├── drc_routes.py          # ⭐ NEW: DRC 检查
+│   └── export_routes.py        # ⭐ NEW: 导出
+└── generators/
+    └── schematic_v2.py        # ✅ EXISTING: 原理图生成
+```
+
+---
+
+## 里程碑
+
+| 里程碑 | 目标日期 | 完成标准 |
 |--------|---------|---------|
-| M1: 稳定运行 | 所有现有测试通过，无 500 错误 | `pytest -v` |
-| M2: 原理图增强 | 符号库搜索可用，生成质量提升 | E2E 测试 |
-| M3: AI 推荐 | 元器件推荐返回结果 | API 测试 |
-| M4: 基本布局 | 50 个元件布局 < 1 秒，无重叠 | 性能测试 |
-| M5: 基本布线 | 简单网络布线正确 | 单元测试 |
-| M6: 完整流程 | 需求 → 原理图 → PCB 端到端 | E2E 测试 |
+| M0: 稳定运行 | Week 1 | 所有现有测试通过 |
+| M1: 原理图增强 | Week 3 | ERC 检查可用 |
+| M2: AI 分析引擎 | Week 6 | 需求分析 + 层数判定 |
+| M3: PCB 布局布线 | Week 9 | 完整 PCB 生成 |
+| M4: DFM + BOM | Week 11 | 制造可行性检查 |
+| M5: 制造文件 | Week 12 | 一键导出 |
+| M6: AI Copilot UI | Week 15 | 对话式设计 |
+| M7: 完整集成 | Week 17 | E2E 测试通过 |
 
 ---
 
-## 依赖关系
+## 与 Flux.ai 功能对比
 
-```
-Phase 0 (稳定化)
-    ↓
-Phase 1 (原理图增强) ← Phase 0 完成
-    ↓
-Phase 2 (AI 引擎) ← Phase 1 完成
-    ↓
-Phase 3 (PCB 布局) ← Phase 2 完成
-    ↓
-Phase 4 (PCB 布线) ← Phase 3 完成
-    ↓
-Phase 5 (集成测试) ← Phase 4 完成
-```
+| 功能 | Flux.ai | 当前项目 | 状态 |
+|------|---------|---------|------|
+| 自然语言输入 | ✅ | ⚠️ 基础 | Phase 2 |
+| AI 元器件推荐 | ✅ | ⚠️ 基础 | Phase 2 |
+| 自动层数判定 | ✅ | ❌ | Phase 2 |
+| 原理图生成 | ✅ | ⚠️ 基础 | Phase 1 |
+| AI 布局 | ✅ | ⚠️ 基础 | Phase 3 |
+| AI 布线 | ✅ | ⚠️ 基础 | Phase 4 |
+| DFM 检查 | ✅ | ❌ | Phase 5 |
+| BOM 优化 | ✅ | ❌ | Phase 6 |
+| 制造文件导出 | ✅ | ⚠️ 基础 | Phase 7 |
+| 直接下单 | ✅ | ❌ | Phase 7 |
+| 浏览器端设计 | ✅ | ✅ | 现有 |
 
 ---
 
-## 风险与缓解
+## 技术风险与缓解
 
 | 风险 | 影响 | 缓解措施 |
 |------|------|---------|
-| KiCad IPC API 限制 | 某些操作无法通过 API 完成 | 保留 PyAutoGUI 作为后备 |
-| AI 生成质量不稳定 | 原理图/PCB 可能有问题 | 增加验证层，保留手动编辑 |
-| 布局算法性能 | 大板可能很慢 | 优化算法，分批处理 |
-| 测试覆盖不足 | 难以保证质量 | 增加 E2E 测试 |
+| KiCad IPC API 限制 | 某些操作无法完成 | 保留 PyAutoGUI 后备 |
+| LLM 生成质量不稳定 | 设计可能有问题 | 保留人工审核 |
+| LCSC API 限流 | 价格查询失败 | 本地缓存 + 降级 |
+| 布局算法性能 | 大板太慢 | 分布式计算 |
+| 制造文件兼容性 | 板厂不认 | 多种格式支持 |
 
 ---
 
-## 后续优化方向
+## 商业化考虑
 
-1. **AI 布局优化**: 考虑信号完整性、热管理、EMI
-2. **高级布线**: 差分对、蛇形线、等长布线
-3. **实时协作**: 多用户同时编辑
-4. **云端 KiCad**: 使用 Docker 运行 KiCad
-5. **增量学习**: 根据用户反馈优化 AI 模型
+1. **定价模式**
+   - 免费: 基础功能 (5个项目/月)
+   - Pro: $19/月 (无限项目 + 优先生成)
+   - Enterprise: 私有部署 + API
+
+2. **收入来源**
+   - 硬件销售佣金 (JLCPCB 等)
+   - Pro 订阅费
+   - 企业定制开发
+
+3. **竞争优势**
+   - 开源可定制
+   - 中文界面
+   - 本地部署选项
+   - 深度 KiCad 集成
