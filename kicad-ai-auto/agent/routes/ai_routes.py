@@ -32,6 +32,9 @@ from kimi_client import get_kimi_client, is_kimi_available
 # 保留 GLM-4 作为后备
 from glm4_client import get_glm4_client, is_glm4_available
 
+# 导入 DeepSeek 作为另一个后备
+from deepseek_client import get_deepseek_client, is_deepseek_available
+
 # 导入新的原理图生成器
 from schematic_generator import generate_standard_schematic, SchematicGenerator
 
@@ -2392,6 +2395,8 @@ async def analyze_requirements(request: AnalyzeRequest):
                 comp_list = (
                     project_spec.get("components", [])
                     or project_spec.get("component_list", [])
+                    or project_spec.get("bill_of_materials", [])
+                    or project_spec.get("components_list", [])
                     or []
                 )
                 for comp in comp_list:
@@ -2547,6 +2552,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                         )
 
                     # 转换电源符号
+                    schematic_power_symbols = []
                     for s in generated_schematic.get("powerSymbols", []):
                         schematic_power_symbols.append(
                             PowerSymbol(
@@ -2679,55 +2685,361 @@ async def analyze_requirements(request: AnalyzeRequest):
                     model_used="kimi",
                 )
             except Exception as glm_error:
-                # GLM调用失败，记录详细错误信息
+                # Kimi调用失败，记录详细错误信息
                 error_msg = str(glm_error)
-                logger.debug(f"Caught error: {error_msg}")
-                logger.warning(f"GLM-4 调用失败: {error_msg}")
+                logger.debug(f"Kimi caught error: {error_msg}")
+                logger.warning(f"Kimi 调用失败: {error_msg}")
 
-                # 检查是否是余额不足错误，回退到模拟实现
-                if (
-                    "余额" in error_msg
-                    or "1113" in error_msg
-                    or "rate" in error_msg.lower()
-                    or "429" in error_msg
-                ):
-                    logger.warning("AI服务余额不足或请求频率过高，回退到模拟AI分析...")
+                # Kimi失败时，继续尝试GLM-4和DeepSeek，而不是直接回退到mock
+                logger.warning("Kimi 失败，尝试 GLM-4...")
+
+                # 尝试 GLM-4
+                if is_glm4_available():
                     try:
-                        result = mock_ai_analyze(request.requirements, request.answers)
-                        logger.warning("回退到模拟AI分析成功")
-                        return result
-                    except Exception as mock_err:
-                        logger.error(f"回退到模拟AI也失败: {mock_err}")
-                        return {
-                            "detail": "AI服务暂时不可用：智谱AI API余额不足或请求频率过高，请前往 https://open.bigmodel.cn/ 充值或稍后重试"
-                        }
-                elif "timeout" in error_msg.lower() or "超时" in error_msg:
-                    raise HTTPException(
-                        status_code=504, detail="AI服务响应超时，请稍后重试"
-                    )
-                elif (
-                    "json" in error_msg.lower()
-                    or "解析" in error_msg
-                    or "parse" in error_msg.lower()
-                ):
-                    raise HTTPException(
-                        status_code=502, detail="AI返回的数据格式错误，请重试"
-                    )
-                else:
-                    # 其他错误，尝试回退到模拟实现
-                    logger.warning("准备回退到模拟AI分析...")
-                    try:
-                        result = mock_ai_analyze(request.requirements, request.answers)
-                        logger.warning("回退到模拟AI分析成功")
-                        return result
-                    except Exception as mock_err:
-                        logger.error(f"回退到模拟AI也失败: {mock_err}")
-                        raise HTTPException(
-                            status_code=500, detail=f"AI分析失败: {error_msg}"
+                        logger.info(f"使用 GLM-4 分析需求: {request.requirements[:100]}...")
+                        client = get_glm4_client()
+                        project_spec = client.generate_project_spec(
+                            request.requirements, attachments=request.attachments
                         )
+                        # [Same processing code as below for GLM-4 - abbreviated]
+                        components = []
+                        comp_list = (
+                            project_spec.get("components", [])
+                            or project_spec.get("bill_of_materials", [])
+                            or project_spec.get("components_list", [])
+                            or []
+                        )
+                        for comp in comp_list:
+                            qty = comp.get("quantity", 1)
+                            if isinstance(qty, str):
+                                try:
+                                    qty = int(qty)
+                                except (ValueError, TypeError):
+                                    qty = 1
+                            components.append(ComponentSpec(
+                                name=comp.get("name", ""),
+                                model=comp.get("model", ""),
+                                package=comp.get("package", "0805"),
+                                quantity=qty,
+                            ))
+                        parameters = []
+                        raw_params = project_spec.get("parameters") or []
+                        if isinstance(raw_params, dict):
+                            for key, value in raw_params.items():
+                                parameters.append(ParameterSpec(key=key, value=str(value) if value else "", unit=None))
+                        elif isinstance(raw_params, list):
+                            for param in raw_params:
+                                if isinstance(param, dict):
+                                    parameters.append(ParameterSpec(
+                                        key=param.get("key", ""),
+                                        value=param.get("value", ""),
+                                        unit=param.get("unit"),
+                                    ))
+                        spec = ProjectSpec(
+                            name=project_spec.get("name", "AI生成项目"),
+                            description=project_spec.get("description", ""),
+                            components=components,
+                            parameters=parameters,
+                        )
+                        usage = project_spec.get("usage", {})
+                        token_used = usage.get("total_tokens", 0) if usage else 0
+                        logger.info(f"GLM-4 生成方案成功: {spec.name}, 消耗Token: {token_used}")
+                        try:
+                            user_id = 1
+                            deduct_token(user_id, "ai_analyze", token_used * 3, "glm4", is_test=False)
+                        except Exception as e:
+                            logger.error(f"记录Token消耗失败: {e}")
+                        comp_dicts = [{"name": c.name, "model": c.model, "package": c.package, "quantity": c.quantity} for c in components]
+                        circuit_type = "general"
+                        req_lower = request.requirements.lower() if request.requirements else ""
+                        if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+                            circuit_type = "power_supply"
+                        elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+                            circuit_type = "mcu"
+                        generated_schematic = generate_standard_schematic(comp_dicts, circuit_type)
+                        schematic_components = [SchematicComponent(
+                            id=c["id"], name=c["name"], model=c["model"], position=c["position"],
+                            pins=c["pins"], footprint=c.get("footprint", ""),
+                            symbol_library=c.get("symbol_library", ""), symbol_name=c.get("symbol_name", ""),
+                            reference=c.get("reference", f"U{i+1}"),
+                        ) for i, c in enumerate(generated_schematic["components"])]
+                        schematic_wires = [SchematicWire(id=w["id"], points=w["points"], net=w["net"]) for w in generated_schematic["wires"]]
+                        schematic_nets = [SchematicNet(id=n["id"], name=n["name"]) for n in generated_schematic["nets"]]
+                        schematic_power_symbols = [PowerSymbol(id=s["id"], netName=s["netName"], position=s["position"], type=s["type"]) for s in generated_schematic.get("powerSymbols", [])]
+                        schematic_net_labels = [SchematicNetLabel(id=l["id"], name=l["name"], position=l["position"], direction=l.get("direction", "right")) for l in generated_schematic.get("netLabels", [])]
+                        schematic = SchematicData(
+                            components=schematic_components, wires=schematic_wires, nets=schematic_nets,
+                            netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
+                        )
+                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4")
+                    except Exception as glm_err:
+                        logger.warning(f"GLM-4 也失败: {glm_err}，尝试 DeepSeek...")
+                else:
+                    logger.warning("GLM-4 也不可用，尝试 DeepSeek...")
+
+                # 尝试 DeepSeek
+                if is_deepseek_available():
+                    try:
+                        logger.info(f"使用 DeepSeek 分析需求: {request.requirements[:100]}...")
+                        client = get_deepseek_client()
+                        project_spec = client.generate_project_spec(
+                            request.requirements, attachments=request.attachments
+                        )
+                        components = []
+                        comp_list = (
+                            project_spec.get("components", [])
+                            or project_spec.get("bill_of_materials", [])
+                            or project_spec.get("components_list", [])
+                            or []
+                        )
+                        for comp in comp_list:
+                            qty = comp.get("quantity", 1)
+                            if isinstance(qty, str):
+                                try:
+                                    qty = int(qty)
+                                except (ValueError, TypeError):
+                                    qty = 1
+                            components.append(ComponentSpec(
+                                name=comp.get("name", ""),
+                                model=comp.get("model", ""),
+                                package=comp.get("package", "0805"),
+                                quantity=qty,
+                            ))
+                        parameters = []
+                        raw_params = project_spec.get("parameters") or []
+                        if isinstance(raw_params, dict):
+                            for key, value in raw_params.items():
+                                parameters.append(ParameterSpec(key=key, value=str(value) if value else "", unit=None))
+                        elif isinstance(raw_params, list):
+                            for param in raw_params:
+                                if isinstance(param, dict):
+                                    parameters.append(ParameterSpec(
+                                        key=param.get("key", ""),
+                                        value=param.get("value", ""),
+                                        unit=param.get("unit"),
+                                    ))
+                        spec = ProjectSpec(
+                            name=project_spec.get("name", "AI生成项目"),
+                            description=project_spec.get("description", ""),
+                            components=components,
+                            parameters=parameters,
+                        )
+                        usage = project_spec.get("usage", {})
+                        token_used = usage.get("total_tokens", 0) if usage else 0
+                        logger.info(f"DeepSeek 生成方案成功: {spec.name}, 消耗Token: {token_used}")
+                        try:
+                            user_id = 1
+                            deduct_token(user_id, "ai_analyze", token_used * 3, "deepseek", is_test=False)
+                        except Exception as e:
+                            logger.error(f"记录Token消耗失败: {e}")
+                        comp_dicts = [{"name": c.name, "model": c.model, "package": c.package, "quantity": c.quantity} for c in components]
+                        circuit_type = "general"
+                        req_lower = request.requirements.lower() if request.requirements else ""
+                        if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+                            circuit_type = "power_supply"
+                        elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+                            circuit_type = "mcu"
+                        generated_schematic = generate_standard_schematic(comp_dicts, circuit_type)
+                        schematic_components = [SchematicComponent(
+                            id=c["id"], name=c["name"], model=c["model"], position=c["position"],
+                            pins=c["pins"], footprint=c.get("footprint", ""),
+                            symbol_library=c.get("symbol_library", ""), symbol_name=c.get("symbol_name", ""),
+                            reference=c.get("reference", f"U{i+1}"),
+                        ) for i, c in enumerate(generated_schematic["components"])]
+                        schematic_wires = [SchematicWire(id=w["id"], points=w["points"], net=w["net"]) for w in generated_schematic["wires"]]
+                        schematic_nets = [SchematicNet(id=n["id"], name=n["name"]) for n in generated_schematic["nets"]]
+                        schematic_power_symbols = [PowerSymbol(id=s["id"], netName=s["netName"], position=s["position"], type=s["type"]) for s in generated_schematic.get("powerSymbols", [])]
+                        schematic_net_labels = [SchematicNetLabel(id=l["id"], name=l["name"], position=l["position"], direction=l.get("direction", "right")) for l in generated_schematic.get("netLabels", [])]
+                        schematic = SchematicData(
+                            components=schematic_components, wires=schematic_wires, nets=schematic_nets,
+                            netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
+                        )
+                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek")
+                    except Exception as deepseek_err:
+                        logger.warning(f"DeepSeek 也失败: {deepseek_err}，回退到模拟AI...")
+
+                # 所有AI提供器都失败，回退到mock
+                logger.warning("所有AI提供器都失败，回退到模拟AI分析...")
+                try:
+                    result = mock_ai_analyze(request.requirements, request.answers)
+                    logger.warning("回退到模拟AI分析成功")
+                    return result
+                except Exception as mock_err:
+                    logger.error(f"回退到模拟AI也失败: {mock_err}")
+                    raise HTTPException(
+                        status_code=500, detail=f"AI分析失败: {error_msg}"
+                    )
         else:
-            # 没有配置 API Key，使用模拟实现
-            logger.warning("未配置 ZHIPU_API_KEY，使用模拟AI分析")
+            # Kimi 不可用，尝试 GLM-4 作为后备
+            logger.warning("Kimi API 不可用，尝试 GLM-4...")
+            if is_glm4_available():
+                try:
+                    logger.info(f"使用 GLM-4 分析需求: {request.requirements[:100]}...")
+                    client = get_glm4_client()
+                    project_spec = client.generate_project_spec(
+                        request.requirements, attachments=request.attachments
+                    )
+                    # [Same processing code as Kimi path - abbreviated for brevity]
+                    # 直接使用 GLM 返回结果，构建 AnalyzeResponse
+                    components = []
+                    comp_list = (
+                        project_spec.get("components", [])
+                        or project_spec.get("bill_of_materials", [])
+                        or project_spec.get("components_list", [])
+                        or []
+                    )
+                    for comp in comp_list:
+                        qty = comp.get("quantity", 1)
+                        if isinstance(qty, str):
+                            try:
+                                qty = int(qty)
+                            except (ValueError, TypeError):
+                                qty = 1
+                        components.append(ComponentSpec(
+                            name=comp.get("name", ""),
+                            model=comp.get("model", ""),
+                            package=comp.get("package", "0805"),
+                            quantity=qty,
+                        ))
+                    parameters = []
+                    raw_params = project_spec.get("parameters") or []
+                    if isinstance(raw_params, dict):
+                        for key, value in raw_params.items():
+                            parameters.append(ParameterSpec(key=key, value=str(value) if value else "", unit=None))
+                    elif isinstance(raw_params, list):
+                        for param in raw_params:
+                            if isinstance(param, dict):
+                                parameters.append(ParameterSpec(
+                                    key=param.get("key", ""),
+                                    value=param.get("value", ""),
+                                    unit=param.get("unit"),
+                                ))
+                    spec = ProjectSpec(
+                        name=project_spec.get("name", "AI生成项目"),
+                        description=project_spec.get("description", ""),
+                        components=components,
+                        parameters=parameters,
+                    )
+                    usage = project_spec.get("usage", {})
+                    token_used = usage.get("total_tokens", 0) if usage else 0
+                    logger.info(f"GLM-4 生成方案成功: {spec.name}, 消耗Token: {token_used}")
+                    try:
+                        user_id = 1
+                        deduct_token(user_id, "ai_analyze", token_used * 3, "glm4", is_test=False)
+                    except Exception as e:
+                        logger.error(f"记录Token消耗失败: {e}")
+                    # 生成原理图
+                    comp_dicts = [{"name": c.name, "model": c.model, "package": c.package, "quantity": c.quantity} for c in components]
+                    circuit_type = "general"
+                    req_lower = request.requirements.lower() if request.requirements else ""
+                    if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+                        circuit_type = "power_supply"
+                    elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+                        circuit_type = "mcu"
+                    generated_schematic = generate_standard_schematic(comp_dicts, circuit_type)
+                    schematic_components = [SchematicComponent(
+                        id=c["id"], name=c["name"], model=c["model"], position=c["position"],
+                        pins=c["pins"], footprint=c.get("footprint", ""),
+                        symbol_library=c.get("symbol_library", ""), symbol_name=c.get("symbol_name", ""),
+                        reference=c.get("reference", f"U{i+1}"),
+                    ) for i, c in enumerate(generated_schematic["components"])]
+                    schematic_wires = [SchematicWire(id=w["id"], points=w["points"], net=w["net"]) for w in generated_schematic["wires"]]
+                    schematic_nets = [SchematicNet(id=n["id"], name=n["name"]) for n in generated_schematic["nets"]]
+                    schematic_power_symbols = [PowerSymbol(id=s["id"], netName=s["netName"], position=s["position"], type=s["type"]) for s in generated_schematic.get("powerSymbols", [])]
+                    schematic_net_labels = [SchematicNetLabel(id=l["id"], name=l["name"], position=l["position"], direction=l.get("direction", "right")) for l in generated_schematic.get("netLabels", [])]
+                    schematic = SchematicData(
+                        components=schematic_components, wires=schematic_wires, nets=schematic_nets,
+                        netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
+                    )
+                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4")
+                except Exception as glm_err:
+                    logger.warning(f"GLM-4 调用失败: {glm_err}，尝试 DeepSeek...")
+            else:
+                logger.warning("GLM-4 也不可用，尝试 DeepSeek...")
+
+            # DeepSeek 后备
+            if is_deepseek_available():
+                try:
+                    logger.info(f"使用 DeepSeek 分析需求: {request.requirements[:100]}...")
+                    client = get_deepseek_client()
+                    project_spec = client.generate_project_spec(
+                        request.requirements, attachments=request.attachments
+                    )
+                    components = []
+                    comp_list = (
+                        project_spec.get("components", [])
+                        or project_spec.get("bill_of_materials", [])
+                        or project_spec.get("components_list", [])
+                        or []
+                    )
+                    for comp in comp_list:
+                        qty = comp.get("quantity", 1)
+                        if isinstance(qty, str):
+                            try:
+                                qty = int(qty)
+                            except (ValueError, TypeError):
+                                qty = 1
+                        components.append(ComponentSpec(
+                            name=comp.get("name", ""),
+                            model=comp.get("model", ""),
+                            package=comp.get("package", "0805"),
+                            quantity=qty,
+                        ))
+                    parameters = []
+                    raw_params = project_spec.get("parameters") or []
+                    if isinstance(raw_params, dict):
+                        for key, value in raw_params.items():
+                            parameters.append(ParameterSpec(key=key, value=str(value) if value else "", unit=None))
+                    elif isinstance(raw_params, list):
+                        for param in raw_params:
+                            if isinstance(param, dict):
+                                parameters.append(ParameterSpec(
+                                    key=param.get("key", ""),
+                                    value=param.get("value", ""),
+                                    unit=param.get("unit"),
+                                ))
+                    spec = ProjectSpec(
+                        name=project_spec.get("name", "AI生成项目"),
+                        description=project_spec.get("description", ""),
+                        components=components,
+                        parameters=parameters,
+                    )
+                    usage = project_spec.get("usage", {})
+                    token_used = usage.get("total_tokens", 0) if usage else 0
+                    logger.info(f"DeepSeek 生成方案成功: {spec.name}, 消耗Token: {token_used}")
+                    try:
+                        user_id = 1
+                        deduct_token(user_id, "ai_analyze", token_used * 3, "deepseek", is_test=False)
+                    except Exception as e:
+                        logger.error(f"记录Token消耗失败: {e}")
+                    comp_dicts = [{"Name": c.name, "model": c.model, "package": c.package, "quantity": c.quantity} for c in components]
+                    circuit_type = "general"
+                    req_lower = request.requirements.lower() if request.requirements else ""
+                    if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+                        circuit_type = "power_supply"
+                    elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+                        circuit_type = "mcu"
+                    generated_schematic = generate_standard_schematic(comp_dicts, circuit_type)
+                    schematic_components = [SchematicComponent(
+                        id=c["id"], name=c["name"], model=c["model"], position=c["position"],
+                        pins=c["pins"], footprint=c.get("footprint", ""),
+                        symbol_library=c.get("symbol_library", ""), symbol_name=c.get("symbol_name", ""),
+                        reference=c.get("reference", f"U{i+1}"),
+                    ) for i, c in enumerate(generated_schematic["components"])]
+                    schematic_wires = [SchematicWire(id=w["id"], points=w["points"], net=w["net"]) for w in generated_schematic["wires"]]
+                    schematic_nets = [SchematicNet(id=n["id"], name=n["name"]) for n in generated_schematic["nets"]]
+                    schematic_power_symbols = [PowerSymbol(id=s["id"], netName=s["netName"], position=s["position"], type=s["type"]) for s in generated_schematic.get("powerSymbols", [])]
+                    schematic_net_labels = [SchematicNetLabel(id=l["id"], name=l["name"], position=l["position"], direction=l.get("direction", "right")) for l in generated_schematic.get("netLabels", [])]
+                    schematic = SchematicData(
+                        components=schematic_components, wires=schematic_wires, nets=schematic_nets,
+                        netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
+                    )
+                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek")
+                except Exception as deepseek_err:
+                    logger.warning(f"DeepSeek 调用失败: {deepseek_err}，回退到模拟AI分析...")
+            else:
+                logger.warning("DeepSeek 也不可用，使用模拟AI分析")
+
             result = mock_ai_analyze(request.requirements, request.answers)
             return result
     except Exception as e:

@@ -350,10 +350,16 @@ interface UploadedFile {
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
+      // 获取认证token
+      const token = useAuthStore.getState().token;
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       // 尝试调用 clarify API（包含文件信息）
       const clarifyResponse = await fetch('/api/v1/ai/clarify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           requirements: inputText,
           attachments: uploadedFiles.map(f => ({
@@ -422,9 +428,15 @@ interface UploadedFile {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
+      // 获取认证token
+      const token = useAuthStore.getState().token;
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       const response = await fetch('/api/v1/ai/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           requirements: inputText,
           answers: {},
@@ -495,9 +507,15 @@ interface UploadedFile {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
+      // 获取认证token
+      const token = useAuthStore.getState().token;
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       const response = await fetch('/api/v1/ai/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           requirements: inputText,
           answers: answers,
@@ -795,9 +813,15 @@ interface UploadedFile {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
+      // 获取认证token
+      const token = useAuthStore.getState().token;
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       const response = await fetch('/api/v1/ai/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           requirements: inputText,
           answers: answers,

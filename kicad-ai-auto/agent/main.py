@@ -293,6 +293,15 @@ try:
 except ImportError as e:
     logger.warning(f"Footprint routes not available: {e}")
 
+# DRC 检查路由
+try:
+    from routes.drc_routes import router as drc_router
+
+    app.include_router(drc_router)
+    logger.info("DRC API routes registered")
+except ImportError as e:
+    logger.warning(f"DRC routes not available: {e}")
+
 
 # 别名路由 - 兼容旧版本
 @app.get("/api/footprints/libraries")

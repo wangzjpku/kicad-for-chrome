@@ -362,6 +362,30 @@ class SchematicGenerator:
         elif circuit_type == "mcu":
             # MCU 电路：MCU居中，外设环绕
             layout = self._layout_mcu(categorized)
+        elif circuit_type == "usb_device":
+            # USB设备：USB接口在左侧，电源在中，数据处理在右
+            layout = self._layout_usb_device(categorized)
+        elif circuit_type == "wireless_sensor":
+            # 无线传感器：传感器在左，无线模块在中间，天线在右
+            layout = self._layout_wireless_sensor(categorized)
+        elif circuit_type == "audio_amplifier":
+            # 音频放大器：输入在左，放大器在中间，输出在右
+            layout = self._layout_audio_amplifier(categorized)
+        elif circuit_type == "motor_control":
+            # 电机控制：控制信号在左，驱动在中间，电机在右
+            layout = self._layout_motor_control(categorized)
+        elif circuit_type == "display_interface":
+            # 显示接口：MCU在左，显示接口在右
+            layout = self._layout_display_interface(categorized)
+        elif circuit_type == "communication":
+            # 通信接口：通信芯片在中心，接口在两侧
+            layout = self._layout_communication(categorized)
+        elif circuit_type == "iot_gateway":
+            # 物联网网关：MCU/处理器在中心，无线和接口环绕
+            layout = self._layout_iot_gateway(categorized)
+        elif circuit_type == "signal_conditioning":
+            # 信号调理：输入在左，放大/滤波在中间，输出在右
+            layout = self._layout_signal_conditioning(categorized)
         else:
             # 通用布局
             layout = self._layout_general(categorized)
@@ -420,6 +444,177 @@ class SchematicGenerator:
 
         # LED 在右下
         layout["led"] = (500, 400, 650, 500)
+
+        return layout
+
+    def _layout_usb_device(self, categorized: Dict) -> Dict[str, Tuple]:
+        """USB设备布局 - USB接口在左，电源管理在中，数据处理在右"""
+        layout = {}
+
+        # USB接口在左侧
+        layout["usb_interface"] = (50, 200, 200, 400)
+
+        # 电源管理在中间
+        layout["power"] = (300, 100, 500, 300)
+
+        # 数据处理/控制在右侧
+        layout["control"] = (600, 200, 850, 400)
+
+        # 无源器件在底部
+        layout["passive"] = (200, 450, 700, 550)
+
+        return layout
+
+    def _layout_wireless_sensor(self, categorized: Dict) -> Dict[str, Tuple]:
+        """无线传感器布局 - 传感器在左，无线模块在中间，天线在右"""
+        layout = {}
+
+        # 传感器在左侧
+        layout["sensor"] = (50, 150, 200, 350)
+
+        # 无线模块在中间
+        layout["wireless"] = (300, 200, 550, 400)
+
+        # 电源管理在顶部
+        layout["power"] = (200, 50, 500, 120)
+
+        # 无源器件在底部
+        layout["passive"] = (200, 420, 600, 520)
+
+        # 天线连接在右侧
+        layout["antenna"] = (650, 250, 800, 350)
+
+        return layout
+
+    def _layout_audio_amplifier(self, categorized: Dict) -> Dict[str, Tuple]:
+        """音频放大器布局 - 输入在左，放大器在中间，输出在右"""
+        layout = {}
+
+        # 输入接口在左侧
+        layout["input"] = (50, 200, 180, 350)
+
+        # 前置放大在中左
+        layout["preamp"] = (250, 150, 400, 300)
+
+        # 功率放大在中间
+        layout["power_amp"] = (480, 120, 680, 380)
+
+        # 输出在右侧
+        layout["output"] = (780, 200, 900, 350)
+
+        # 电源在顶部
+        layout["power"] = (300, 50, 600, 100)
+
+        # 无源器件在底部
+        layout["passive"] = (200, 420, 700, 520)
+
+        return layout
+
+    def _layout_motor_control(self, categorized: Dict) -> Dict[str, Tuple]:
+        """电机控制布局 - 控制信号在左，驱动在中间，电机在右"""
+        layout = {}
+
+        # 控制信号在左侧
+        layout["control"] = (50, 150, 200, 350)
+
+        # 驱动电路在中间
+        layout["driver"] = (300, 150, 500, 350)
+
+        # 电机连接在右侧
+        layout["motor"] = (650, 180, 850, 380)
+
+        # 电源在顶部
+        layout["power"] = (250, 50, 550, 120)
+
+        # 保护电路在下部
+        layout["protection"] = (250, 400, 550, 500)
+
+        return layout
+
+    def _layout_display_interface(self, categorized: Dict) -> Dict[str, Tuple]:
+        """显示接口布局 - MCU在左，显示接口在右"""
+        layout = {}
+
+        # MCU/处理器在左侧
+        layout["mcu"] = (50, 200, 250, 400)
+
+        # 显示接口在中间
+        layout["display"] = (350, 150, 600, 350)
+
+        # 显示模块在右侧
+        layout["display_module"] = (700, 150, 950, 350)
+
+        # 电源管理在顶部
+        layout["power"] = (300, 50, 600, 120)
+
+        # 无源器件在底部
+        layout["passive"] = (250, 420, 700, 520)
+
+        return layout
+
+    def _layout_communication(self, categorized: Dict) -> Dict[str, Tuple]:
+        """通信接口布局 - 通信芯片在中心，接口在两侧"""
+        layout = {}
+
+        # 左侧接口
+        layout["interface_left"] = (50, 200, 180, 350)
+
+        # 通信芯片在中心
+        layout["comm_chip"] = (300, 180, 550, 380)
+
+        # 右侧接口
+        layout["interface_right"] = (700, 200, 850, 350)
+
+        # 电源在顶部
+        layout["power"] = (350, 50, 550, 120)
+
+        # 隔离/保护在底部
+        layout["isolation"] = (300, 420, 600, 520)
+
+        return layout
+
+    def _layout_iot_gateway(self, categorized: Dict) -> Dict[str, Tuple]:
+        """物联网网关布局 - MCU/处理器在中心，无线和接口环绕"""
+        layout = {}
+
+        # MCU/处理器在中心
+        layout["mcu"] = (380, 220, 580, 380)
+
+        # WiFi/无线模块在左上
+        layout["wireless"] = (100, 80, 300, 200)
+
+        # 蓝牙模块在右上
+        layout["bluetooth"] = (650, 80, 850, 200)
+
+        # 有线接口在左下
+        layout["wired"] = (100, 400, 300, 520)
+
+        # 电源管理在顶部中间
+        layout["power"] = (380, 50, 580, 120)
+
+        # 存储在右下
+        layout["storage"] = (650, 400, 850, 520)
+
+        return layout
+
+    def _layout_signal_conditioning(self, categorized: Dict) -> Dict[str, Tuple]:
+        """信号调理布局 - 输入在左，放大/滤波在中间，输出在右"""
+        layout = {}
+
+        # 输入接口在左侧
+        layout["input"] = (50, 200, 180, 350)
+
+        # 信号调理（放大/滤波）在中间
+        layout["conditioning"] = (300, 150, 550, 380)
+
+        # 输出在右侧
+        layout["output"] = (700, 200, 850, 350)
+
+        # 电源在顶部
+        layout["power"] = (350, 50, 550, 120)
+
+        # 无源器件（滤波）在底部
+        layout["passive"] = (250, 420, 650, 520)
 
         return layout
 

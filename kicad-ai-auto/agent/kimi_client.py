@@ -308,7 +308,7 @@ def get_kimi_client() -> KimiClient:
     global _kimi_client
     if _kimi_client is None:
         # 使用用户提供的 API Key
-        _kimi_client = KimiClient(api_key="sk-X0k3aAP7Hr5UKBVoqnqWUzAgLodS9Srwwa6hLua4kBZm4bNw")
+        _kimi_client = KimiClient(api_key="sk-kimi-POTrHLS6t3mBaMpV7w7XJf2R6WOUh3Odw5Smb7xcsU4VaeOqqD3fFEHl6iGvKpBl")
     return _kimi_client
 
 
