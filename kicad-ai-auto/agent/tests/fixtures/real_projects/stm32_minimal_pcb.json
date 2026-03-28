@@ -1,0 +1,108 @@
+{
+  "name": "STM32 Minimal PCB",
+  "description": "STM32F401 minimum system PCB",
+  "board_size": {"width": 100, "height": 80},
+  "layers": 2,
+  "footprints": [
+    {
+      "id": "U1",
+      "reference": "U1",
+      "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+      "position": {"x": 50, "y": 40},
+      "rotation": 0,
+      "layer": "top",
+      "fixed": true,
+      "nets": ["VDD", "VSS", "PA0", "PA1", "PB0"]
+    },
+    {
+      "id": "C1",
+      "reference": "C1",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "position": {"x": 35, "y": 30},
+      "rotation": 90,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["VDD"]
+    },
+    {
+      "id": "C2",
+      "reference": "C2",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "position": {"x": 65, "y": 30},
+      "rotation": 90,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["VDD"]
+    },
+    {
+      "id": "C3",
+      "reference": "C3",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "position": {"x": 35, "y": 50},
+      "rotation": 90,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["VSS"]
+    },
+    {
+      "id": "R1",
+      "reference": "R1",
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "position": {"x": 20, "y": 40},
+      "rotation": 0,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["PA0"]
+    },
+    {
+      "id": "LED1",
+      "reference": "LED1",
+      "footprint": "LED_SMD:LED_0402_1005Metric",
+      "position": {"x": 15, "y": 40},
+      "rotation": 0,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["PA0"]
+    },
+    {
+      "id": "USB1",
+      "reference": "USB1",
+      "footprint": "Connector_USB:USB_Micro-B_MiddleMount",
+      "position": {"x": 85, "y": 40},
+      "rotation": 180,
+      "layer": "top",
+      "fixed": true,
+      "nets": ["DP", "DM", "GND", "VBUS"]
+    },
+    {
+      "id": "SW1",
+      "reference": "SW1",
+      "footprint": "Button_Switch_SMD:SW_Push_6x6mm",
+      "position": {"x": 50, "y": 65},
+      "rotation": 0,
+      "layer": "top",
+      "fixed": false,
+      "nets": ["NRST"]
+    }
+  ],
+  "nets": [
+    {"name": "VDD", "class": "power", "nodes": ["U1.VDD", "C1.1", "C2.1", "USB1.VBUS"]},
+    {"name": "VSS", "class": "power", "nodes": ["U1.VSS", "C3.1", "C3.2", "USB1.GND"]},
+    {"name": "PA0", "class": "signal", "nodes": ["U1.PA0", "R1.1", "LED1.1"]},
+    {"name": "PA1", "class": "signal", "nodes": ["U1.PA1"]},
+    {"name": "PB0", "class": "signal", "nodes": ["U1.PB0"]},
+    {"name": "DP", "class": "diff", "nodes": ["U1.DP", "USB1.DP"]},
+    {"name": "DM", "class": "diff", "nodes": ["U1.DM", "USB1.DM"]},
+    {"name": "NRST", "class": "signal", "nodes": ["U1.NRST", "SW1.1"]}
+  ],
+  "tracks": [
+    {"net": "VDD", "layer": "top", "width": 0.25, "points": [{"x": 50, "y": 40}, {"x": 35, "y": 30}]},
+    {"net": "VSS", "layer": "top", "width": 0.25, "points": [{"x": 50, "y": 40}, {"x": 35, "y": 50}]}
+  ],
+  "vias": [
+    {"x": 35, "y": 30, "net": "VDD", "size": 0.4, "layers": ["top", "bottom"]}
+  ],
+  "keepout_areas": [
+    {"type": "via", "x": 10, "y": 10, "radius": 5}
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "name": "LM7805 Power Supply",
+  "description": "5V Linear Power Supply with LM7805",
+  "version": "1.0",
+  "components": [
+    {
+      "id": "U1",
+      "type": "ic",
+      "name": "LM7805",
+      "reference": "U1",
+      "symbol_library": " Regulator_Linear",
+      "symbol_name": "LM7805",
+      "footprint": "Package_TO_SOT_THT:TO-220-3_Horizontal_TabDown",
+      "position": {"x": 100, "y": 100},
+      "rotation": 0,
+      "pins": [
+        {"number": "1", "name": "IN", "type": "input"},
+        {"number": "2", "name": "GND", "type": "power"},
+        {"number": "3", "name": "OUT", "type": "output"}
+      ]
+    },
+    {
+      "id": "C1",
+      "type": "capacitor",
+      "name": "C",
+      "reference": "C1",
+      "symbol_library": "Device",
+      "symbol_name": "C",
+      "footprint": "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm",
+      "position": {"x": 70, "y": 100},
+      "rotation": 0,
+      "value": "100nF",
+      "pins": [
+        {"number": "1", "name": "1", "type": "passive"},
+        {"number": "2", "name": "2", "type": "passive"}
+      ]
+    },
+    {
+      "id": "C2",
+      "type": "capacitor",
+      "name": "C",
+      "reference": "C2",
+      "symbol_library": "Device",
+      "symbol_name": "C",
+      "footprint": "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm",
+      "position": {"x": 130, "y": 100},
+      "rotation": 0,
+      "value": "100nF",
+      "pins": [
+        {"number": "1", "name": "1", "type": "passive"},
+        {"number": "2", "name": "2", "type": "passive"}
+      ]
+    },
+    {
+      "id": "VIN",
+      "type": "power",
+      "name": "VCC",
+      "reference": "VIN",
+      "symbol_library": "power",
+      "symbol_name": "VCC",
+      "position": {"x": 50, "y": 100},
+      "rotation": 0
+    },
+    {
+      "id": "GND1",
+      "type": "power",
+      "name": "GND",
+      "reference": "GND1",
+      "symbol_library": "power",
+      "symbol_name": "GND",
+      "position": {"x": 100, "y": 150},
+      "rotation": 0
+    },
+    {
+      "id": "VOUT",
+      "type": "power",
+      "name": "VCC",
+      "reference": "VOUT",
+      "symbol_library": "power",
+      "symbol_name": "VCC",
+      "position": {"x": 150, "y": 100},
+      "rotation": 0
+    }
+  ],
+  "wires": [
+    {"id": "W1", "from": "VIN", "from_pin": "1", "to": "C1", "to_pin": "1"},
+    {"id": "W2", "from": "C1", "from_pin": "2", "to": "U1", "to_pin": "2"},
+    {"id": "W3", "from": "U1", "from_pin": "1", "to": "C1", "to_pin": "1"},
+    {"id": "W4", "from": "U1", "from_pin": "3", "to": "C2", "to_pin": "1"},
+    {"id": "W5", "from": "C2", "from_pin": "2", "to": "GND1", "to_pin": "1"},
+    {"id": "W6", "from": "C1", "from_pin": "2", "to": "GND1", "to_pin": "1"},
+    {"id": "W7", "from": "U1", "from_pin": "3", "to": "VOUT", "to_pin": "1"}
+  ],
+  "nets": [
+    {"name": "VCC_IN", "nodes": ["VIN.1", "C1.1", "U1.1"]},
+    {"name": "GND", "nodes": ["GND1.1", "C1.2", "C2.2"]},
+    {"name": "VCC_OUT", "nodes": ["VOUT.1", "C2.1", "U1.3"]}
+  ]
+}
