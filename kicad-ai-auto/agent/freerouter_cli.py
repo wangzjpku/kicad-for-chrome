@@ -66,7 +66,8 @@ class FreeRouterCLI:
                 if result.returncode == 0:
                     logger.info(f"找到 Java: {java}")
                     return java
-            except:
+            except Exception as e:
+                logger.debug(f"查找Java路径失败: {e}")
                 continue
 
         return None

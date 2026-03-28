@@ -11,6 +11,7 @@ import Konva from 'konva';
 // React 18 compatibility is handled through proper ref management below
 
 import { usePCBStore } from '../stores/pcbStore';
+import { useSchematicStore } from '../stores/schematicStore';
 import { samplePCB } from '../data/samplePCB';
 
 import SimpleToolbar from '../components/SimpleToolbar';
@@ -26,6 +27,8 @@ import BoardOutlineRenderer from '../canvas/BoardOutlineRenderer';
 import FootprintRenderer from '../canvas/FootprintRenderer';
 import TrackRenderer from '../canvas/TrackRenderer';
 import ViaRenderer from '../canvas/ViaRenderer';
+import NetRenderer from '../canvas/NetRenderer';
+import ZoneRenderer from '../canvas/ZoneRenderer';
 
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DRCReport } from '../types';
@@ -42,7 +45,7 @@ const PCBEditor: React.FC = () => {
 
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   const [activeTab, setActiveTab] = useState<'properties' | 'layers' | 'drc' | 'export'>('properties');
-  const [activeLayer, setActiveLayer] = useState('F.Cu');
+  // activeLayer now comes from store
   const [drcReport, setDrcReport] = useState<DRCReport | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [showAIChat, setShowAIChat] = useState(false);
@@ -146,7 +149,7 @@ const PCBEditor: React.FC = () => {
       if (updateTimer) clearTimeout(updateTimer);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, []);  // 依赖数组为空，使用 getState 方法获取最新状态
   
   const {
     pcbData,
@@ -169,8 +172,17 @@ const PCBEditor: React.FC = () => {
     // removeSelectedElements, // 未使用 - 未来可用于删除功能
     // isSaving, // 未使用
     // lastSaved, // 未使用
-    projectId
+    projectId,
+    fullPCBData,
+    loadFullPCBData,
+    isIPCConnected,
+    activeLayer,
+    setActiveLayer,
+    highlightedNet,
   } = usePCBStore();
+
+  // 获取原理图数据用于AI助手
+  const { schematicData: editorSchematicData } = useSchematicStore();
 
   // 初始化加载数据
   useEffect(() => {
@@ -180,6 +192,8 @@ const PCBEditor: React.FC = () => {
         console.warn('[PCBEditor] Failed to load PCB, using sample data');
         setPCBData(samplePCB);
       });
+      // 同时尝试从KiCad IPC加载完整数据
+      loadFullPCBData();
     } else {
       // 使用示例数据
       setPCBData(samplePCB);
@@ -229,6 +243,14 @@ const PCBEditor: React.FC = () => {
       const margin = 50; // 像素边距
       const boardWidthPx = (maxX - minX) * MM_TO_PX;
       const boardHeightPx = (maxY - minY) * MM_TO_PX;
+
+      // 防止 NaN 值：如果PCB没有内容，使用默认尺寸
+      if (!isFinite(boardWidthPx) || boardWidthPx <= 0 || !isFinite(boardHeightPx) || boardHeightPx <= 0) {
+        console.log('[PCBEditor] No PCB content, using default view');
+        setZoom(1);
+        setPan({ x: containerSize.width / 2, y: containerSize.height / 2 });
+        return;
+      }
 
       // 计算合适的缩放比例（填充画布的80%）
       const availableWidth = containerSize.width * 0.8;
@@ -438,7 +460,7 @@ const PCBEditor: React.FC = () => {
           height: 500,
         }}>
           <AIChatAssistant
-            schematicData={pcbData}
+            schematicData={editorSchematicData}
             projectSpec={{ name: projectId || '未命名项目' }}
             onModifySchematic={(modifications) => {
               console.log('AI modifications received:', modifications);
@@ -567,6 +589,16 @@ const PCBEditor: React.FC = () => {
               }}
             >
               <BoardOutlineRenderer outline={pcbData.boardOutline} />
+
+              {/* 铜箔区域 */}
+              <ZoneRenderer zones={fullPCBData?.zones} layer={activeLayer} />
+
+              {/* 网络连接（鼠线） */}
+              <NetRenderer 
+                fullPCBData={fullPCBData} 
+                highlightedNet={highlightedNet}
+                showRatsnest={true}
+              />
 
               {pcbData.tracks.map(track => (
                 <TrackRenderer key={track.id} track={track} />

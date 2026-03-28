@@ -32,7 +32,7 @@ class AutoStarter:
         self.project_dir = Path(__file__).parent.parent.parent
         self.backend_dir = self.project_dir / "kicad-ai-auto" / "agent"
         self.frontend_dir = self.project_dir / "kicad-ai-auto" / "web"
-        self.kicad_dir = Path("E:/Program Files/KiCad/9.0")
+        self.kicad_dir = Path(os.environ.get("KICAD_PATH", "E:/Program Files/KiCad/9.0"))
 
         self.backend_process: Optional[subprocess.Popen] = None
         self.frontend_process: Optional[subprocess.Popen] = None
@@ -291,7 +291,8 @@ class AutoStarter:
         try:
             with socket.create_connection(("localhost", port), timeout=1):
                 return True
-        except:
+        except OSError as e:
+            logger.debug(f"端口{port}检查失败: {e}")
             return False
 
     def _is_process_running(self, process_name: str) -> bool:
@@ -303,7 +304,8 @@ class AutoStarter:
                 text=True
             )
             return process_name in result.stdout
-        except:
+        except Exception as e:
+            logger.debug(f"检查进程{process_name}失败: {e}")
             return False
 
     def print_summary(self):

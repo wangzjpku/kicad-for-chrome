@@ -58,7 +58,7 @@ export default function StatusBar({ dataTestId }: StatusBarProps) {
 
         {/* 版本信息 */}
         <div className="status-item text-gray-500" data-testid="status-version">
-          KiCad AI Auto v1.0.0
+          KiCad AI Auto v0.9.12
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ KiCad AI Playwright 自动化测试 - 使用现有服务
 
 import asyncio
 import socket
+import sys
 from pathlib import Path
 from playwright.async_api import async_playwright
 import logging

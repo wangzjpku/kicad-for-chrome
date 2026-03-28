@@ -666,6 +666,8 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
 
             results.push(`✅ 已应用模板: ${template.name}`);
             results.push(`   描述: ${template.description}`);
+            // FIX ISS-20260322-005: 清空输入框防止重复提交
+            setInputValue('');
             break;
           }
 
@@ -679,7 +681,9 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       }
     }
 
-    // 保存 PCB 数据
+    // 保存 PCB 数据 - 延迟确保React状态更新完成后再保存
+    // FIX ISS-20260322-006: AutoSave可能在模板修改状态更新前触发，使用setTimeout确保状态已更新
+    await new Promise(resolve => setTimeout(resolve, 0));
     try {
       await savePCBData();
     } catch (e) {
@@ -723,13 +727,17 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       }];
     }
 
-    // 2. 检测模板关键词（精确芯片型号优先匹配）
+    // 2. 检测模板关键词（按特异性排序：精确芯片型号 > 通用关键词）
+    // FIX ISS-20260322-007: 精确芯片型号必须排在通用关键词之前，防止"最小系统"等词匹配到错误模板
     const templatePatterns = [
       // 精确芯片型号（最高优先级）
       { pattern: /AMS1117/i, templateId: 'ams1117-3.3' },
       { pattern: /CH340[CGEK]/i, templateId: 'ch340-usb-serial' },
-      { pattern: /STM32|单片机|最小系统/i, templateId: 'stm32-minimal' },
       { pattern: /ESP32/i, templateId: 'esp32-minimal' },
+      { pattern: /STM32/i, templateId: 'stm32-minimal' },
+      // 通用关键词（排在精确型号之后）
+      { pattern: /单片机/i, templateId: 'stm32-minimal' },
+      { pattern: /最小系统/i, templateId: 'stm32-minimal' },
       { pattern: /NE555|555.*振荡|振荡器.*555/i, templateId: 'ne555-oscillator' },
       { pattern: /NPN|三极管.*LED|LED.*驱动/i, templateId: 'npn-led-driver' },
       // 通用电源关键词

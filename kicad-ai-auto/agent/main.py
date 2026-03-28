@@ -20,6 +20,11 @@ for env_path in env_paths:
     if os.path.exists(env_path):
         load_dotenv(env_path, override=True)
 
+# 添加deprecated目录到sys.path
+import sys
+
+sys.path.insert(0, os.path.join(agent_dir, "deprecated"))
+
 from fastapi import (
     FastAPI,
     WebSocket,
@@ -33,11 +38,12 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
+from contextlib import asynccontextmanager
 from slowapi.errors import RateLimitExceeded
 import asyncio
 import io
@@ -142,6 +148,7 @@ def validate_file_content(content: bytes, extension: str) -> bool:
     # 检查文件魔数
     return content.startswith(signature)
 
+
 # 项目目录
 PROJECTS_DIR = Path(os.getenv("PROJECTS_DIR", "/projects"))
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -155,22 +162,49 @@ limiter = Limiter(
     storage_uri="memory://",  # 使用内存存储（单实例）
 )
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理（替代废弃的 @app.on_event）"""
+    global kicad_controller, state_monitor, export_manager
+
+    # Startup
+    logger.info("Initializing KiCad Controller...")
+    kicad_controller = KiCadController(
+        display_id=os.getenv("DISPLAY", ":99"), resolution=(1920, 1080)
+    )
+    state_monitor = StateMonitor(kicad_controller)
+    export_manager = ExportManager(kicad_controller)
+    logger.info("KiCad Controller initialized")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down KiCad Controller...")
+    if kicad_controller:
+        kicad_controller.close()
+    logger.info("KiCad Controller stopped")
+
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title="KiCad AI Control API",
-    description="本次第一次定型",
-    version="1.0.0",
+    description="基于 KiCad 9.0+ IPC API 的 AI 驱动 PCB 设计自动化后端",
+    version="0.9.12",
+    lifespan=lifespan,
 )
+
 
 # ========== 版本信息端点 ==========
 @app.get("/api/version")
 async def get_version():
     """获取API版本信息"""
     return {
-        "version": "0.9.11",
+        "version": "0.9.12",
         "name": "KiCad AI Control API",
-        "description": "本次第一次定型"
+        "description": "基于 KiCad 9.0+ IPC API 的 AI 驱动 PCB 设计自动化后端",
     }
+
 
 # 注册速率限制器
 app.state.limiter = limiter
@@ -241,6 +275,15 @@ try:
 except ImportError as e:
     logger.warning(f"Netlist routes not available: {e}")
 
+# 注册 PCB 生成 API 路由
+try:
+    from routes.pcb_gen_routes import router as pcb_gen_router
+
+    app.include_router(pcb_gen_router)
+    logger.info("PCB Generation API routes registered")
+except ImportError as e:
+    logger.warning(f"PCB Generation routes not available: {e}")
+
 # 注册封装库 API 路由
 try:
     from routes.footprint_routes import router as footprint_router
@@ -250,17 +293,21 @@ try:
 except ImportError as e:
     logger.warning(f"Footprint routes not available: {e}")
 
+
 # 别名路由 - 兼容旧版本
 @app.get("/api/footprints/libraries")
 async def footprints_libraries_alias():
     """封装库列表(兼容旧版本)"""
     from routes.footprint_routes import list_footprint_libraries
+
     return {"success": True, "libraries": list_footprint_libraries()}
+
 
 @app.get("/api/netlist/example")
 async def netlist_example_alias():
     """网表示例(兼容旧版本)"""
     from routes.netlist_routes import get_netlist_example
+
     return await get_netlist_example()
 
 
@@ -271,13 +318,13 @@ async def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key"
     """验证 API Key - 支持开发和生产环境"""
     # 使用新的配置验证函数
     result = validate_api_key(api_key)
-    
+
     # result = None: 不需要验证
     # result = True: 验证通过
     # result = False: 验证失败
     if result is False:
         raise HTTPException(status_code=401, detail="Invalid API Key")
-    
+
     # 如果生产环境但未配置 API_KEY，会在 validate_api_key 中抛出异常
     return api_key
 
@@ -287,8 +334,9 @@ class ProjectPath(BaseModel):
 
     path: str
 
-    @validator("path")
-    def validate_path(cls, v):
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, v: str) -> str:
         """防止路径遍历攻击 - 增强版"""
         from urllib.parse import unquote
 
@@ -311,7 +359,9 @@ class ProjectPath(BaseModel):
                 if not decoded_path.startswith("/"):
                     full_path = (PROJECTS_DIR / decoded_path).resolve()
                     if not str(full_path).startswith(str(PROJECTS_DIR.resolve())):
-                        raise ValueError("Invalid path: path must be within projects directory")
+                        raise ValueError(
+                            "Invalid path: path must be within projects directory"
+                        )
         except Exception as e:
             if "path traversal" in str(e) or "within projects" in str(e):
                 raise
@@ -324,6 +374,9 @@ class ProjectPath(BaseModel):
 kicad_controller: Optional[KiCadController] = None
 state_monitor: Optional[StateMonitor] = None
 export_manager: Optional[ExportManager] = None
+
+# 全局锁保护控制器操作
+_controller_lock = asyncio.Lock()
 
 # ========== 数据模型 ==========
 
@@ -373,39 +426,6 @@ class StateResponse(BaseModel):
     timestamp: datetime
 
 
-# ========== 生命周期 ==========
-
-
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时初始化"""
-    global kicad_controller, state_monitor, export_manager
-
-    # 添加异步锁，防止并发操作冲突
-    kicad_lock = asyncio.Lock()
-
-    logger.info("Initializing KiCad Controller...")
-    kicad_controller = KiCadController(
-        display_id=os.getenv("DISPLAY", ":99"), resolution=(1920, 1080)
-    )
-
-    state_monitor = StateMonitor(kicad_controller)
-    export_manager = ExportManager(kicad_controller)
-
-    logger.info("KiCad Controller initialized")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """应用关闭时清理"""
-    global kicad_controller
-
-    logger.info("Shutting down KiCad Controller...")
-    if kicad_controller:
-        kicad_controller.close()
-    logger.info("KiCad Controller stopped")
-
-
 # ========== 健康检查 ==========
 
 
@@ -428,7 +448,10 @@ async def health_check(request: Request):
 async def start_kicad(request: Request, project_path: Optional[str] = None):
     """启动 KiCad"""
     try:
-        kicad_controller.start(project_path)
+        # 使用锁保护全局控制器，避免并发操作冲突
+        async with _controller_lock:
+            # 使用 to_thread 避免阻塞事件循环
+            await asyncio.to_thread(kicad_controller.start, project_path)
         return {
             "success": True,
             "message": "KiCad started successfully",
@@ -444,7 +467,10 @@ async def start_kicad(request: Request, project_path: Optional[str] = None):
 async def stop_kicad(request: Request):
     """停止 KiCad"""
     try:
-        kicad_controller.close()
+        # 使用锁保护全局控制器，避免并发操作冲突
+        async with _controller_lock:
+            # 使用 to_thread 避免阻塞事件循环
+            await asyncio.to_thread(kicad_controller.close)
         return {"success": True, "message": "KiCad stopped"}
     except Exception as e:
         logger.error(f"Failed to stop KiCad: {e}")
@@ -490,7 +516,8 @@ async def open_project(
             f.write(content)
 
         # 打开项目
-        kicad_controller.open_project(str(file_path))
+        async with _controller_lock:
+            kicad_controller.open_project(str(file_path))
 
         return {
             "success": True,
@@ -508,7 +535,8 @@ async def open_project(
 async def save_project():
     """保存当前项目"""
     try:
-        kicad_controller.save_project()
+        async with _controller_lock:
+            kicad_controller.save_project()
         return {"success": True, "message": "Project saved"}
     except Exception as e:
         logger.error(f"Failed to save project: {e}")
@@ -519,7 +547,8 @@ async def save_project():
 async def get_project_info():
     """获取当前项目信息"""
     try:
-        info = kicad_controller.get_project_info()
+        async with _controller_lock:
+            info = kicad_controller.get_project_info()
         return info
     except Exception as e:
         logger.error(f"Failed to get project info: {e}")
@@ -535,8 +564,12 @@ async def click_menu(action: MenuAction):
     try:
         # 检查控制器是否可用
         if kicad_controller is None:
-            return {"success": False, "message": "Controller not initialized", "menu": action.menu}
-        
+            return {
+                "success": False,
+                "message": "Controller not initialized",
+                "menu": action.menu,
+            }
+
         kicad_controller.click_menu(action.menu, action.item)
         return {"success": True, "menu": action.menu, "item": action.item}
     except Exception as e:
@@ -646,7 +679,9 @@ async def get_screenshot(request: Request):
                                 try:
                                     os.remove(tmp_path)
                                 except Exception as cleanup_err:
-                                    logger.warning(f"Failed to cleanup temp file: {cleanup_err}")
+                                    logger.warning(
+                                        f"Failed to cleanup temp file: {cleanup_err}"
+                                    )
                 except Exception as ipc_error:
                     logger.error(f"IPC manager error: {ipc_error}")
 
@@ -791,10 +826,22 @@ async def get_drc_options():
         "success": True,
         "options": {
             "min_clearance": {"value": 0.2, "unit": "mm", "description": "最小间距"},
-            "min_track_width": {"value": 0.2, "unit": "mm", "description": "最小走线宽度"},
-            "min_via_diameter": {"value": 0.3, "unit": "mm", "description": "最小过孔直径"},
-            "min_solder_mask_clearance": {"value": 0.1, "unit": "mm", "description": "最小绿油间距"},
-        }
+            "min_track_width": {
+                "value": 0.2,
+                "unit": "mm",
+                "description": "最小走线宽度",
+            },
+            "min_via_diameter": {
+                "value": 0.3,
+                "unit": "mm",
+                "description": "最小过孔直径",
+            },
+            "min_solder_mask_clearance": {
+                "value": 0.1,
+                "unit": "mm",
+                "description": "最小绿油间距",
+            },
+        },
     }
 
 
@@ -807,7 +854,7 @@ async def get_erc_options():
             "check_power_pins": {"value": True, "description": "检查电源引脚"},
             "check_unconnected": {"value": True, "description": "检查未连接"},
             "check_duplicates": {"value": True, "description": "检查重复"},
-        }
+        },
     }
 
 
@@ -824,6 +871,17 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         async with self._lock:
+            # 关闭并移除同 IP:port 的旧连接（防止重连时僵尸连接）
+            stale = [ws for ws in self.active_connections
+                     if ws.client and websocket.client and
+                     ws.client.peername == websocket.client.peername]
+            for ws in stale:
+                try:
+                    await ws.close()
+                except Exception as e:
+                    logger.debug(f"关闭过期WebSocket连接失败: {e}")
+                if ws in self.active_connections:
+                    self.active_connections.remove(ws)
             self.active_connections.append(websocket)
 
     async def disconnect(self, websocket: WebSocket):
@@ -855,13 +913,17 @@ async def control_websocket(websocket: WebSocket):
                 message = await websocket.receive_json()
             except Exception as e:
                 logger.warning(f"Invalid JSON received: {e}")
-                await websocket.send_json({"type": "error", "message": "Invalid JSON format"})
+                await websocket.send_json(
+                    {"type": "error", "message": "Invalid JSON format"}
+                )
                 continue
 
             # 验证消息结构
             msg_type = message.get("type")
             if msg_type is None:
-                await websocket.send_json({"type": "error", "message": "Missing message type"})
+                await websocket.send_json(
+                    {"type": "error", "message": "Missing message type"}
+                )
                 continue
 
             # 处理不同类型的消息
@@ -872,7 +934,9 @@ async def control_websocket(websocket: WebSocket):
             elif msg_type == "command":
                 command = message.get("command")
                 if command is None:
-                    await websocket.send_json({"type": "error", "message": "Missing command field"})
+                    await websocket.send_json(
+                        {"type": "error", "message": "Missing command field"}
+                    )
                     continue
                 result = await handle_command(command)
                 cmd_type = command.get("type")
@@ -887,7 +951,9 @@ async def control_websocket(websocket: WebSocket):
             elif msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
             else:
-                await websocket.send_json({"type": "error", "message": f"Unknown message type: {msg_type}"})
+                await websocket.send_json(
+                    {"type": "error", "message": f"Unknown message type: {msg_type}"}
+                )
 
     except WebSocketDisconnect:
         await manager.disconnect(websocket)

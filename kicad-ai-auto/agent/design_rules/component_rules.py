@@ -293,8 +293,8 @@ def _get_circuit_voltage(parameters: List[Dict]) -> float:
         if "电压" in key or "voltage" in key:
             try:
                 return float(param.get("value", 5))
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                logger.warning(f"解析电压值失败: {e}")
     return 5.0  # 默认5V
 
 
@@ -432,8 +432,8 @@ def _check_regulator_selection(
                 output_voltage = float(value)
             elif "输出" in key and "电流" in key:
                 output_current = float(value)
-        except:
-            pass
+        except (ValueError, TypeError) as e:
+            logger.warning(f"解析电源参数失败: {e}")
 
     for comp in components:
         model = comp.get("model", "").lower()

@@ -62,6 +62,7 @@ export interface Footprint extends PCBElement {
   layer: string;
   pads: Pad[];
   pad?: Pad[]; // 兼容后端返回的字段名（单数形式）
+  silkscreen?: FootprintGraphic[]; // 丝印图形数据
   attributes: Record<string, unknown>;
   model3d?: {
     path: string;
@@ -69,6 +70,16 @@ export interface Footprint extends PCBElement {
     rotation: Point3D;
     scale: Point3D;
   };
+}
+
+export interface FootprintGraphic {
+  type: 'line' | 'rect' | 'circle';
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  cx?: number;
+  cy?: number;
 }
 
 export interface Pad {

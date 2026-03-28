@@ -18,7 +18,9 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
   const [newProjectName, setNewProjectName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const isLoadingRef = useRef(false);
+  const urlParamProcessedRef = useRef(false);
 
   // 加载项目列表
   useEffect(() => {
@@ -27,6 +29,24 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
       loadProjects();
     }
   }, []);
+
+  // 检查URL参数，自动打开指定项目
+  useEffect(() => {
+    if (projects.length > 0 && !urlParamProcessedRef.current) {
+      urlParamProcessedRef.current = true;
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectName = urlParams.get('project');
+      if (projectName && onOpenProject) {
+        const targetProject = projects.find(p => p.name === projectName);
+        if (targetProject) {
+          console.log('[ProjectList] Auto-opening project from URL:', projectName);
+          onOpenProject(targetProject);
+        } else {
+          console.log('[ProjectList] Project not found from URL:', projectName);
+        }
+      }
+    }
+  }, [projects, onOpenProject]);
 
   const loadProjects = async () => {
     try {
@@ -109,6 +129,12 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
     }
   };
 
+  // 过滤项目
+  const filteredProjects = projects.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: '#888888' }}>
@@ -158,6 +184,22 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
         <h1 style={{ color: '#ffffff', fontSize: 24, margin: 0 }}>
           Projects
         </h1>
+        <input
+          type="text"
+          placeholder="搜索项目..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#3d3d3d',
+            border: '1px solid #4d4d4d',
+            borderRadius: 4,
+            color: '#ffffff',
+            fontSize: 14,
+            width: 200,
+            marginRight: 16,
+          }}
+        />
         <button
           onClick={() => {
             console.log('+ New Project button clicked, setting showCreateForm to true');
@@ -255,7 +297,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
 
       {/* 项目列表 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {projects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div
             style={{
               textAlign: 'center',
@@ -265,10 +307,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
               borderRadius: 8,
             }}
           >
-            No projects yet. Create your first project!
+            {searchQuery ? '没有找到匹配的项目' : 'No projects yet. Create your first project!'}
           </div>
         ) : (
-          projects.map((project) => (
+          filteredProjects.map((project, index) => (
             <div
               key={project.id}
               style={{
@@ -276,11 +318,41 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
                 padding: 16,
                 borderRadius: 8,
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
-              <div>
+              {/* 左侧：项目编号和版本号 */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginRight: 20,
+                  minWidth: 50,
+                }}
+              >
+                <span
+                  style={{
+                    color: '#4a9eff',
+                    fontSize: 24,
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {index + 1}
+                </span>
+                <span
+                  style={{
+                    color: '#666666',
+                    fontSize: 11,
+                    marginTop: 2,
+                  }}
+                >
+                  v1.0
+                </span>
+              </div>
+
+              {/* 中间：项目信息 */}
+              <div style={{ flex: 1 }}>
                 <h3
                   style={{
                     color: '#ffffff',
@@ -299,6 +371,8 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
                   Updated: {new Date(project.updatedAt).toLocaleDateString()}
                 </p>
               </div>
+
+              {/* 右侧：操作按钮 */}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={() => onOpenProject?.(project)}

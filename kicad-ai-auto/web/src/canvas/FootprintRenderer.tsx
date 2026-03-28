@@ -4,9 +4,9 @@
  */
 
 import React, { useCallback, useRef } from 'react';
-import { Group, Rect, Text } from 'react-konva';
+import { Group, Rect, Text, Line, Circle } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
-import { Footprint } from '../types';
+import { Footprint, FootprintGraphic, Pad } from '../types';
 import { MM_TO_PX } from '../data/samplePCB';
 import { usePCBStore } from '../stores/pcbStore';
 
@@ -15,9 +15,9 @@ interface FootprintRendererProps {
 }
 
 const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
-  const { id, position, rotation, layer, reference, pads, pad } = footprint;
+  const { id, position, rotation, layer, reference, pads, pad, silkscreen } = footprint;
   // 兼容后端返回的 pad 和 pads 两种字段名
-  const padList = pads || pad || [];
+  const padList: Pad[] = pads || pad || [];
 
   // 从 store 获取状态和操作
   const { selectedIds, toggleSelection, setSelectedIds, currentTool, updateFootprintPosition, pushHistory, gridSize, snapToGrid } = usePCBStore();
@@ -38,7 +38,9 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
 
   // 点击处理
   const handleClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
-    e.evt.stopPropagation(); // 阻止DOM事件冒泡到 Stage
+    if (e.evt) {
+      e.evt.stopPropagation(); // 阻止DOM事件冒泡到 Stage
+    }
     e.cancelBubble = true; // 阻止Konva事件冒泡
     console.log('[FootprintRenderer] Clicked:', id, reference);
     toggleSelection(id);
@@ -86,6 +88,83 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
   // 移动工具下：可以拖动已选中的footprint
   const draggable = (currentTool === 'select') || (selected && currentTool === 'move');
 
+  // 渲染silkscreen图形
+  const renderSilkscreen = () => {
+    if (!silkscreen || silkscreen.length === 0) {
+      // 没有silkscreen数据时，生成一个简单的边框
+      if (padList.length > 0) {
+        // 根据焊盘位置生成一个简单的边框
+        const minX = Math.min(...padList.map((p) => (p.position?.x ?? 0) - ((p.size?.x ?? 1) / 2)));
+        const maxX = Math.max(...padList.map((p) => (p.position?.x ?? 0) + ((p.size?.x ?? 1) / 2)));
+        const minY = Math.min(...padList.map((p) => (p.position?.y ?? 0) - ((p.size?.y ?? 1) / 2)));
+        const maxY = Math.max(...padList.map((p) => (p.position?.y ?? 0) + ((p.size?.y ?? 1) / 2)));
+        const margin = 0.8;
+        return (
+          <Rect
+            key="silk-default"
+            x={(minX - margin) * MM_TO_PX}
+            y={(minY - margin) * MM_TO_PX}
+            width={(maxX - minX + margin * 2) * MM_TO_PX}
+            height={(maxY - minY + margin * 2) * MM_TO_PX}
+            stroke="#888888"
+            strokeWidth={2}
+            listening={false}
+          />
+        );
+      }
+      return null;
+    }
+
+    return silkscreen.map((item: FootprintGraphic, index: number) => {
+      if (item.type === 'line') {
+        return (
+          <Line
+            key={`silk-${index}`}
+            points={[
+              (item.x1 || 0) * MM_TO_PX,
+              (item.y1 || 0) * MM_TO_PX,
+              (item.x2 || 0) * MM_TO_PX,
+              (item.y2 || 0) * MM_TO_PX
+            ]}
+            stroke="#888888"
+            strokeWidth={2}
+            listening={false}
+          />
+        );
+      } else if (item.type === 'rect') {
+        const x = Math.min(item.x1 || 0, item.x2 || 0);
+        const y = Math.min(item.y1 || 0, item.y2 || 0);
+        const width = Math.abs((item.x2 || 0) - (item.x1 || 0));
+        const height = Math.abs((item.y2 || 0) - (item.y1 || 0));
+        return (
+          <Rect
+            key={`silk-${index}`}
+            x={x * MM_TO_PX}
+            y={y * MM_TO_PX}
+            width={width * MM_TO_PX}
+            height={height * MM_TO_PX}
+            stroke="#888888"
+            strokeWidth={2}
+            listening={false}
+          />
+        );
+      } else if (item.type === 'circle') {
+        return (
+          <Circle
+            key={`silk-${index}`}
+            x={(item.cx || 0) * MM_TO_PX}
+            y={(item.cy || 0) * MM_TO_PX}
+            radius={Math.sqrt(Math.pow(((item.x1 || 0) - (item.cx || 0)) * MM_TO_PX, 2) + Math.pow(((item.y1 || 0) - (item.cy || 0)) * MM_TO_PX, 2))}
+            stroke="#888888"
+            strokeWidth={2}
+            listening={false}
+          />
+        );
+      }
+      return null;
+    });
+  };
+
   // 如果没有焊盘，渲染一个默认的封装形状（放大以便可见和点击）
   const renderDefaultFootprint = () => {
     return (
@@ -127,18 +206,25 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
         listening={true}
       />
 
+      {/* 绘制丝印图形 */}
+      {renderSilkscreen()}
+
       {/* 绘制焊盘 */}
       {padList.length > 0 ? (
         padList.map((pad) => {
           // 确保焊盘有最小可见尺寸（放大显示以便用户容易点击）
-          const minSize = 12; // 最小12像素，更容易点击
-          const padWidth = Math.max(pad.size.x * MM_TO_PX, minSize);
-          const padHeight = Math.max(pad.size.y * MM_TO_PX, minSize);
+          const minSize = 30; // 最小12像素，更容易点击
+          // 兼容没有size属性的情况，使用默认值
+          const padWidth = Math.max((pad.size?.x ?? 1) * MM_TO_PX, minSize);
+          const padHeight = Math.max((pad.size?.y ?? 1) * MM_TO_PX, minSize);
+          // 兼容没有position的情况
+          const padX = pad.position?.x ?? 0;
+          const padY = pad.position?.y ?? 0;
           return (
             <Rect
               key={pad.id}
-              x={pad.position.x * MM_TO_PX - padWidth / 2}
-              y={pad.position.y * MM_TO_PX - padHeight / 2}
+              x={padX * MM_TO_PX - padWidth / 2}
+              y={padY * MM_TO_PX - padHeight / 2}
               width={padWidth}
               height={padHeight}
               fill={highlightColor}

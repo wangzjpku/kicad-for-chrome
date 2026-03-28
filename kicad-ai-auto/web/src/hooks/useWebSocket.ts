@@ -158,6 +158,11 @@ export function useWebSocket() {
       return
     }
 
+    // 关闭旧的 websocket（防止重连时僵尸连接）
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      wsRef.current.close()
+    }
+
     try {
       const ws = new WebSocket(WS_URL)
       wsRef.current = ws
@@ -231,7 +236,7 @@ export function useWebSocket() {
       setUsePolling(true)
       startPolling()
     }
-  }, [addLog, handleMessage, startPolling, usePolling])
+  }, [addLog, handleMessage, startPolling, usePolling, setStoreConnected])
 
   const disconnect = useCallback(() => {
     if (usePolling) {

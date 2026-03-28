@@ -101,11 +101,19 @@ async def execute_action(
 ):
     """执行 KiCad 动作"""
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected. Please start KiCad with IPC server."}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected. Please start KiCad with IPC server.",
+        }
+
     try:
         result = manager.execute_action(request.action_name, request.params)
-        return {"success": True, "connected": True, **result} if isinstance(result, dict) else {"success": True, "connected": True, "result": str(result)}
+        return (
+            {"success": True, "connected": True, **result}
+            if isinstance(result, dict)
+            else {"success": True, "connected": True, "result": str(result)}
+        )
     except Exception as e:
         logger.error(f"Error executing action: {e}")
         return {"success": False, "connected": True, "message": str(e)}
@@ -141,8 +149,13 @@ async def get_items(
     """获取 PCB 上的项目列表"""
     # 如果未连接，返回友好错误而不是500
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected. Please start KiCad with IPC server.", "items": []}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected. Please start KiCad with IPC server.",
+            "items": [],
+        }
+
     try:
         status = manager.get_board_status()
         items = status.get("items", [])
@@ -163,14 +176,28 @@ async def get_items(
 async def get_selection(manager: KiCadIPCManager = Depends(get_kicad_manager)):
     """获取当前选中的项目"""
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected", "selection": []}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected",
+            "selection": [],
+        }
+
     try:
         status = manager.get_board_status()
-        return {"success": True, "connected": True, "selection": status.get("selection", [])}
+        return {
+            "success": True,
+            "connected": True,
+            "selection": status.get("selection", []),
+        }
     except Exception as e:
         logger.error(f"Error getting selection: {e}")
-        return {"success": False, "connected": False, "message": str(e), "selection": []}
+        return {
+            "success": False,
+            "connected": False,
+            "message": str(e),
+            "selection": [],
+        }
 
 
 @router.post("/screenshot")
@@ -180,20 +207,32 @@ async def take_screenshot(
     """使用 KiCad CLI 导出截图"""
     if not manager.is_connected():
         return {"success": False, "connected": False, "message": "KiCad not connected"}
-    
+
     temp_file_path = None
+    operation_success = False  # 初始化操作成功标志
     try:
         with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as temp_file:
             temp_file_path = temp_file.name
         output_path = temp_file_path
 
         success = manager.get_screenshot_via_cli(output_path)
+        operation_success = success  # 标记操作是否成功
         if success:
-            return {"success": True, "connected": True, "path": output_path, "message": "Screenshot saved"}
+            return {
+                "success": True,
+                "connected": True,
+                "path": output_path,
+                "message": "Screenshot saved",
+            }
         else:
-            return {"success": False, "connected": True, "message": "Screenshot generation failed"}
+            return {
+                "success": False,
+                "connected": True,
+                "message": "Screenshot generation failed",
+            }
     except Exception as e:
         logger.error(f"Error taking screenshot: {e}")
+        operation_success = False  # 异常时标记失败
         return {"success": False, "connected": True, "message": str(e)}
     finally:
         # 仅当操作失败且是我们创建的临时文件时，才清理它
@@ -300,8 +339,14 @@ async def save_board(manager: KiCadIPCManager = Depends(get_kicad_manager)):
 async def get_statistics(manager: KiCadIPCManager = Depends(get_kicad_manager)):
     """获取板子统计信息"""
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected", "tracks": 0, "footprints": 0}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected",
+            "tracks": 0,
+            "footprints": 0,
+        }
+
     try:
         result = manager.get_board_statistics()
         return {"success": True, "connected": True, **result}
@@ -310,8 +355,45 @@ async def get_statistics(manager: KiCadIPCManager = Depends(get_kicad_manager)):
         return {"success": False, "connected": False, "message": str(e)}
 
 
+@router.get("/full-pcb")
+async def get_full_pcb_data(manager: KiCadIPCManager = Depends(get_kicad_manager)):
+    """
+    获取完整的PCB数据
+
+    返回完整的PCB信息，包括：
+    - 所有层信息（F.Cu, B.Cu, 丝印层等）
+    - 网络信息（nets）
+    - 封装信息（footprints，含焊盘）
+    - 走线信息（tracks）
+    - 过孔信息（vias）
+    - 铜箔区域（zones）
+    - 文本元素（texts）
+    - 板框信息（board_outline）
+    """
+    if not manager.is_connected():
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected. Start KiCad with IPC server.",
+            "layers": [],
+            "nets": [],
+            "footprints": [],
+            "tracks": [],
+            "vias": [],
+            "zones": [],
+        }
+
+    try:
+        result = manager.get_full_pcb_data()
+        return result
+    except Exception as e:
+        logger.error(f"Error getting full PCB data: {e}")
+        return {"success": False, "connected": True, "error": str(e)}
+
+
 class SelectItemsRequest(BaseModel):
     item_ids: List[str]
+
 
 @router.post("/select")
 async def select_items(
@@ -320,10 +402,14 @@ async def select_items(
     """选择项目"""
     if not manager.is_connected():
         return {"success": False, "connected": False, "message": "KiCad not connected"}
-    
+
     try:
         result = manager.select_items(request.item_ids)
-        return {"success": True, **result} if isinstance(result, dict) else {"success": True, "result": str(result)}
+        return (
+            {"success": True, **result}
+            if isinstance(result, dict)
+            else {"success": True, "result": str(result)}
+        )
     except Exception as e:
         logger.error(f"Error selecting items: {e}")
         return {"success": False, "message": str(e)}
@@ -334,7 +420,7 @@ async def clear_selection(manager: KiCadIPCManager = Depends(get_kicad_manager))
     """清除选择"""
     if not manager.is_connected():
         return {"success": False, "connected": False, "message": "KiCad not connected"}
-    
+
     try:
         result = manager.clear_selection()
         return {"success": True, **result}
@@ -403,9 +489,27 @@ async def kicad_websocket(
             await websocket.send_json({"type": "status", "data": {"connected": False}})
 
         while True:
-            # 接收客户端消息
-            data = await websocket.receive_text()
-            message = json.loads(data)
+            try:
+                # 接收客户端消息，添加超时以便优雅退出
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                message = json.loads(data)
+            except asyncio.TimeoutError:
+                # 超时检查连接是否仍然有效
+                try:
+                    await websocket.send_json({"type": "ping"})
+                    continue
+                except Exception as e:
+                    logger.debug(f"WebSocket ping失败，连接已关闭: {e}")
+                    break
+            except json.JSONDecodeError:
+                await websocket.send_json(
+                    {"type": "error", "message": "Invalid JSON format"}
+                )
+                continue
+            except Exception as e:
+                # 连接可能已关闭
+                logger.debug(f"WebSocket接收消息失败: {e}")
+                break
 
             msg_type = message.get("type")
 
@@ -465,20 +569,36 @@ async def kicad_websocket(
 # ========== 状态广播任务 ==========
 
 
-async def broadcast_status_task(manager: KiCadIPCManager):
+async def broadcast_status_task(
+    manager: KiCadIPCManager, shutdown_event: asyncio.Event = None
+):
     """后台任务：定期广播 KiCad 状态"""
     while True:
         try:
+            # 检查是否需要关闭
+            if shutdown_event and shutdown_event.is_set():
+                logger.info("Broadcast task shutting down...")
+                break
+
             if manager.is_connected():
                 status = manager.get_board_status()
                 await ws_manager.broadcast(
                     {
                         "type": "status_update",
                         "data": status,
-                        "timestamp": asyncio.get_event_loop().time(),
+                        "timestamp": asyncio.get_running_loop().time(),
                     }
                 )
-            await asyncio.sleep(1.0)  # 1秒更新一次
+
+            # 使用wait_for以便响应关闭事件
+            if shutdown_event:
+                try:
+                    await asyncio.wait_for(shutdown_event.wait(), timeout=1.0)
+                    break
+                except asyncio.TimeoutError:
+                    pass
+            else:
+                await asyncio.sleep(1.0)
         except Exception as e:
             logger.error(f"Broadcast error: {e}")
             await asyncio.sleep(5.0)
@@ -489,22 +609,24 @@ async def broadcast_status_task(manager: KiCadIPCManager):
 
 class AutoRouteRequest(BaseModel):
     """自动布线请求"""
+
     net_class: str = "default"  # 网络类名称
-    ripup_days: bool = False     # 是否允许拆线重布
-    stability: int = 50          # 稳定性参数 (0-100)
-    max_iterations: int = 100    # 最大迭代次数
+    ripup_days: bool = False  # 是否允许拆线重布
+    stability: int = 50  # 稳定性参数 (0-100)
+    max_iterations: int = 100  # 最大迭代次数
 
 
 class RoutingRule(BaseModel):
     """布线规则"""
+
     name: str
     description: str
     min_trace_width: float = 0.2  # 最小走线宽度 (mm)
-    max_trace_width: float = 2.0   # 最大走线宽度 (mm)
+    max_trace_width: float = 2.0  # 最大走线宽度 (mm)
     default_trace_width: float = 0.25  # 默认走线宽度 (mm)
-    min_clearance: float = 0.2     # 最小间距 (mm)
-    via_diameter: float = 0.8      # 过孔直径 (mm)
-    via_drill: float = 0.4        # 过孔钻孔 (mm)
+    min_clearance: float = 0.2  # 最小间距 (mm)
+    via_diameter: float = 0.8  # 过孔直径 (mm)
+    via_drill: float = 0.4  # 过孔钻孔 (mm)
     impedance_controlled: bool = False  # 阻抗控制
 
 
@@ -518,15 +640,17 @@ async def auto_route(
 ):
     """
     执行自动布线
-    
+
     使用KiCad内置的FreeRouting进行自动布线
     """
     try:
         if not manager.is_connected():
-            raise HTTPException(status_code=400, detail="KiCad未连接，请先启动KiCad并启用IPC服务器")
+            raise HTTPException(
+                status_code=400, detail="KiCad未连接，请先启动KiCad并启用IPC服务器"
+            )
 
         logger.info(f"Starting auto-routing with net_class={request.net_class}")
-        
+
         # 执行自动布线
         result = manager.auto_route(
             net_class=request.net_class,
@@ -534,14 +658,13 @@ async def auto_route(
             stability=request.stability,
             max_iterations=request.max_iterations,
         )
-        
+
         # 如果布线失败，返回错误信息
         if not result.get("success", False):
             raise HTTPException(
-                status_code=400,
-                detail=result.get("error", "自动布线失败")
+                status_code=400, detail=result.get("error", "自动布线失败")
             )
-        
+
         return {
             "success": True,
             "message": result.get("message", "Auto-routing completed"),
@@ -563,16 +686,25 @@ async def get_routing_rules(
     """
     # 先检查连接状态
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected. Start KiCad with IPC server.", "rules": {}}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected. Start KiCad with IPC server.",
+            "rules": {},
+        }
+
     try:
         # 尝试获取规则，如果方法不存在则返回默认值
-        if hasattr(manager, 'get_routing_rules'):
+        if hasattr(manager, "get_routing_rules"):
             rules = manager.get_routing_rules()
             return {"success": True, "connected": True, "rules": rules}
         else:
             # 默认布线规则
-            return {"success": True, "connected": True, "rules": {"default": "standard"}}
+            return {
+                "success": True,
+                "connected": True,
+                "rules": {"default": "standard"},
+            }
     except Exception as e:
         logger.error(f"Error getting routing rules: {e}")
         return {"success": False, "connected": True, "message": str(e), "rules": {}}
@@ -600,7 +732,7 @@ async def set_routing_rules(
             via_drill=rules.via_drill,
             impedance_controlled=rules.impedance_controlled,
         )
-        
+
         return {
             "success": True,
             "message": f"Routing rule '{rules.name}' updated",
@@ -620,10 +752,15 @@ async def clear_all_tracks(
     """
     if not manager.is_connected():
         return {"success": False, "connected": False, "message": "KiCad not connected"}
-    
+
     try:
         result = manager.clear_all_tracks()
-        return {"success": True, "connected": True, "message": "All tracks cleared", "result": str(result)}
+        return {
+            "success": True,
+            "connected": True,
+            "message": "All tracks cleared",
+            "result": str(result),
+        }
     except Exception as e:
         logger.error(f"Error clearing tracks: {e}")
         return {"success": False, "connected": True, "message": str(e)}
@@ -637,8 +774,13 @@ async def get_ratsnest(
     获取鼠线(未布线连接)信息
     """
     if not manager.is_connected():
-        return {"success": False, "connected": False, "message": "KiCad not connected", "ratsnest": []}
-    
+        return {
+            "success": False,
+            "connected": False,
+            "message": "KiCad not connected",
+            "ratsnest": [],
+        }
+
     try:
         result = manager.get_ratsnest()
         return {"success": True, "connected": True, "ratsnest": result}
@@ -657,10 +799,14 @@ async def show_ratsnest(
     """
     if not manager.is_connected():
         return {"success": False, "connected": False, "message": "KiCad not connected"}
-    
+
     try:
         result = manager.show_ratsnest(show)
-        return {"success": True, "connected": True, "message": f"Ratsnest {'shown' if show else 'hidden'}"}
+        return {
+            "success": True,
+            "connected": True,
+            "message": f"Ratsnest {'shown' if show else 'hidden'}",
+        }
     except Exception as e:
         logger.error(f"Error showing ratsnest: {e}")
         return {"success": False, "connected": True, "message": str(e)}

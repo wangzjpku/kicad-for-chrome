@@ -223,8 +223,8 @@ class ChipDataChecker:
                         )
                     )
                     return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"从参考设计获取芯片数据失败: {e}")
 
         # 未找到
         score.datasheet_score = 0

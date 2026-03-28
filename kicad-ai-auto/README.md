@@ -1,102 +1,25 @@
 # KiCad AI 自动化控制系统
 
+[English](README_en.md) | 中文
+
 ## 项目概述
 
-这是一个完整的 KiCad AI 自动化控制解决方案，允许通过浏览器界面控制 KiCad，并提供 Playwright 接口供 AI 自动化操作。
+KiCad AI Automation 是一个完整的 AI 驱动的 KiCad PCB 设计自动化解决方案。通过自然语言描述需求，AI 可以自动生成原理图、PCB 布局，并支持导出各种格式的制造文件。
 
-## 项目结构
+## 功能特性
 
-```
-kicad-ai-auto/
-├── agent/                  # Python FastAPI 后端
-│   ├── main.py            # FastAPI 主应用
-│   ├── kicad_controller.py # KiCad 控制核心
-│   ├── export_manager.py   # 导出管理器
-│   ├── state_monitor.py    # 状态监控器
-│   └── requirements.txt    # Python 依赖
-├── web/                    # React 前端（待开发）
-├── docker/                 # Docker 配置
-│   ├── Dockerfile          # KiCad 容器
-│   ├── docker-entrypoint.sh
-│   └── requirements.txt
-├── playwright-tests/       # Playwright 自动化测试
-│   └── kicad_ai_agent.py  # AI 控制接口
-├── docs/                   # 文档
-│   ├── plan.txt           # 项目方案
-│   └── Todo.txt           # 执行计划
-└── scripts/               # 辅助脚本
-```
+### 🤖 AI 智能设计
+- **自然语言输入**: 用中文描述您的电路需求
+- **智能电路识别**: 自动识别 ESP32、Arduino、STM32、电源模块等
+- **自动原理图生成**: AI 自动创建符合标准的原理图
+- **自动 PCB 布局**: 从原理图自动转换并优化 PCB 布局
 
-## 快速开始
+### 🖥️ 多种运行模式
+- **IPC API 模式** (推荐): 使用 KiCad 9.0+ 官方 IPC API
+- **Docker/X11 模式**: Linux 容器化运行
+- **PyAutoGUI 模式**: 跨版本兼容（遗留模式）
 
-### 1. 使用 Docker 启动
-
-```bash
-# 构建镜像
-cd docker
-docker build -t kicad-ai-auto .
-
-# 运行容器
-docker run -d \
-  -p 6080:6080 \
-  -p 8000:8000 \
-  -v $(pwd)/projects:/projects \
-  -v $(pwd)/output:/output \
-  -e ENABLE_NOVNC=true \
-  kicad-ai-auto
-```
-
-### 2. 启动控制代理
-
-```bash
-cd agent
-pip install -r requirements.txt
-python main.py
-```
-
-### 3. 使用 Playwright 自动化
-
-```python
-from playwright_tests.kicad_ai_agent import KiCadAIAgent
-import asyncio
-
-async def main():
-    agent = KiCadAIAgent()
-    await agent.connect()
-    
-    # 创建项目
-    await agent.create_project("test")
-    
-    # 放置器件
-    await agent.place_symbol("R", 50000000, 50000000)
-    
-    # 导出 Gerber
-    await agent.export_gerber("/output/gerber")
-    
-    await agent.disconnect()
-
-asyncio.run(main())
-```
-
-## API 文档
-
-### REST API
-
-- `POST /api/project/start` - 启动 KiCad
-- `POST /api/project/open` - 打开项目
-- `POST /api/project/save` - 保存项目
-- `POST /api/menu/click` - 点击菜单
-- `POST /api/tool/activate` - 激活工具
-- `POST /api/input/mouse` - 鼠标操作
-- `POST /api/input/keyboard` - 键盘操作
-- `POST /api/export` - 导出文件
-- `POST /api/drc/run` - 运行 DRC
-- `GET /api/state/screenshot` - 获取截图
-- `GET /api/state/full` - 获取完整状态
-- `WS /ws/control` - WebSocket 控制通道
-
-### 支持的导出格式
-
+### 📤 导出支持
 - Gerber (RS-274X)
 - Drill (Excellon)
 - BOM (CSV)
@@ -105,10 +28,157 @@ asyncio.run(main())
 - SVG
 - STEP (3D)
 
-## 开发计划
+## 快速开始
 
-参见 `docs/Todo.txt`
+### Windows 本地运行 (推荐)
+
+1. **启动后端服务**
+```bash
+cd kicad-ai-auto/agent
+venv\Scripts\python main.py
+```
+
+2. **启动前端**
+```bash
+cd kicad-ai-auto/web
+npm run dev
+```
+
+3. **打开浏览器**
+访问 http://localhost:3000
+
+### 使用 Docker (Linux)
+
+```bash
+cd kicad-ai-auto
+docker-compose up -d
+```
+
+访问:
+- Web 界面: http://localhost:3000
+- API 文档: http://localhost:8000/docs
+
+## 使用指南
+
+### 1. 创建 AI 项目
+
+1. 点击主页面的 "🤖 AI 创建" 按钮
+2. 输入电路需求描述，例如：
+   - "设计一个 ESP32 的智能控制器"
+   - "做一个 5V 稳压电源"
+   - "STM32 温度传感器模块"
+3. AI 会分析需求并提出澄清问题
+4. 回答问题后，AI 生成原理图和 BOM
+5. 预览方案，可选择编辑
+6. 确认创建，生成完整项目
+
+### 2. 编辑原理图
+
+在原理图编辑器中可以：
+- 移动元件
+- 添加/删除导线
+- 添加网络标签
+- 编辑元件属性
+
+### 3. 编辑 PCB
+
+在 PCB 编辑器中可以：
+- 调整元件位置
+- 手动/自动布线
+- 添加过孔
+- 铺铜
+- 设计规则检查 (DRC)
+
+## 项目结构
+
+```
+kicad-ai-auto/
+├── agent/                  # Python FastAPI 后端
+│   ├── main.py             # 主入口
+│   ├── routes/             # API 路由
+│   │   ├── ai_routes.py   # AI 分析和生成
+│   │   ├── project_routes.py  # 项目管理
+│   │   └── kicad_ipc_routes.py  # KiCad IPC
+│   ├── schematic_generator.py  # 原理图生成器
+│   ├── pcb_generator.py    # PCB 生成器
+│   └── component_knowledge/  # 元件知识库
+├── web/                    # React 前端
+│   ├── src/
+│   │   ├── components/    # UI 组件
+│   │   ├── pages/         # 页面
+│   │   ├── stores/        # 状态管理
+│   │   └── editors/       # 编辑器
+│   └── package.json
+├── docker/                # Docker 配置
+├── playwright-tests/       # 自动化测试
+└── VERSION.md             # 版本信息
+```
+
+## API 文档
+
+### AI 分析接口
+
+- `POST /api/v1/ai/analyze` - 分析需求，生成方案和原理图
+
+### 项目管理接口
+
+- `GET /api/v1/projects` - 获取项目列表
+- `POST /api/v1/projects` - 创建新项目
+- `GET /api/v1/projects/{id}` - 获取项目详情
+- `GET /api/v1/projects/{id}/schematic` - 获取原理图数据
+- `GET /api/v1/projects/{id}/pcb/design` - 获取 PCB 数据
+
+### KiCad IPC 接口
+
+- `POST /api/kicad-ipc/start` - 启动 KiCad
+- `POST /api/kicad-ipc/stop` - 停止 KiCad
+- `POST /api/kicad-ipc/action` - 执行 KiCad 操作
+- `GET /api/kicad-ipc/items` - 获取 PCB 元素列表
+
+完整 API 文档请访问: http://localhost:8000/docs
+
+## 技术栈
+
+### 后端
+- Python 3.11+
+- FastAPI
+- KiCad Python API (kicad-python)
+- Pydantic
+
+### 前端
+- React 18+
+- TypeScript
+- Vite
+- Zustand (状态管理)
+- Konva.js (画布)
+- Tailwind CSS
+
+### DevOps
+- Docker
+- Playwright
+
+## 系统要求
+
+- **KiCad**: 9.0+ (推荐)
+- **Node.js**: 18+
+- **Python**: 3.11+
+- **操作系统**: Windows 10+, Linux, macOS
+
+## 常见问题
+
+### Q: AI 返回的是模板而不是我需要的电路
+A: 请确保输入中包含具体的关键词（如"ESP32"、"STM32"），AI 会根据关键词触发动态生成。
+
+### Q: 创建的项目原理图为空
+A: 这是一个已知的 bug，已经修复。请确保使用最新版本。
+
+### Q: Windows 下无法启动
+A: 请确保已安装 KiCad 9.0+ 并配置正确的路径。检查 .env 文件中的 KICAD_CLI_PATH。
 
 ## 许可证
 
 GPL-3.0
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！

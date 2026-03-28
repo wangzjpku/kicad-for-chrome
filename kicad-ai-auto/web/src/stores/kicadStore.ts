@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 export interface KiCadState {
   // 连接状态
@@ -49,67 +50,90 @@ export interface LogEntry {
   message: string
 }
 
-export const useKiCadStore = create<KiCadState>((set) => ({
-  // 初始状态
-  connected: false,
-  projectPath: null,
-  projectName: null,
-  currentTool: null,
-  currentLayer: 'F.Cu',
-  cursorX: 0,
-  cursorY: 0,
-  zoom: 100,
-  screenshotUrl: null,
-  screenshotEmpty: false,
-  errors: [],
-  logs: [],
-  theme: 'dark',
-  activeOutputTab: 'logs',
+// 需要持久化的状态
+const persistConfig = {
+  name: 'kicad-store',
+  storage: createJSONStorage(() => localStorage),
+  partialize: (state: KiCadState) => ({
+    // 只持久化非敏感的配置状态
+    theme: state.theme,
+    activeOutputTab: state.activeOutputTab,
+    currentLayer: state.currentLayer,
+  }),
+}
 
-  // 操作方法
-  setConnected: (connected) => set({ connected }),
+export const useKiCadStore = create<KiCadState>()(
+  persist(
+    (set) => ({
+      // 初始状态
+      connected: false,
+      projectPath: null,
+      projectName: null,
+      currentTool: null,
+      currentLayer: 'F.Cu',
+      cursorX: 0,
+      cursorY: 0,
+      zoom: 100,
+      screenshotUrl: null,
+      screenshotEmpty: false,
+      errors: [],
+      logs: [],
+      theme: 'dark',
+      activeOutputTab: 'logs',
 
-  setProject: (path, name) =>
-    set({
-      projectPath: path,
-      projectName: name,
+      // 操作方法
+      setConnected: (connected) => set({ connected }),
+
+      setProject: (path, name) =>
+        set({
+          projectPath: path,
+          projectName: name,
+        }),
+
+      setTool: (tool) => set({ currentTool: tool }),
+
+      setLayer: (layer) => set({ currentLayer: layer }),
+
+      setCursor: (x, y) =>
+        set({
+          cursorX: x,
+          cursorY: y,
+        }),
+
+      setZoom: (zoom) => set({ zoom }),
+
+      setScreenshot: (url) => {
+        // 检测截图是否为空白（白色）
+        // 简单检测：如果URL包含大量连续的白色像素模式
+        const isEmpty = url && (
+          url.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==') || // 1x1透明像素
+          url.length < 5000 // 截图数据太小，可能是空白
+        )
+        set({ screenshotUrl: url, screenshotEmpty: isEmpty })
+      },
+
+      addError: (error) =>
+        set((state) => ({
+          errors: [...state.errors, error],
+        })),
+
+      clearErrors: () => set({ errors: [] }),
+
+      addLog: (entry) =>
+        set((state) => {
+          const MAX_LOGS = 1000
+          const newLogs = [...state.logs, entry]
+          // 保留最近 MAX_LOGS 条，超过则移除最早的
+          if (newLogs.length > MAX_LOGS) {
+            newLogs.splice(0, newLogs.length - MAX_LOGS)
+          }
+          return { logs: newLogs }
+        }),
+
+      setTheme: (theme) => set({ theme }),
+
+      setActiveOutputTab: (tab) => set({ activeOutputTab: tab }),
     }),
-
-  setTool: (tool) => set({ currentTool: tool }),
-
-  setLayer: (layer) => set({ currentLayer: layer }),
-
-  setCursor: (x, y) =>
-    set({
-      cursorX: x,
-      cursorY: y,
-    }),
-
-  setZoom: (zoom) => set({ zoom }),
-
-  setScreenshot: (url) => {
-    // 检测截图是否为空白（白色）
-    // 简单检测：如果URL包含大量连续的白色像素模式
-    const isEmpty = url && (
-      url.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==') || // 1x1透明像素
-      url.length < 5000 // 截图数据太小，可能是空白
-    )
-    set({ screenshotUrl: url, screenshotEmpty: isEmpty })
-  },
-
-  addError: (error) =>
-    set((state) => ({
-      errors: [...state.errors, error],
-    })),
-
-  clearErrors: () => set({ errors: [] }),
-
-  addLog: (entry) =>
-    set((state) => ({
-      logs: [...state.logs.slice(-999), entry], // 保留最近 1000 条
-    })),
-
-  setTheme: (theme) => set({ theme }),
-
-  setActiveOutputTab: (tab) => set({ activeOutputTab: tab }),
-}))
+    persistConfig
+  )
+)

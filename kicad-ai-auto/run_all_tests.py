@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Master test runner for KiCad AI Auto project
 Runs all tests: backend (Python) and frontend (TypeScript)

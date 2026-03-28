@@ -151,6 +151,35 @@ export const projectApi = {
 // ==================== PCB API ====================
 
 export const pcbApi = {
+  // 生成 PCB 布局和布线
+  generate: async (request: {
+    requirements?: string;
+    board: {
+      width: number;
+      height: number;
+      layers: string[];
+    };
+    components: Array<{
+      ref: string;
+      symbol: string;
+      footprint: string;
+      width: number;
+      height: number;
+    }>;
+    nets: Array<{
+      name: string;
+      source_ref: string;
+      source_pin: number;
+      target_ref: string;
+      target_pin: number;
+    }>;
+    placement_strategy?: string;
+    routing_strategy?: string;
+  }): Promise<PCBGenerationResult> => {
+    const response = await apiClient.post('/pcb/generate', request);
+    return response.data;
+  },
+
   getPCB: async (projectId: string): Promise<ApiResponse<PCBData>> => {
     const response = await apiClient.get(`/projects/${projectId}/pcb/design`);
     return response.data;
@@ -306,6 +335,71 @@ export interface AIDesignResult {
   erc_result?: Record<string, unknown>;
   errors: Array<Record<string, unknown>>;
   warnings: Array<Record<string, unknown>>;
+  circuit_data?: CircuitData;  // 电路JSON数据
+}
+
+// 电路数据格式（与后端 LoopResult.final_json 对应）
+export interface CircuitData {
+  components?: CircuitComponent[];
+  nets?: CircuitNet[];
+  parameters?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface CircuitComponent {
+  id?: string;
+  name: string;
+  model?: string;
+  value?: string;
+  footprint?: string;
+  x?: number;
+  y?: number;
+  position?: { x: number; y: number };
+  rotation?: number;
+  pins?: CircuitPin[];
+  [key: string]: unknown;
+}
+
+export interface CircuitNet {
+  name: string;
+  connections?: Array<{ component: string; pin: string }>;
+  [key: string]: unknown;
+}
+
+export interface CircuitPin {
+  id?: string;
+  number: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+// PCB 相关类型
+export interface PCBPlacement {
+  ref: string;
+  x: number;
+  y: number;
+  rotation?: number;
+}
+
+export interface PCBRoute {
+  net: string;
+  segments: Array<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    layer?: string;
+  }>;
+}
+
+export interface PCBGenerationResult {
+  success: boolean;
+  message: string;
+  placements: PCBPlacement[];
+  routes: PCBRoute[];
+  vias: Array<{ x: number; y: number; net: string }>;
+  board_outline: { width: number; height: number };
+  metrics: Record<string, unknown>;
 }
 
 export const aiApi = {

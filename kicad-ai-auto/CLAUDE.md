@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 KiCad AI Automation is an AI-driven PCB design automation solution. Users describe circuit requirements in natural language, and AI automatically generates schematics and PCB layouts with support for exporting manufacturing files.
 
+**Current Version**: v0.9.12
+
 ## Architecture
 
 ### Multi-Mode Operation
@@ -51,6 +53,9 @@ cd kicad-ai-auto/agent
 # Run Python tests
 pytest tests/ -v
 pytest tests/test_api.py::TestProjectAPI::test_start_kicad -v
+
+# Kill stale Python processes (if code changes not reflecting)
+taskkill //F //IM python.exe
 ```
 
 ### Frontend
@@ -71,14 +76,41 @@ cd kicad-ai-auto
 docker-compose up -d
 ```
 
+## Testing
+
+### Playwright Browser Automation
+
+The project uses Playwright for browser automation testing. MCP tools available:
+- `mcp__plugin_playwright_playwright__browser_navigate`
+- `mcp__plugin_playwright_playwright__browser_click`
+- `mcp__plugin_playwright_playwright__browser_take_screenshot`
+- `mcp__plugin_playwright_playwright__browser_snapshot`
+
+### Test Results
+
+Test reports are stored in: `web/test_results/`
+
 ## Key Files
 
 - **API Routes**: `agent/routes/project_routes.py` - Project CRUD, PCB/schematic data
-- **AI Generation**: `agent/routes/ai_routes.py` - Circuit analysis and generation
+- **AI Generation**: `agent/routes/ai_routes.py` - Circuit analysis and generation (Kimi/GLM-4 integration)
 - **IPC Control**: `agent/kicad_ipc_manager.py` - KiCad 9.0+ programmatic control
 - **Frontend State**: `web/src/stores/kicadStore.ts` - Zustand store for project/schematic/PCB state
 - **PCB Rendering**: `web/src/editors/PCBEditor.tsx` - Konva.js canvas rendering
 - **Schematic Rendering**: `web/src/editors/SchematicEditor.tsx` - Konva.js canvas rendering
+
+## Data Persistence
+
+Data files in `agent/`:
+- `projects_data.json` - Project metadata
+- `pcb_data.json` - PCB layout data
+- `schematic_data.json` - Schematic data (v0.9.12+)
+
+**Important**: After code changes, restart the backend:
+```bash
+taskkill //F //IM python.exe
+cd agent && ./venv/Scripts/python.exe main.py
+```
 
 ## Environment Variables
 
@@ -92,3 +124,4 @@ Key variables in `agent/.env`:
 - kipy works through IPC, not direct Python imports - requires KiCad GUI
 - Frontend proxies `/api` and `/ws` to backend via Vite config
 - PCB/schematic data uses KiCad's native footprint/symbol libraries for component definitions
+- Always restart backend after Python code changes to see effects

@@ -2,14 +2,50 @@
 
 ## 当前版本
 
-- **项目版本**: v0.9.3
-- **后端 (agent)**: 1.0.0
-- **前端 (web)**: 0.9.3
-- **最后更新**: 2026-03-06
+- **项目版本**: v0.9.12
+- **后端 (agent)**: 0.9.12
+- **前端 (web)**: 0.9.12
+- **最后更新**: 2026-03-06T21:00
 
 ## 版本历史
 
-### v0.9.3 - 2026-03-06 (走线修复版本)
+### v0.9.12 - 2026-03-06 (NE555修复版本)
+
+#### 严重问题修复
+- NE555芯片原理图缺失 - 添加定时器电路检测，优先使用NE555模板
+- NE555芯片PCB封装缺失 - 修复封装数据生成逻辑
+
+#### 功能优化
+- 电路类型检测优化 - NE555关键词检测优先级提高
+- 输入电压自动检测 - 根据用户输入自动选择正确电压值
+- DeepEDA API认证修复 - model-info接口无需认证即可访问
+
+#### 修改文件
+- agent/routes/ai_routes.py - NE555检测和电压检测
+- agent/routes/auth_routes.py - 添加get_optional_user可选认证
+- agent/routes/deepeda_routes.py - model-info使用可选认证
+
+### v0.9.11 - 2026-03-06 (安全修复版本)
+
+#### 安全修复
+- JWT密钥必须从环境变量获取 - 移除硬编码默认密钥
+- 危险API添加管理员认证 - /clear-all 需要管理员权限
+- 密码哈希添加盐值保护 - 防止彩虹表攻击
+
+#### 功能修复
+- AI原理图引脚信息 - 使用知识库获取元件引脚定义
+- 封装搜索优化 - 支持前缀匹配和单词边界匹配
+- 封装类型推断优化 - 改进LED/电阻/电容识别逻辑
+
+#### 修改文件
+- agent/routes/auth_routes.py - JWT密钥验证
+- agent/routes/project_routes.py - clear-all管理员认证
+- agent/models/user.py - 密码盐值哈希
+- agent/routes/ai_routes.py - 引脚信息获取
+- agent/routes/footprint_routes.py - 搜索算法
+- agent/footprint_library.py - 封装类型推断
+
+### v0.9.11 - 2026-03-06 (走线修复版本)
 
 #### 功能修复
 - 走线连接到焊盘 - 新增 `_generate_tracks_from_footprints` 函数
@@ -78,7 +114,7 @@
 
 ## 升级指南
 
-### 从 v0.8.x 升级到 v0.9.3
+### 从 v0.8.x 升级到 v0.9.11
 
 1. **更新代码**
    ```bash

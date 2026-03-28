@@ -336,12 +336,16 @@ def find_best_footprint(
     if component_name in SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS:
         return SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS[component_name]
 
-    # 2. 尝试模糊匹配
+    # 2. 尝试模糊匹配（更严格的条件）
+    # 对于单字符符号（如 R, C, L），跳过模糊匹配，避免误判
+    name_lower = component_name.lower()
     for symbol, footprint in SYMBOL_TO_FOOTPRINT_RECOMMENDATIONS.items():
-        if (
-            symbol.lower() in component_name.lower()
-            or component_name.lower() in symbol.lower()
-        ):
+        symbol_lower = symbol.lower()
+        # 跳过单字符符号的模糊匹配（它们太容易误判）
+        if len(symbol) == 1:
+            continue
+        # 对于多字符符号，检查是否是更精确的匹配
+        if symbol_lower in name_lower or name_lower in symbol_lower:
             return footprint
 
     # 3. 根据 package 参数获取默认封装
@@ -396,12 +400,19 @@ def infer_component_type(
     if any(ic in name_lower for ic in ics):
         return "ic"
 
-    # 电阻判断
-    if name_lower.startswith("r") or "电阻" in name_lower:
+    # LED 判断 - 需要更精确的匹配，避免误判
+    if "led" in name_lower or ("灯" in name_lower and "电" not in name_lower):
+        return "led"
+
+    # 电阻判断 - 必须在 LED 判断之后
+    if "电阻" in name_lower or "resistor" in name_lower:
+        return "resistor"
+    # 同时检查前缀R，但需要排除已经匹配的情况
+    if name_lower.startswith("r") and "电容" not in name_lower and "继电器" not in name_lower:
         return "resistor"
 
     # 电容判断
-    if name_lower.startswith("c") or "电容" in name_lower:
+    if "电容" in name_lower or "capacitor" in name_lower:
         # 检查是否是电解电容
         if (
             "电解" in name_lower
@@ -410,12 +421,10 @@ def infer_component_type(
         ):
             return "capacitor"
         return "capacitor"
+    if name_lower.startswith("c") and "电感" not in name_lower and "连接器" not in name_lower:
+        return "capacitor"
 
-    # LED 判断 - 必须优先于电感和二极管判断
-    if "led" in name_lower or "灯" in name_lower:
-        return "led"
-
-    # 电感判断 - 必须在 LED 判断之后
+    # 电感判断
     if name_lower.startswith("l") or "电感" in name_lower:
         return "inductor"
 
@@ -436,7 +445,7 @@ def infer_component_type(
         or "connector" in name_lower
     ):
         if "usb" in name_lower:
-            return "connector"
+            return "usb"  # 修复：USB接口应返回"usb"而不是"connector"
         if "header" in name_lower or "排针" in name_lower:
             return "connector"
         return "connector"
@@ -577,11 +586,20 @@ class FootprintLibraryManager:
     def _auto_detect_footprint_dirs(self):
         """自动检测 KiCad 封装库目录"""
         import platform
+        import os
+
+        # 首先检查环境变量
+        env_path = os.environ.get("KICAD_FOOTPRINT_DIR")
+        if env_path and os.path.exists(env_path):
+            logger.info(f"Using KiCad footprint directory from env: {env_path}")
+            self._scan_directory(env_path)
+            return
 
         system = platform.system()
 
         if system == "Windows":
             base_dirs = [
+                r"E:\Program Files\KiCad\9.0\share\kicad\footprints",
                 r"C:\Program Files\KiCad\9.0\share\kicad\footprints",
                 r"C:\Program Files\KiCad\8.0\share\kicad\footprints",
                 r"C:\Program Files (x86)\KiCad\9.0\share\kicad\footprints",

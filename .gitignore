@@ -8,6 +8,11 @@ venv/
 env/
 .venv/
 *.egg-info/
+
+# Backup files
+*.bak
+*.backup
+*~
 dist/
 build/
 

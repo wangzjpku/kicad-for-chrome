@@ -26,11 +26,12 @@ FOOTPRINT_LIBS_ROOT = Path(__file__).parent.parent.parent / "kicad-footprints"
 @dataclass
 class FootprintInfo:
     """封装信息"""
-    library: str           # 库名 (如 Package_TO_SOT_SMD)
-    name: str              # 封装名 (如 SOT-23)
-    full_path: str         # 完整路径
+
+    library: str  # 库名 (如 Package_TO_SOT_SMD)
+    name: str  # 封装名 (如 SOT-23)
+    full_path: str  # 完整路径
     description: str = ""  # 描述
-    tags: List[str] = None # 标签
+    tags: List[str] = None  # 标签
 
     def __post_init__(self):
         if self.tags is None:
@@ -55,13 +56,11 @@ class SmartFootprintFinder:
         "RT9193": ("Package_TO_SOT_SMD", "SOT-23-5"),
         "MP1584": ("Package_SO", "SOIC-8_3.9x4.9mm_P1.27mm"),
         "LM2596": ("Package_TO_SOT_SMD", "TO-263-5"),
-
         # ===== 整流桥 =====
         "MB6S": ("Package_SO", "SOIC-4_4.55x3.7mm_P2.54mm"),
         "MB10S": ("Package_SO", "SOIC-4_4.55x3.7mm_P2.54mm"),
         "KBPC1010": ("Package_Bridge", "Bridge_William_WI-1"),
         "GBU4K": ("Package_Bridge", "Bridge_GBU-4K"),
-
         # ===== MCU =====
         "ESP32C3": ("RF_Module", "ESP32-C3"),
         "ESP32-WROOM-32": ("RF_Module", "ESP32-WROOM-32"),
@@ -72,14 +71,12 @@ class SmartFootprintFinder:
         "ATmega328P-AU": ("Package_QFP", "TQFP-32_7x7mm_P0.8mm"),
         "RP2040": ("Package_DFN_QFN", "QFN-56-1EP_7x7mm_P0.4mm_EP5.6x5.6mm"),
         "CH32V003": ("Package_SO", "SOIC-8_3.9x4.9mm_P1.27mm"),
-
         # ===== USB转串口 =====
         "CH340G": ("Package_SO", "SOIC-16_3.9x9.9mm_P1.27mm"),
         "CH340C": ("Package_SO", "SOIC-16_3.9x9.9mm_P1.27mm"),
         "CP2102": ("Package_DFN_QFN", "QFN-28-1EP_5x5mm_P0.5mm_EP3.35x3.35mm"),
         "CP2104": ("Package_DFN_QFN", "QFN-24-1EP_4x4mm_P0.5mm"),
         "FT232RL": ("Package_SO", "SSOP-28_5.3x10.2mm_P0.65mm"),
-
         # ===== 二极管 =====
         "1N4007": ("Diode_THT", "D_DO-41_SOD81_P7.62mm_Vertical_AnodeUp"),
         "1N4148": ("Diode_THT", "D_DO-35_SOD27_P7.62mm_Vertical_AnodeUp"),
@@ -87,20 +84,17 @@ class SmartFootprintFinder:
         "SS54": ("Diode_SMD", "D_SMC"),
         "BAT54C": ("Package_TO_SOT_SMD", "SOT-23"),
         "B5819W": ("Diode_SMD", "D_SOD-123"),
-
         # ===== LED =====
         "LED0603": ("LED_SMD", "LED_0603_1608Metric"),
         "LED0805": ("LED_SMD", "LED_0805_2012Metric"),
         "LED1206": ("LED_SMD", "LED_1206_3216Metric"),
         "WS2812B": ("LED_SMD", "LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"),
         "WS2812B-2020": ("LED_SMD", "LED_WS2812-2020_PLCC4_2.0x2.0mm"),
-
         # ===== 晶振 =====
         "HC49": ("Crystal", "Crystal_HC49-4H_Vertical"),
         "HC49S": ("Crystal", "Crystal_HC49-SD_SMD_Horizontal"),
         "NX3225": ("Crystal", "Crystal_SMD_3225-4Pin_3.2x2.5mm"),
         "NX5032": ("Crystal", "Crystal_SMD_5032-4Pin_5.0x3.2mm"),
-
         # ===== 电容 =====
         "C0603": ("Capacitor_SMD", "C_0603_1608Metric"),
         "C0805": ("Capacitor_SMD", "C_0805_2012Metric"),
@@ -108,31 +102,48 @@ class SmartFootprintFinder:
         "CD60": ("Capacitor_THT", "CP_Radial_D5.0mm_P2.00mm"),
         "CD110": ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"),
         "1206": ("Capacitor_SMD", "C_1206_3216Metric"),
-
         # ===== 电阻 =====
         "R0603": ("Resistor_SMD", "R_0603_1608Metric"),
         "R0805": ("Resistor_SMD", "R_0805_2012Metric"),
         "R1206": ("Resistor_SMD", "R_1206_3216Metric"),
-
         # ===== 连接器 =====
         "USB-C": ("Connector_USB", "USB_C_Receptacle_HRO_TYPE-C-31-M-12"),
         "USB-Micro": ("Connector_USB", "USB_Micro-B_Molex-105017-0001"),
+        "Micro-USB": ("Connector_USB", "USB_Micro-B_Molex-105017-0001"),
+        "Micro USB": ("Connector_USB", "USB_Micro-B_Molex-105017-0001"),
         "USB-A": ("Connector_USB", "USB_A_Molex_105057_Vertical"),
         "PH-2.0": ("Connector_JST", "JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"),
         "PH-2.5": ("Connector_JST", "JST_PH_B2B-PH-SM4-TB_1x02-1MP_P2.50mm_Horizontal"),
         "XH-2.5": ("Connector_JST", "JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical"),
-        "PinHeader-2.54": ("Connector_PinHeader_2.54mm", "PinHeader_1x02_P2.54mm_Vertical"),
-        "TerminalBlock-5mm": ("Connector_PinHeader_2.54mm", "PinHeader_1x02_P2.54mm_Vertical"),
-
+        "PinHeader-2.54": (
+            "Connector_PinHeader_2.54mm",
+            "PinHeader_1x02_P2.54mm_Vertical",
+        ),
+        "TerminalBlock-5mm": (
+            "Connector_PinHeader_2.54mm",
+            "PinHeader_1x02_P2.54mm_Vertical",
+        ),
         # ===== 开关 =====
         "SKQGAFE010": ("Button_Switch_SMD", "SW_SPST_SKQG_WithStem"),
         "TS-022": ("Button_Switch_THT", "SW_PUSH_6mm"),
-
         # ===== 传感器 =====
         "DHT11": ("Sensor_Humidity", "Digital_Humidity_Temperature_Sensortech_DHT11"),
         "DS18B20": ("Sensor_Temperature", "Temperature_TO-92_3Pin_Horizontal"),
         "LM35": ("Sensor_Temperature", "Temperature_TO-92_3Pin_Horizontal"),
-
+        # ===== 定时器/IC =====
+        "NE555": ("Package_DIP", "DIP-8_W7.62mm"),
+        "NE556": ("Package_DIP", "DIP-14_W7.62mm"),
+        "LM358": ("Package_DIP", "DIP-8_W7.62mm"),
+        "LM324": ("Package_DIP", "DIP-14_W7.62mm"),
+        "LM339": ("Package_DIP", "DIP-14_W7.62mm"),
+        "LM311": ("Package_DIP", "DIP-8_W7.62mm"),
+        "TL072": ("Package_DIP", "DIP-8_W7.62mm"),
+        "TL074": ("Package_DIP", "DIP-14_W7.62mm"),
+        "CD4011": ("Package_DIP", "DIP-14_W7.62mm"),
+        "CD4017": ("Package_DIP", "DIP-16_W7.62mm"),
+        "CD4060": ("Package_DIP", "DIP-16_W7.62mm"),
+        "ATmega8": ("Package_DIP", "DIP-28_W7.62mm"),
+        "ATmega16": ("Package_DIP", "DIP-40_W7.62mm"),
         # ===== 无线模块 =====
         "NRF24L01": ("RF_Module", "NRF24L01"),
         "CC1101": ("RF_Module", "CC1101_Module"),
@@ -175,11 +186,17 @@ class SmartFootprintFinder:
         "0603": ("Resistor_SMD", "R_0603_1608Metric"),
         "0805": ("Resistor_SMD", "R_0805_2012Metric"),
         "1206": ("Resistor_SMD", "R_1206_3216Metric"),
+        "C1206": ("Capacitor_SMD", "C_1206_3216Metric"),
         "DO-41": ("Diode_THT", "D_DO-41_SOD81_P7.62mm_Vertical_AnodeUp"),
         "DO-35": ("Diode_THT", "D_DO-35_SOD27_P7.62mm_Vertical_AnodeUp"),
         "SOD-123": ("Diode_SMD", "D_SOD-123"),
         "SOD123": ("Diode_SMD", "D_SOD-123"),
         "SOD-323": ("Diode_SMD", "D_SOD-323"),
+        # 晶振封装
+        "3225": ("Crystal", "Crystal_SMD_3225-4Pin_3.2x2.5mm"),
+        "3225-4Pin": ("Crystal", "Crystal_SMD_3225-4Pin_3.2x2.5mm"),
+        "5032": ("Crystal", "Crystal_SMD_5032-4Pin_5.0x3.2mm"),
+        "5032-4Pin": ("Crystal", "Crystal_SMD_5032-4Pin_5.0x3.2mm"),
     }
 
     # 默认封装（按元件类型）
@@ -206,8 +223,8 @@ class SmartFootprintFinder:
         "ic": ("Package_SO", "SOIC-8_3.9x4.9mm_P1.27mm"),
         "connector": ("Connector_PinHeader_2.54mm", "PinHeader_1x02_P2.54mm_Vertical"),
         "连接器": ("Connector_PinHeader_2.54mm", "PinHeader_1x02_P2.54mm_Vertical"),
-        "crystal": ("Crystal", "Crystal_HC49-4H_Vertical"),
-        "晶振": ("Crystal", "Crystal_HC49-4H_Vertical"),
+        "crystal": ("Crystal", "Crystal_SMD_3225-4Pin_3.2x2.5mm"),
+        "晶振": ("Crystal", "Crystal_SMD_3225-4Pin_3.2x2.5mm"),
         "usb": ("Connector_USB", "USB_Micro-B_Molex-105017-0001"),
         "switch": ("Button_Switch_SMD", "SW_SPST_SKQG_WithStem"),
         "开关": ("Button_Switch_SMD", "SW_SPST_SKQG_WithStem"),
@@ -229,16 +246,18 @@ class SmartFootprintFinder:
             return
 
         for lib_dir in FOOTPRINT_LIBS_ROOT.iterdir():
-            if lib_dir.is_dir() and lib_dir.name.endswith('.pretty'):
-                lib_name = lib_dir.name.replace('.pretty', '')
+            if lib_dir.is_dir() and lib_dir.name.endswith(".pretty"):
+                lib_name = lib_dir.name.replace(".pretty", "")
                 footprints = []
-                for fp_file in lib_dir.glob('*.kicad_mod'):
+                for fp_file in lib_dir.glob("*.kicad_mod"):
                     footprints.append(fp_file.stem)
                 self._libs_cache[lib_name] = footprints
 
         logger.info(f"已加载 {len(self._libs_cache)} 个封装库")
 
-    def find_footprint(self, model: str, component_type: str = "", package_hint: str = "") -> Tuple[str, str]:
+    def find_footprint(
+        self, model: str, component_type: str = "", package_hint: str = ""
+    ) -> Tuple[str, str]:
         """
         查找元件封装
 
@@ -272,22 +291,51 @@ class SmartFootprintFinder:
             ]
             for keywords, comp_type in model_keywords:
                 if any(kw in model_lower for kw in keywords):
+                    # 如果有明确的package_hint（如1206），优先使用它
+                    if package_upper:
+                        for kw in ['0603', '0805', '1206']:
+                            if kw in package_upper:
+                                if comp_type == 'capacitor':
+                                    footprint = ('Capacitor_SMD', f'C_{kw}_3216Metric' if kw=='1206' else f'C_{kw}_1608Metric' if kw=='0603' else f'C_{kw}_2012Metric')
+                                    logger.info(
+                                        f"Passive类型推断+封装: {model} -> {comp_type} -> {footprint[0]}:{footprint[1]}"
+                                    )
+                                    return footprint
+                    
+                    # 否则使用默认封装
                     for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
                         if type_key in comp_type:
-                            logger.info(f"Passive类型推断: {model} -> {comp_type} -> {footprint[0]}:{footprint[1]}")
+                            logger.info(
+                                f"Passive类型推断: {model} -> {comp_type} -> {footprint[0]}:{footprint[1]}"
+                            )
                             return footprint
 
         # 0.1. 如果有 component_type 且模型是简单名称，优先使用类型默认封装
         # 避免像 "Red" 这样的简单型号误匹配到不相关的库
-        simple_names = ['led', 'red', 'green', 'blue', 'yellow', 'white',
-                       'r', 'res', 'resistor',
-                       'c', 'cap', 'capacitor',
-                       'l', 'inductor',
-                       'd', 'diode']
+        simple_names = [
+            "led",
+            "red",
+            "green",
+            "blue",
+            "yellow",
+            "white",
+            "r",
+            "res",
+            "resistor",
+            "c",
+            "cap",
+            "capacitor",
+            "l",
+            "inductor",
+            "d",
+            "diode",
+        ]
         if component_type_lower and model_lower in simple_names:
             for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
                 if type_key in component_type_lower:
-                    logger.info(f"简单名称+类型匹配: {model} -> {footprint[0]}:{footprint[1]}")
+                    logger.info(
+                        f"简单名称+类型匹配: {model} -> {footprint[0]}:{footprint[1]}"
+                    )
                     return footprint
 
         # 1. 先检查型号映射表
@@ -296,28 +344,67 @@ class SmartFootprintFinder:
                 logger.info(f"型号匹配: {model} -> {footprint[0]}:{footprint[1]}")
                 return footprint
 
-        # 2. 检查封装关键词
+        # 2. 检查封装关键词（需要考虑component_type和model）
         if package_upper:
+            # 判断是否为电容：明确类型是capacitor/电容，或者model包含电容相关关键词
+            is_capacitor = (
+                'capacitor' in component_type_lower or 
+                '电容' in component_type_lower or
+                'uf' in model_lower or 
+                'nf' in model_lower
+            )
+            
+            # 判断是否为电阻：明确类型是resistor/电阻，或者model包含电阻相关关键词
+            is_resistor = (
+                'resistor' in component_type_lower or 
+                '电阻' in component_type_lower or
+                'ω' in model or  # Ω symbol
+                'ohm' in model_lower or
+                'Ω' in model or  # uppercase Omega
+                'ohm' in model_lower or
+                re.search(r'\d+Ω', model) is not None or  # 10Ω format
+                re.search(r'\d+kΩ', model) is not None  # 10kΩ format
+            )
+            
             for keyword, footprint in self.PACKAGE_KEYWORDS.items():
                 if keyword in package_upper:
-                    logger.info(f"封装关键词匹配: {package_hint} -> {footprint[0]}:{footprint[1]}")
+                    # 电容类型时，1206/0805/0603应匹配电容封装
+                    if is_capacitor and keyword in ['0603', '0805', '1206']:
+                        if keyword == '0603':
+                            footprint = ('Capacitor_SMD', 'C_0603_1608Metric')
+                        elif keyword == '0805':
+                            footprint = ('Capacitor_SMD', 'C_0805_2012Metric')
+                        elif keyword == '1206':
+                            footprint = ('Capacitor_SMD', 'C_1206_3216Metric')
+                    # 电阻类型时，使用电阻封装（已经是默认值，保持不变）
+                    
+                    logger.info(
+                        f"封装关键词匹配: {package_hint} -> {footprint[0]}:{footprint[1]}"
+                    )
                     return footprint
 
-        # 3. 智能搜索封装库
-        result = self._search_in_libs(model)
-        if result:
-            logger.info(f"库搜索匹配: {model} -> {result[0]}:{result[1]}")
-            return result
+        # 3. 智能搜索封装库（仅在没有指定类型或类型为通用类型时才搜索）
+        # 如果已明确指定类型（如 resistor, capacitor），优先使用默认封装
+        allow_library_search = not component_type_lower or component_type_lower in ["passive", "other", ""]
+        if allow_library_search:
+            result = self._search_in_libs(model)
+            if result:
+                logger.info(f"库搜索匹配: {model} -> {result[0]}:{result[1]}")
+                return result
 
         # 4. 根据元件类型使用默认封装
         for type_key, footprint in self.DEFAULT_FOOTPRINTS.items():
             if type_key in component_type_lower:
-                logger.info(f"类型默认封装: {component_type} -> {footprint[0]}:{footprint[1]}")
+                logger.info(
+                    f"类型默认封装: {component_type} -> {footprint[0]}:{footprint[1]}"
+                )
                 return footprint
 
         # 5. 最终默认
         default = ("Resistor_SMD", "R_0603_1608Metric")
-        logger.warning(f"未找到匹配封装，使用默认: {model} -> {default[0]}:{default[1]}")
+        logger.warning(
+            f"未找到匹配封装，使用默认: {model} -> {default[0]}:{default[1]}"
+        )
         return default
 
     def _search_in_libs(self, model: str) -> Optional[Tuple[str, str]]:
@@ -329,14 +416,14 @@ class SmartFootprintFinder:
 
         # 提取数字+字母组合
         patterns = [
-            r'\d{4}',           # 4位数字 (如 7805)
-            r'[A-Z]+\d+[A-Z]*', # 字母+数字 (如 LM7805)
-            r'SOT[-]?\d+',      # SOT封装
-            r'TO[-]?\d+',       # TO封装
-            r'SOIC[-]?\d+',     # SOIC封装
-            r'DIP[-]?\d+',      # DIP封装
-            r'QFP',             # QFP封装
-            r'QFN',             # QFN封装
+            r"\d{4}",  # 4位数字 (如 7805)
+            r"[A-Z]+\d+[A-Z]*",  # 字母+数字 (如 LM7805)
+            r"SOT[-]?\d+",  # SOT封装
+            r"TO[-]?\d+",  # TO封装
+            r"SOIC[-]?\d+",  # SOIC封装
+            r"DIP[-]?\d+",  # DIP封装
+            r"QFP",  # QFP封装
+            r"QFN",  # QFN封装
         ]
 
         for pattern in patterns:
@@ -345,12 +432,32 @@ class SmartFootprintFinder:
 
         # 如果没有提取到关键词，且模型是简单名称（电容、电阻、LED等），不进行库搜索
         # 避免误匹配到不相关的封装
-        simple_passives = ['led', 'r', 'c', 'l', 'd', 'u', 'resistor', 'capacitor', 'inductor', 'diode']
+        simple_passives = [
+            "led",
+            "r",
+            "c",
+            "l",
+            "d",
+            "u",
+            "resistor",
+            "capacitor",
+            "inductor",
+            "diode",
+        ]
         if not keywords and model_lower in simple_passives:
             return None
 
-        # 在库中搜索
+        # 在库中搜索（排除可能导致误匹配的关键词）
+        skip_libs = ["Switch", "Button", "Touch"]  # 避免数字型号匹配到开关
+        if len(model_lower) <= 4 and model_lower.isdigit():
+            # 纯数字型号（如 330, 100, 220）不搜索开关库
+            skip_libs.extend(["Switch", "Button", "Touch"])
+        
         for lib_name, footprints in self._libs_cache.items():
+            # 跳过可能导致误匹配的库
+            if any(skip in lib_name for skip in skip_libs):
+                continue
+                
             for fp_name in footprints:
                 fp_lower = fp_name.lower()
 
@@ -365,7 +472,9 @@ class SmartFootprintFinder:
 
         return None
 
-    def get_footprint_info(self, lib_name: str, fp_name: str) -> Optional[FootprintInfo]:
+    def get_footprint_info(
+        self, lib_name: str, fp_name: str
+    ) -> Optional[FootprintInfo]:
         """获取封装详细信息"""
         fp_path = FOOTPRINT_LIBS_ROOT / f"{lib_name}.pretty" / f"{fp_name}.kicad_mod"
 
@@ -377,7 +486,7 @@ class SmartFootprintFinder:
         tags = []
 
         try:
-            content = fp_path.read_text(encoding='utf-8', errors='ignore')
+            content = fp_path.read_text(encoding="utf-8", errors="ignore")
 
             # 提取描述
             desc_match = re.search(r'\(descr\s+"([^"]+)"\)', content)
@@ -396,7 +505,7 @@ class SmartFootprintFinder:
             name=fp_name,
             full_path=str(fp_path),
             description=description,
-            tags=tags
+            tags=tags,
         )
 
     def list_available_libraries(self) -> List[str]:
@@ -421,6 +530,7 @@ class SmartFootprintFinder:
 # 全局实例
 _finder = None
 
+
 def get_footprint_finder() -> SmartFootprintFinder:
     """获取全局封装查找器实例"""
     global _finder
@@ -428,7 +538,10 @@ def get_footprint_finder() -> SmartFootprintFinder:
         _finder = SmartFootprintFinder()
     return _finder
 
-def find_footprint(model: str, component_type: str = "", package_hint: str = "") -> Tuple[str, str]:
+
+def find_footprint(
+    model: str, component_type: str = "", package_hint: str = ""
+) -> Tuple[str, str]:
     """便捷函数：查找封装"""
     return get_footprint_finder().find_footprint(model, component_type, package_hint)
 

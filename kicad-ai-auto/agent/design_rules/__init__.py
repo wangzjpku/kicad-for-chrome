@@ -398,3 +398,32 @@ def get_design_engine() -> ProfessionalDesignEngine:
     if _design_engine is None:
         _design_engine = ProfessionalDesignEngine()
     return _design_engine
+
+
+# ========== ERC (Electrical Rule Checker) ==========
+from .erc import (
+    ERCChecker,
+    ERCResult,
+    ERCIssue,
+    ERCErrorType,
+    ERCErrorLevel,
+    check_schematic,
+    run_erc,
+)
+
+__all__ = [
+    # Design Rules
+    "ProfessionalDesignEngine",
+    "get_design_engine",
+    "DesignCategory",
+    "DesignIssue",
+    "DesignRule",
+    # ERC
+    "ERCChecker",
+    "ERCResult",
+    "ERCIssue",
+    "ERCErrorType",
+    "ERCErrorLevel",
+    "check_schematic",
+    "run_erc",
+]

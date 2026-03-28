@@ -139,7 +139,7 @@ class KiCadPCBParser:
 
         # 查找所有 footprint 块的起始位置
         # 匹配格式: (footprint "library:name" ...)
-        footprint_pattern = r'\(footprint\s+"([^"]+)"'
+        footprint_pattern = r'\(module\s+"([^"]+)"'
 
         for i, fp_match in enumerate(re.finditer(footprint_pattern, content)):
             fp_start = fp_match.start()
@@ -147,7 +147,7 @@ class KiCadPCBParser:
 
             # 找到这个 footprint 块的结束位置 (配对的右括号)
             # 简化处理：从下一个 footprint 开始，或者文件结束
-            next_fp = re.search(r'\(footprint\s+"', content[fp_start + 10 :])
+            next_fp = re.search(r'\(module\s+"', content[fp_start + 10 :])
             if next_fp:
                 fp_end = fp_start + 10 + next_fp.start()
             else:
@@ -206,14 +206,14 @@ class KiCadPCBParser:
         pads = []
 
         # 查找所有 footprint 块的起始位置
-        footprint_pattern = r'\(footprint\s+"([^"]+)"'
+        footprint_pattern = r'\(module\s+"([^"]+)"'
 
         for i, fp_match in enumerate(re.finditer(footprint_pattern, content)):
             fp_start = fp_match.start()
             footprint_name = fp_match.group(1)
 
             # 找到这个 footprint 块的结束位置
-            next_fp = re.search(r'\(footprint\s+"', content[fp_start + 10 :])
+            next_fp = re.search(r'\(module\s+"', content[fp_start + 10 :])
             if next_fp:
                 fp_end = fp_start + 10 + next_fp.start()
             else:

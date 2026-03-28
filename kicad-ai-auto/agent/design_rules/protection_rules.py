@@ -392,8 +392,8 @@ def _check_ocp(components: List[Dict], parameters: List[Dict]) -> List[DesignIss
                 if "电流" in param.get("key", ""):
                     try:
                         current = float(param.get("value", 1))
-                    except:
-                        pass
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"解析电流值失败，使用默认值: {e}")
 
             # 推荐合适的保护器件
             if current <= 0.5:

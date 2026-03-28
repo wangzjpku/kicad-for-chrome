@@ -6,9 +6,12 @@ Ralph Loop 迭代优化器
 """
 
 import copy
+import logging
 import random
 from typing import List, Dict, Optional, Callable
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 from .pcb_models import (
     PCBBoard,
@@ -199,12 +202,40 @@ class AutoFixer:
     def _fix_thermal_clearance(self, issue: Issue, board: PCBBoard) -> bool:
         """修复发热元件间距"""
         if len(issue.related_ids) >= 2:
-            # 移动第二个元件
+            # 移动第二个元件，但需要检查边界和碰撞
             for comp in board.components:
                 if comp.id == issue.related_ids[1]:
-                    comp.position.x += 5
-                    comp.position.y += 5
-                    return True
+                    # 尝试向多个方向移动，找到一个有效位置
+                    for dx, dy in [(5, 0), (0, 5), (-5, 0), (0, -5), (5, 5), (-5, -5)]:
+                        new_x = comp.position.x + dx
+                        new_y = comp.position.y + dy
+                        # 检查是否在板内
+                        if (
+                            2 <= new_x <= board.width - 2
+                            and 2 <= new_y <= board.height - 2
+                        ):
+                            # 检查是否与其他元件重叠（简化检查：只检查边界）
+                            can_move = True
+                            for other in board.components:
+                                if other.id != comp.id:
+                                    # 简单距离检查
+                                    dist = (
+                                        (new_x - other.position.x) ** 2
+                                        + (new_y - other.position.y) ** 2
+                                    ) ** 0.5
+                                    if dist < 5:  # 最小元件间距 5mm
+                                        can_move = False
+                                        break
+                            if can_move:
+                                comp.position.x = new_x
+                                comp.position.y = new_y
+                                logger.info(
+                                    f"移动元件 {comp.id} 到 ({new_x}, {new_y}) 以解决热间距问题"
+                                )
+                                return True
+                    # 如果所有方向都不可行，记录警告
+                    logger.warning(f"无法为元件 {comp.id} 找到有效的热间距解决方案")
+                    return False
         return False
 
     def _fix_connector_placement(self, issue: Issue, board: PCBBoard) -> bool:
@@ -295,6 +326,10 @@ class AutoFixer:
         """修复差分对长度 - 暂时禁用，因为会创建更多问题"""
         # 差分对长度补偿需要更复杂的算法，目前禁用
         # 因为添加蛇形走线会导致新的走线间距问题
+        logger.warning(
+            f"差分对长度修复暂时禁用: issue={issue.message}. "
+            "需要更复杂的算法来处理蛇形走线与走线间距的权衡。"
+        )
         return False
 
     def _fix_rf_trace_width(self, issue: Issue, board: PCBBoard) -> bool:

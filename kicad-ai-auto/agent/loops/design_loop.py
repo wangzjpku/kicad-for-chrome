@@ -356,16 +356,16 @@ def _parse_json_response(response: str) -> Optional[Dict[str, Any]]:
     if match:
         try:
             return json.loads(match.group(1))
-        except:
-            pass
-    
+        except json.JSONDecodeError as e:
+            logger.debug(f"从markdown解析JSON失败: {e}")
+
     # 尝试直接解析
     match = re.search(r'\{.*\}', response, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(0))
-        except:
-            pass
+        except json.JSONDecodeError as e:
+            logger.debug(f"从响应直接解析JSON失败: {e}")
     
     return None
 

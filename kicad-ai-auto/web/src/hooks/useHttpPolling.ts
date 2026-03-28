@@ -4,14 +4,22 @@ import { kicadApi } from '../services/api'
 
 const POLLING_INTERVAL = 1000 // 1秒轮询一次
 
-interface PollingMessage {
-  type: string
-  data?: string
-  tool?: string
-  layer?: string
-  cursor?: { x: number; y: number }
-  zoom?: number
-  message?: string
+// PollingMessage 接口保留用于未来消息处理扩展
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface _PollingMessage {
+  type: string;
+  data?: string;
+  tool?: string;
+  layer?: string;
+}
+
+interface SendMessage {
+  type: string;
+  event?: string;
+  x?: number;
+  y?: number;
+  keys?: string[];
+  command?: { type: string; [key: string]: unknown };
 }
 
 interface SendMessage {
@@ -38,9 +46,9 @@ export function useHttpPolling() {
     setLayer, 
     setCursor, 
     setZoom,
-    setScreenshot,
+    // setScreenshot, // 未使用
     addLog,
-    addError 
+    // addError // 未使用
   } = useKiCadStore()
 
   // 获取状态并更新 store

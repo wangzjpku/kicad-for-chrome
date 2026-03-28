@@ -28,6 +28,18 @@ from footprint_library import (
 
 logger = logging.getLogger(__name__)
 
+# 导入 PCB 评估器
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+try:
+    from pcb_evaluator.pcb_models import PCBBoard, Track, Via, Component, Net, Point2D, Issue, Severity
+    from pcb_evaluator.checkers import PCBChecker, DesignRules
+    HAS_PCB_EVALUATOR = True
+except ImportError as e:
+    logger.warning(f"pcb_evaluator not available: {e}")
+    HAS_PCB_EVALUATOR = False
+
 # 导入智能封装查找器
 try:
     from smart_footprint_finder import find_footprint as smart_find_footprint
@@ -851,7 +863,6 @@ async def create_project(project: ProjectCreate, current_user: dict = Depends(ge
             - 400: 项目名称无效
             - 409: 项目名称已存在
     """
-    """创建新项目"""
     # 检查项目名称是否已存在（避免覆盖现有项目）
     async with _projects_lock:
         existing_projects = _projects.values()
@@ -1387,22 +1398,159 @@ async def create_via(project_id: str, via: Dict[str, Any]):
 
 # ========== DRC ==========
 
+def _convert_pcb_data_to_board(project_id: str, pcb_data: dict) -> "PCBBoard":
+    """将内部 PCB 数据转换为 PCBBoard 对象用于 DRC 检查"""
+    if not HAS_PCB_EVALUATOR:
+        return None
+
+    try:
+        # 获取板尺寸
+        board_width = pcb_data.get("boardWidth", 80)
+        board_height = pcb_data.get("boardHeight", 60)
+
+        board = PCBBoard(
+            name=f"Project_{project_id}",
+            width=float(board_width),
+            height=float(board_height)
+        )
+
+        # 转换网络
+        nets_dict = {}
+        for net in pcb_data.get("nets", []):
+            net_id = net.get("id", str(len(nets_dict)))
+            net_name = net.get("name", f"Net_{net_id}")
+            is_power = net_name.upper() in ["VCC", "VDD", "5V", "3.3V", "VIN"] or net_name.startswith("VCC") or net_name.startswith("VDD")
+            is_gnd = net_name.upper() in ["GND", "VSS", "GROUND", "0V"] or net_name.startswith("GND")
+
+            net_obj = Net(
+                id=net_id,
+                name=net_name,
+                is_power_supply=is_power,
+                is_ground=is_gnd
+            )
+            board.nets.append(net_obj)
+            nets_dict[net_id] = net_obj
+
+        # 转换元件
+        for fp in pcb_data.get("footprints", []):
+            ref = fp.get("reference", "U?")
+            value = fp.get("value", "")
+            pos = fp.get("position", {"x": 0, "y": 0})
+
+            # 识别元件类型
+            is_ic = any(x in value.upper() for x in ["IC", "MCU", "STM32", "ESP32", "CH340", "AMS1117"])
+            is_mcu = any(x in value.upper() for x in ["STM32", "ESP32", "MCU", "ATMEGA", "ATTINY"])
+            is_crystal = any(x in value.upper() for x in ["CRYSTAL", "XTAL", "8MHZ", "16MHZ"])
+            is_connector = any(x in ref.upper() for x in ["J", "CONN", "USB", "HEADER"])
+            is_heatsink = any(x in value.upper() for x in ["7805", "7812", "LM317", "AMS1117"])
+
+            comp = Component(
+                id=fp.get("id", ref),
+                reference=ref,
+                value=value,
+                footprint=fp.get("footprint", ""),
+                position=Point2D(x=float(pos.get("x", 0)), y=float(pos.get("y", 0))),
+                rotation=fp.get("rotation", 0),
+                is_ic=is_ic,
+                is_mcu=is_mcu,
+                is_crystal=is_crystal,
+                is_connector=is_connector,
+                is_heatsink=is_heatsink
+            )
+            board.components.append(comp)
+
+        # 转换走线
+        for track in pcb_data.get("tracks", []):
+            points = []
+            for pt in track.get("points", []):
+                points.append(Point2D(x=float(pt.get("x", 0)), y=float(pt.get("y", 0))))
+
+            if len(points) >= 2:
+                track_obj = Track(
+                    id=track.get("id", f"track_{len(board.tracks)}"),
+                    net_id=track.get("netId", "0"),
+                    points=points,
+                    width=float(track.get("width", 0.2)),
+                    layer=track.get("layer", "F.Cu")
+                )
+                board.tracks.append(track_obj)
+
+        # 转换过孔
+        for via in pcb_data.get("vias", []):
+            pos = via.get("position", {"x": 0, "y": 0})
+            via_obj = Via(
+                id=via.get("id", f"via_{len(board.vias)}"),
+                net_id=via.get("netId", "0"),
+                position=Point2D(x=float(pos.get("x", 0)), y=float(pos.get("y", 0))),
+                diameter=float(via.get("diameter", 0.6)),
+                drill=float(via.get("drill", 0.3))
+            )
+            board.vias.append(via_obj)
+
+        return board
+    except Exception as e:
+        logger.error(f"Error converting PCB data to board: {e}")
+        return None
+
 
 @router.post("/{project_id}/drc/run")
 async def run_drc(project_id: str):
-    """运行 DRC 检查"""
+    """运行 DRC 检查 - 使用完整的 PCB 检查器"""
     async with _projects_lock:
         if project_id not in _projects:
             raise HTTPException(status_code=404, detail="Project not found")
 
-    # 简化的 DRC 检查 - 实际应该调用 KiCad
     async with _pcb_data_lock:
-        pcb = _pcb_data.get(project_id, {})
+        pcb = _pcb_data.get(project_id) or {}
 
-    # 示例检查: 检查走线宽度
     errors = []
     warnings = []
 
+    # 如果 PCB 评估器可用，使用完整的检查器
+    if HAS_PCB_EVALUATOR:
+        try:
+            board = _convert_pcb_data_to_board(project_id, pcb)
+            if board:
+                checker = PCBChecker(DesignRules())
+                result = checker.evaluate(board)
+
+                # 转换检查结果为 API 格式
+                for issue in result.issues:
+                    issue_dict = {
+                        "id": issue.id,
+                        "type": issue.type.value if hasattr(issue.type, 'value') else str(issue.type),
+                        "severity": issue.severity.value if hasattr(issue.severity, 'value') else str(issue.severity),
+                        "category": issue.category,
+                        "message": issue.message,
+                        "location": {"x": issue.location.x, "y": issue.location.y} if issue.location else None,
+                        "relatedIds": issue.related_ids,
+                        "autoFixable": issue.auto_fixable,
+                        "fixSuggestion": issue.fix_suggestion,
+                    }
+
+                    if issue.severity == Severity.ERROR:
+                        errors.append(issue_dict)
+                    else:
+                        warnings.append(issue_dict)
+
+                # 添加评分信息
+                return {
+                    "success": True,
+                    "data": {
+                        "errorCount": result.error_count,
+                        "warningCount": result.warning_count,
+                        "totalIssues": result.total_issues,
+                        "scores": result.scores,
+                        "errors": errors,
+                        "warnings": warnings,
+                        "timestamp": datetime.now().isoformat(),
+                        "checker": "PCBChecker (full)"
+                    }
+                }
+        except Exception as e:
+            logger.error(f"PCBChecker failed: {e}, falling back to simple check")
+
+    # 降级到简单检查
     for track in pcb.get("tracks", []):
         width = track.get("width", 0)
         if width < 0.1:
@@ -1424,27 +1572,16 @@ async def run_drc(project_id: str):
             "errors": errors,
             "warnings": warnings,
             "timestamp": datetime.now().isoformat(),
-        },
+            "checker": "simple (fallback)"
+        }
     }
 
 
 @router.get("/{project_id}/drc/report")
 async def get_drc_report(project_id: str):
-    """获取 DRC 报告"""
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    # 返回空的 DRC 报告
-    return {
-        "success": True,
-        "data": {
-            "errorCount": 0,
-            "warningCount": 0,
-            "errors": [],
-            "warnings": [],
-            "timestamp": datetime.now().isoformat(),
-        },
-    }
+    """获取 DRC 报告 - 调用完整的 DRC 检查"""
+    # 直接调用 run_drc 获取完整报告
+    return await run_drc(project_id)
 
 
 # ========== 导出 ==========
@@ -1608,13 +1745,7 @@ async def export_bom(project_id: str):
             for i, comp in enumerate(components)
         ]
 
-    # 调试：打印获取到的数据（logging 已在文件顶部导入）
-
-    logger = logging.getLogger(__name__)
-
-    # 强制刷新日志输出
-    import sys
-
+    # 调试：打印获取到的数据
     logger.debug(f"BOM export called for {project_id}")
     logger.debug(f"_schematic_data keys: {list(_schematic_data.keys())}")
 
@@ -1770,8 +1901,9 @@ async def export_step(project_id: str):
     os.makedirs(output_dir, exist_ok=True)
 
     # 检查是否有KiCad IPC连接
-    kicad_cli_path = os.environ.get(
-        "KICAD_CLI_PATH", "E:/Program Files/KiCad/9.0/bin/kicad-cli.exe"
+    settings = get_settings()
+    kicad_cli_path = settings.kicad_cli_path or os.environ.get(
+        "KICAD_CLI_PATH"
     )
 
     # 查找项目的KiCad文件

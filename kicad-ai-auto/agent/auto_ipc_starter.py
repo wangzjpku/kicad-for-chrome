@@ -43,8 +43,13 @@ class AutoIPCStarter:
 
     def __init__(self, kicad_path: str = None):
         if kicad_path is None:
-            # 默认路径
-            self.kicad_path = Path("E:/Program Files/KiCad/9.0/bin/kicad.exe")
+            # 优先使用环境变量 KICAD_CLI_PATH
+            env_path = os.environ.get("KICAD_CLI_PATH")
+            if env_path:
+                self.kicad_path = Path(env_path)
+            else:
+                # 回退到常见路径
+                self.kicad_path = Path("E:/Program Files/KiCad/9.0/bin/kicad.exe")
         else:
             self.kicad_path = Path(kicad_path)
 
@@ -188,8 +193,8 @@ class AutoIPCStarter:
             if response.status_code == 200:
                 data = response.json()
                 return data.get("connected", False)
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"检查IPC连接失败: {e}")
         return False
 
 

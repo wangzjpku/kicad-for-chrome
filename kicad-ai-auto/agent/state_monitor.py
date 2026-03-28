@@ -297,8 +297,8 @@ class StateMonitor:
                 grid_origin = board.GetGridOrigin()
                 # KiCad 网格大小通常在用户设置中
                 self.current_state.grid_size = "1.27mm"  # 默认值
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"获取网格大小失败 (非关键): {e}")
 
             logger.debug(
                 f"State updated: layer={self.current_state.layer}, "
@@ -467,8 +467,8 @@ class StateMonitor:
                                 "type": self._get_layer_type(layer_id),
                             }
                         )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"获取层信息失败 (非关键): {e}")
 
             return layers
 

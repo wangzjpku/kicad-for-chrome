@@ -46,6 +46,7 @@ class DesignResponse(BaseModel):
     erc_result: Optional[Dict[str, Any]] = None
     errors: List[Dict[str, Any]] = []
     warnings: List[Dict[str, Any]] = []
+    circuit_data: Optional[Dict[str, Any]] = None  # 电路JSON数据，用于前端预览
 
 
 class GenerateAndValidateRequest(BaseModel):
@@ -110,6 +111,7 @@ async def design_circuit(request: DesignRequest):
             erc_result=result.erc_result,
             errors=result.errors,
             warnings=result.warnings,
+            circuit_data=result.final_json,  # 返回电路数据供前端预览
         )
 
     except Exception as e:

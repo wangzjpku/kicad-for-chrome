@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 # 添加 deprecated 目录到 Python 路径
-_deprecated_path = Path(__file__).parent.parent / 'deprecated'
+_deprecated_path = Path(__file__).parent.parent / "deprecated"
 if str(_deprecated_path) not in sys.path:
     sys.path.insert(0, str(_deprecated_path))
 
@@ -28,6 +28,7 @@ from kicad_ipc_manager import (
 # 导入GLM-4客户端
 # 导入 Kimi 大模型客户端 (优先)
 from kimi_client import get_kimi_client, is_kimi_available
+
 # 保留 GLM-4 作为后备
 from glm4_client import get_glm4_client, is_glm4_available
 
@@ -45,6 +46,7 @@ from circuit_enhancer import enhance_with_required_circuits
 
 # 导入质量验证器
 from chip_quality_validator import validate_design
+from kb_quality import validate_component as kb_validate_component
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +245,7 @@ class AnalyzeRequest(BaseModel):
     # 附件（参考资料）
     attachments: Optional[List[Dict[str, str]]] = None
     # 生成模式: 'full'(完整) / 'schematic_only'(仅原理图) / 'pcb_only'(仅PCB)
-    mode: Optional[str] = 'full'
+    mode: Optional[str] = "full"
     # PCB 参数
     pcb_params: Optional[Dict[str, Any]] = None
     # 原理图数据（用于PCB生成时）
@@ -252,6 +254,7 @@ class AnalyzeRequest(BaseModel):
 
 class AttachmentInfo(BaseModel):
     """附件信息模型"""
+
     name: str
     path: str
     type: str
@@ -259,12 +262,13 @@ class AttachmentInfo(BaseModel):
 
 class PCBParams(BaseModel):
     """PCB 参数模型"""
+
     width: float = 100  # mm
     height: float = 80  # mm
     layers: int = 2
     thickness: float = 1.6  # mm
     silkscreen: bool = True
-    soldermask: str = 'green'
+    soldermask: str = "green"
 
 
 class ClarificationQuestion(BaseModel):
@@ -315,6 +319,7 @@ class SchematicComponent(BaseModel):
     pins: List[Dict[str, Any]] = []
     footprint: Optional[str] = None  # 添加封装字段
     symbol_library: Optional[str] = None  # 添加符号库字段
+    symbol_name: Optional[str] = None  # 添加符号名称字段 (如 NE555, STM32F103C8Tx)
     reference: Optional[str] = None  # 添加位号字段 (如 U1, R1, C1)
     category: Optional[str] = None  # 添加元件类别字段
 
@@ -332,6 +337,7 @@ class SchematicNet(BaseModel):
 
 class SchematicNetLabel(BaseModel):
     """网络标签"""
+
     id: str
     name: str
     position: Dict[str, float]
@@ -340,6 +346,7 @@ class SchematicNetLabel(BaseModel):
 
 class PowerSymbol(BaseModel):
     """电源符号"""
+
     id: str
     netName: str  # 使用 camelCase 与前端保持一致
     position: Dict[str, float]
@@ -580,24 +587,12 @@ def _generate_dynamic_project(
             ComponentSpec(
                 name="稳压芯片", model="AMS1117-3.3", package="SOT-223", quantity=1
             ),
-            ComponentSpec(
-                name="电容", model="10uF 25V", package="0805", quantity=2
-            ),
-            ComponentSpec(
-                name="电容", model="100nF 50V", package="0805", quantity=4
-            ),
-            ComponentSpec(
-                name="电阻", model="10kΩ 5%", package="0805", quantity=2
-            ),
-            ComponentSpec(
-                name="LED", model="0603 Red", package="0603", quantity=1
-            ),
-            ComponentSpec(
-                name="按键", model="6x6x5", package="THT", quantity=1
-            ),
-            ComponentSpec(
-                name="USB接口", model="Micro-USB", package="SMD", quantity=1
-            ),
+            ComponentSpec(name="电容", model="10uF 25V", package="0805", quantity=2),
+            ComponentSpec(name="电容", model="100nF 50V", package="0805", quantity=4),
+            ComponentSpec(name="电阻", model="10kΩ 5%", package="0805", quantity=2),
+            ComponentSpec(name="LED", model="0603 Red", package="0603", quantity=1),
+            ComponentSpec(name="按键", model="6x6x5", package="THT", quantity=1),
+            ComponentSpec(name="USB接口", model="Micro-USB", package="SMD", quantity=1),
         ]
         parameters = [
             ParameterSpec(key="工作电压", value="3.3", unit="V"),
@@ -934,6 +929,59 @@ def mock_ai_analyze(
     # 关键词到方案的映射表（按优先级排序）
     # 每个条目: (关键词列表, 项目名, 描述, 元件列表, 参数列表)
     project_templates = [
+        # 0. CH340C USB转串口 (ISS-20260322-003修复)
+        (
+            ["ch340c", "ch340g", "ch340e", "ch340k", "usb转串口", "usb转uart", "usb serial"],
+            "CH340C USB转串口模块",
+            "基于CH340C的USB转TTL串口模块，内置晶振，无需外部晶振，支持3.3V和5V",
+            [
+                ComponentSpec(name="USB转串口芯片", model="CH340C", package="SOP-16", quantity=1),
+                ComponentSpec(name="USB接口", model="USB-C", package="SMD", quantity=1),
+                ComponentSpec(name="晶振", model="12MHz", package="3225", quantity=1),
+                ComponentSpec(name="去耦电容", model="100nF", package="0603", quantity=2),
+                ComponentSpec(name="电阻", model="10kΩ", package="0603", quantity=2),
+            ],
+            [
+                ParameterSpec(key="工作电压", value="3.3/5", unit="V"),
+                ParameterSpec(key="波特率", value="2M", unit="bps"),
+                ParameterSpec(key="接口", value="TXD/RXD/GND/VCC", unit=""),
+            ],
+        ),
+        # 0.1 NE555 振荡器 (ISS-20260322-T3修复)
+        (
+            ["ne555", "555振荡", "555定时", "555 oscillator", "555 timer", "振荡器电路"],
+            "NE555 方波振荡器",
+            "基于NE555定时器的方波振荡器电路，产生1kHz方波输出",
+            [
+                ComponentSpec(name="定时器芯片", model="NE555", package="DIP-8", quantity=1),
+                ComponentSpec(name="上拉电阻", model="10kΩ", package="0603", quantity=1),
+                ComponentSpec(name="定时电阻", model="4.7kΩ", package="0603", quantity=1),
+                ComponentSpec(name="定时电容", model="100nF", package="0805", quantity=1),
+                ComponentSpec(name="滤波电容", model="100nF", package="0805", quantity=1),
+            ],
+            [
+                ParameterSpec(key="输出频率", value="1", unit="kHz"),
+                ParameterSpec(key="占空比", value="50", unit="%"),
+                ParameterSpec(key="工作电压", value="5", unit="V"),
+            ],
+        ),
+        # 0.2 NPN LED驱动 (ISS-20260322-T5修复)
+        (
+            ["npn", "三极管led", "led驱动", "led driver", "三极管驱动"],
+            "NPN三极管LED驱动",
+            "基于NPN三极管的LED驱动电路，用于大功率LED或多个LED串控制",
+            [
+                ComponentSpec(name="NPN三极管", model="S8050", package="SOT-23", quantity=1),
+                ComponentSpec(name="基极限流电阻", model="330Ω", package="0603", quantity=1),
+                ComponentSpec(name="LED限流电阻", model="470Ω", package="0603", quantity=1),
+                ComponentSpec(name="LED", model="红色5mm", package="TH", quantity=1),
+            ],
+            [
+                ParameterSpec(key="LED数量", value="3", unit="个"),
+                ParameterSpec(key="工作电压", value="12", unit="V"),
+                ParameterSpec(key="LED电流", value="20", unit="mA"),
+            ],
+        ),
         # 1. STM32温度控制系统
         (
             ["stm32", "温度控制", "温控", "temperature", "temperature control"],
@@ -1157,7 +1205,17 @@ def mock_ai_analyze(
         ),
         # 8. 智能家居控制器 / ESP32产品
         (
-            ["智能家居", "smart home", "iot", "物联网", "wifi", "无线控制", "智能控制", "esp32", "ESP32"],
+            [
+                "智能家居",
+                "smart home",
+                "iot",
+                "物联网",
+                "wifi",
+                "无线控制",
+                "智能控制",
+                "esp32",
+                "ESP32",
+            ],
             "智能家居控制器",
             "基于ESP32的智能家居控制器，支持WiFi远程控制，多路继电器输出",
             [
@@ -1441,7 +1499,7 @@ def mock_ai_analyze(
         or "ac" in req.lower()
     )
 
-    if (answers is not None and req.strip()) or has_specific_params:
+    if (answers and req.strip()) or has_specific_params:
         logger.info(f"检测到特定参数或用户答案，使用动态生成覆盖模板结果...")
         project_name, description, components, parameters = _generate_dynamic_project(
             req, answers
@@ -1458,17 +1516,26 @@ def mock_ai_analyze(
     elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
         circuit_type = "mcu"
 
-    # 准备元件数据
+    # 准备元件数据 - 从知识库补充引脚信息
     comp_dicts = []
     for comp in components:
-        comp_dicts.append(
-            {
-                "name": comp.name,
-                "model": comp.model,
-                "package": comp.package,
-                "quantity": comp.quantity,
-            }
-        )
+        comp_dict = {
+            "name": comp.name,
+            "model": comp.model,
+            "package": comp.package,
+            "quantity": comp.quantity,
+        }
+        # 从知识库获取引脚定义
+        comp_info = get_component_info(comp.model)
+        if comp_info and "pins" in comp_info:
+            comp_dict["pins"] = comp_info["pins"]
+            logger.info(f"从知识库获取引脚: {comp.model}, {len(comp_info['pins'])} 个引脚")
+        # 从知识库获取符号库信息
+        if comp_info and "symbol_library" in comp_info:
+            comp_dict["symbol_library"] = comp_info["symbol_library"]
+        if comp_info and "symbol_name" in comp_info:
+            comp_dict["symbol_name"] = comp_info["symbol_name"]
+        comp_dicts.append(comp_dict)
 
     # 使用新的原理图生成器
     schematic_data = generate_standard_schematic(comp_dicts, circuit_type)
@@ -1490,6 +1557,7 @@ def mock_ai_analyze(
             pins=c["pins"],
             footprint=c.get("footprint", ""),
             symbol_library=c.get("symbol_library", ""),
+            symbol_name=c.get("symbol_name", ""),  # 保留符号名称
             reference=c.get("reference", "U1"),
             category=c.get("category", ""),  # 添加类别字段
         )
@@ -1511,7 +1579,7 @@ def mock_ai_analyze(
             id=l["id"],
             name=l["name"],
             position=l["position"],
-            direction=l.get("direction", "right")
+            direction=l.get("direction", "right"),
         )
         for l in schematic_data.get("netLabels", [])
     ]
@@ -1519,10 +1587,7 @@ def mock_ai_analyze(
     # 转换电源符号
     schematic_power_symbols = [
         PowerSymbol(
-            id=s["id"],
-            netName=s["netName"],
-            position=s["position"],
-            type=s["type"]
+            id=s["id"], netName=s["netName"], position=s["position"], type=s["type"]
         )
         for s in schematic_data.get("powerSymbols", [])
     ]
@@ -1580,7 +1645,35 @@ def mock_ai_analyze(
             # 可以选择记录警告或修改components
     except Exception as e:
         logger.warning(f"质量验证失败: {e}")
-    # ===== 质量验证结束 =====
+
+    # ===== Phase 4: KB质量门控（KiCad库交叉验证）=====
+    try:
+        kb_validation_results = []
+        kb_blocking_issues = []
+        for comp in components_with_footprint:
+            chip_name = comp.name
+            result = kb_validate_component(chip_name, check_datasheet=False, cross_check=True)
+            if result.has_errors:
+                kb_validation_results.append({
+                    "chip": chip_name,
+                    "status": result.worst_severity,
+                    "errors": [{"code": i.code, "message": i.message} for i in result.issues if i.severity in ("P0", "P1")],
+                })
+                for issue in result.issues:
+                    if issue.severity == "P0":
+                        kb_blocking_issues.append(f"[P0] {chip_name}: {issue.message}")
+                    elif issue.severity == "P1":
+                        kb_blocking_issues.append(f"[P1] {chip_name}: {issue.message}")
+
+        if kb_blocking_issues:
+            logger.warning(f"KB质量门控拦截: {kb_blocking_issues}")
+            # 附加到validation_result（不影响生成，但记录警告）
+            validation_result["kb_quality_blocked"] = True
+            validation_result["kb_blocking_issues"] = kb_blocking_issues
+        logger.info(f"KB质量门控: {len(kb_validation_results)}/{len(components_with_footprint)} 元件有质量问题")
+    except Exception as e:
+        logger.warning(f"KB质量门控失败: {e}")
+    # ===== KB质量门控结束 =====
 
     spec = ProjectSpec(
         name=project_name,
@@ -1594,23 +1687,21 @@ def mock_ai_analyze(
         wires=schematic_wires,
         nets=schematic_nets,
         netLabels=schematic_net_labels,
-        powerSymbols=schematic_power_symbols
+        powerSymbols=schematic_power_symbols,
     )
 
     # 模拟AI生成，固定消耗500 token
     mock_token_used = 500
-    
+
     return AnalyzeResponse(
-        spec=spec, 
-        schematic=schematic,
-        token_used=mock_token_used,
-        model_used="mock"
+        spec=spec, schematic=schematic, token_used=mock_token_used, model_used="mock"
     )
 
 
 # ========== PCB 数据生成函数 ==========
 class PCBComponent(BaseModel):
     """PCB 上的元件"""
+
     id: str
     reference: str
     footprint: str
@@ -1620,6 +1711,14 @@ class PCBComponent(BaseModel):
 
 class PCBTrace(BaseModel):
     """PCB 走线"""
+
+    id: str
+    net: str
+    layer: str = "F.Cu"
+    width: float
+    points: List[Dict[str, float]]
+    """PCB 走线"""
+
     net: str
     width: float
     points: List[Dict[str, float]]
@@ -1627,12 +1726,14 @@ class PCBTrace(BaseModel):
 
 class PCBNet(BaseModel):
     """PCB 网络"""
+
     id: str
     name: str
 
 
 class PCBData(BaseModel):
     """PCB 数据"""
+
     width: float
     height: float
     layers: int
@@ -1641,10 +1742,12 @@ class PCBData(BaseModel):
     soldermask: str
     components: List[PCBComponent]
     nets: List[PCBNet]
-    traces: List[PCBTrace]
+    tracks: List[PCBTrace]
 
 
-def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, Any]) -> PCBData:
+def generate_pcb_layout(
+    schematic_data: Dict[str, Any], pcb_params: Dict[str, Any]
+) -> PCBData:
     """
     根据原理图数据和 PCB 参数生成 PCB 布局
 
@@ -1658,27 +1761,27 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
     logger.info(f"生成 PCB 布局: {pcb_params}")
 
     # 提取 PCB 参数
-    width = pcb_params.get('width', 100)
-    height = pcb_params.get('height', 80)
-    layers = pcb_params.get('layers', 2)
-    thickness = pcb_params.get('thickness', 1.6)
-    silkscreen = pcb_params.get('silkscreen', True)
-    soldermask = pcb_params.get('soldermask', 'green')
+    width = pcb_params.get("width", 100)
+    height = pcb_params.get("height", 80)
+    layers = pcb_params.get("layers", 2)
+    thickness = pcb_params.get("thickness", 1.6)
+    silkscreen = pcb_params.get("silkscreen", True)
+    soldermask = pcb_params.get("soldermask", "green")
 
     # 转换阻焊颜色
     soldermask_colors = {
-        'green': '#1a5a1a',
-        'red': '#5a1a1a',
-        'blue': '#1a1a5a',
-        'yellow': '#5a5a1a',
-        'white': '#3a3a3a',
-        'black': '#0a0a0a'
+        "green": "#1a5a1a",
+        "red": "#5a1a1a",
+        "blue": "#1a1a5a",
+        "yellow": "#5a5a1a",
+        "white": "#3a3a3a",
+        "black": "#0a0a0a",
     }
-    soldermask_color = soldermask_colors.get(soldermask, '#1a5a1a')
+    soldermask_color = soldermask_colors.get(soldermask, "#1a5a1a")
 
     # 生成元件位置 - 简单的网格布局算法
     components = []
-    schematic_components = schematic_data.get('components', [])
+    schematic_components = schematic_data.get("components", [])
 
     if not schematic_components:
         # 如果没有原理图数据，创建一些示例元件
@@ -1688,35 +1791,35 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
                 reference="U1",
                 footprint="SOIC-8_3.9x4.9mm_P1.27mm",
                 position={"x": width / 2, "y": height / 2},
-                rotation=0
+                rotation=0,
             ),
             PCBComponent(
                 id="C1",
                 reference="C1",
                 footprint="Capacitor_SMD:C_0603_1608Metric",
                 position={"x": width / 2 - 15, "y": height / 2 + 15},
-                rotation=0
+                rotation=0,
             ),
             PCBComponent(
                 id="C2",
                 reference="C2",
                 footprint="Capacitor_SMD:C_0603_1608Metric",
                 position={"x": width / 2 + 15, "y": height / 2 + 15},
-                rotation=0
+                rotation=0,
             ),
             PCBComponent(
                 id="R1",
                 reference="R1",
                 footprint="Resistor_SMD:R_0603_1608Metric",
                 position={"x": width / 2 - 20, "y": height / 2 - 15},
-                rotation=90
+                rotation=90,
             ),
             PCBComponent(
                 id="J1",
                 reference="J1",
                 footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
                 position={"x": width - 10, "y": height / 2},
-                rotation=0
+                rotation=0,
             ),
         ]
     else:
@@ -1734,6 +1837,7 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
 
             # 添加一些随机偏移使布局更自然
             import random
+
             offset_x = random.uniform(-3, 3)
             offset_y = random.uniform(-3, 3)
 
@@ -1745,43 +1849,46 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
             y = max(5, min(height - 5, y))
 
             # 确定封装
-            footprint = comp.get('footprint', '')
+            footprint = comp.get("footprint", "")
             if not footprint:
                 # 根据元件名称推断封装
-                name_lower = comp.get('name', '').lower()
-                if '电容' in name_lower or 'cap' in name_lower:
+                name_lower = comp.get("name", "").lower()
+                if "电容" in name_lower or "cap" in name_lower:
                     footprint = "Capacitor_SMD:C_0603_1608Metric"
-                elif '电阻' in name_lower or 'res' in name_lower:
+                elif "电阻" in name_lower or "res" in name_lower:
                     footprint = "Resistor_SMD:R_0603_1608Metric"
-                elif 'ic' in name_lower or '芯片' in name_lower or 'u' in comp.get('reference', '').lower():
+                elif (
+                    "ic" in name_lower
+                    or "芯片" in name_lower
+                    or "u" in comp.get("reference", "").lower()
+                ):
                     footprint = "SOIC-8_3.9x4.9mm_P1.27mm"
-                elif '晶振' in name_lower or 'xtal' in name_lower:
+                elif "晶振" in name_lower or "xtal" in name_lower:
                     footprint = "Crystal:Crystal_SMD_3225"
-                elif 'led' in name_lower or '二极管' in name_lower:
+                elif "led" in name_lower or "二极管" in name_lower:
                     footprint = "LED_SMD:LED_0603_1608Metric"
                 else:
                     footprint = "Resistor_SMD:R_0603_1608Metric"
 
             components.append(
                 PCBComponent(
-                    id=comp.get('id', f"comp-{i+1}"),
-                    reference=comp.get('reference', comp.get('name', f'U{i+1}')),
+                    id=comp.get("id", f"comp-{i + 1}"),
+                    reference=comp.get("reference", comp.get("name", f"U{i + 1}")),
                     footprint=footprint,
                     position={"x": x, "y": y},
-                    rotation=random.choice([0, 90, 180, 270])
+                    rotation=random.choice([0, 90, 180, 270]),
                 )
             )
 
     # 生成网络列表
     nets = []
-    schematic_nets = schematic_data.get('nets', [])
+    schematic_nets = schematic_data.get("nets", [])
 
     if schematic_nets:
         for i, net in enumerate(schematic_nets[:20]):  # 限制网络数量
             nets.append(
                 PCBNet(
-                    id=net.get('id', f"net-{i+1}"),
-                    name=net.get('name', f"N{i+1}")
+                    id=net.get("id", f"net-{i + 1}"), name=net.get("name", f"N{i + 1}")
                 )
             )
     else:
@@ -1797,7 +1904,9 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
     traces = []
     for net in nets[:10]:  # 限制走线数量
         # 为每个网络生成简单的走线
-        net_components = [c for c in components if c.reference.startswith(('U', 'C', 'R'))]
+        net_components = [
+            c for c in components if c.reference.startswith(("U", "C", "R"))
+        ]
 
         if len(net_components) >= 2:
             # 选择前两个元件作为走线端点
@@ -1809,14 +1918,16 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
 
             traces.append(
                 PCBTrace(
+                    id=f"track-{len(traces) + 1}",
                     net=net.name,
+                    layer="F.Cu",
                     width=0.254,  # 0.254mm = 10mil
                     points=[
                         start,
                         {"x": mid_x, "y": start["y"]},
                         {"x": mid_x, "y": end["y"]},
-                        end
-                    ]
+                        end,
+                    ],
                 )
             )
 
@@ -1829,11 +1940,13 @@ def generate_pcb_layout(schematic_data: Dict[str, Any], pcb_params: Dict[str, An
         soldermask=soldermask_color,
         components=components,
         nets=nets,
-        traces=traces
+        tracks=traces,
     )
 
 
-def generate_clarification_questions(requirements: str, attachments: Optional[List[Dict[str, str]]] = None) -> ClarificationResponse:
+def generate_clarification_questions(
+    requirements: str, attachments: Optional[List[Dict[str, str]]] = None
+) -> ClarificationResponse:
     """
     根据用户需求生成澄清问题列表
 
@@ -1852,7 +1965,9 @@ def generate_clarification_questions(requirements: str, attachments: Optional[Li
     if attachments and len(attachments) > 0:
         logger.info(f"用户提供了 {len(attachments)} 个参考资料:")
         for att in attachments:
-            logger.info(f"  - {att.get('name', 'unknown')} ({att.get('type', 'unknown')}): {att.get('path', '')}")
+            logger.info(
+                f"  - {att.get('name', 'unknown')} ({att.get('type', 'unknown')}): {att.get('path', '')}"
+            )
 
     req_lower = requirements.lower()
     questions = []
@@ -1881,7 +1996,10 @@ def generate_clarification_questions(requirements: str, attachments: Optional[Li
             (["usb", "串口", "uart", "i2c", "spi", "通信"], "通信接口电路"),
             (["音频", "声音", "audio", "扬声器", "麦克风", "功放"], "音频电路"),
             (["充电", "电池", "battery", "锂电池", "tp4056"], "充电电路"),
-            (["电源", "稳压", "power", "voltage", "供电", "变压", "ams1117", "7805"], "电源/稳压电路"),
+            (
+                ["电源", "稳压", "power", "voltage", "供电", "变压", "ams1117", "7805"],
+                "电源/稳压电路",
+            ),
         ]
 
         for keywords, ctype in circuit_keywords:
@@ -2138,12 +2256,10 @@ def build_enhanced_requirements(original: str, answers: Dict[str, str]) -> str:
 
 @router.post("/clarify", response_model=ClarificationResponse)
 async def get_clarification_questions(request: AnalyzeRequest):
-    """
-    获取澄清问题列表
+    """获取澄清问题列表
 
     用户提交初始需求后，调用此接口获取需要澄清的问题列表。
     前端展示问题，收集用户回答后，再调用 /analyze 接口生成方案。
-
     如果提供了 attachments（参考资料），会一并发送给 AI 进行分析。
     """
     try:
@@ -2151,8 +2267,7 @@ async def get_clarification_questions(request: AnalyzeRequest):
             return JSONResponse(status_code=400, content={"detail": "需求描述不能为空"})
 
         result = generate_clarification_questions(
-            request.requirements,
-            attachments=request.attachments
+            request.requirements, attachments=request.attachments
         )
         return result
 
@@ -2185,78 +2300,100 @@ async def analyze_requirements(request: AnalyzeRequest):
     logger.info(f"DEBUG: request.pcb_params = {request.pcb_params}")
 
     # 获取生成模式
-    mode = request.mode or 'full'
+    mode = request.mode or "full"
     logger.info(f"DEBUG: Mode: {mode}, Has schematic: {bool(request.schematic)}")
     logger.info(f"DEBUG: schematic type: {type(request.schematic)}")
 
     # ========== PCB Only 模式 (不需要 requirements) ==========
-    if mode == 'pcb_only' and request.schematic:
+    if mode == "pcb_only" and request.schematic:
         # PCB Only 模式下不需要 requirements
         logger.info("=== PCB Only 模式开始 ===")
         logger.info(f"DEBUG: pcb_params = {request.pcb_params}")
-        logger.info(f"DEBUG: schematic keys = {request.schematic.keys() if request.schematic else 'None'}")
+        logger.info(
+            f"DEBUG: schematic keys = {request.schematic.keys() if request.schematic else 'None'}"
+        )
         try:
             # 生成 PCB 数据
-            pcb_data = generate_pcb_layout(
-                request.schematic,
-                request.pcb_params or {}
+            pcb_data = generate_pcb_layout(request.schematic, request.pcb_params or {})
+            logger.info(
+                f"PCB 生成成功: {pcb_data.width}x{pcb_data.height}mm, {len(pcb_data.components)} 个元件"
             )
-            logger.info(f"PCB 生成成功: {pcb_data.width}x{pcb_data.height}mm, {len(pcb_data.components)} 个元件")
 
             # 返回兼容格式（包含 spec 和 pcb）
             # PCB生成消耗少量token
             pcb_token = 50 * 3  # PCB生成固定消耗50 token
             try:
-                deduct_token(1, "ai_pcb_generate", pcb_token, "pcb_generator", is_test=False)
+                deduct_token(
+                    1, "ai_pcb_generate", pcb_token, "pcb_generator", is_test=False
+                )
             except Exception as e:
                 logger.error(f"记录PCB生成Token失败: {e}")
-            
+
             return AnalyzeResponse(
                 spec=ProjectSpec(
                     name="PCB Project",
                     description="Generated from schematic",
                     components=[],
-                    parameters=[]
+                    parameters=[],
                 ),
                 schematic=SchematicData(
-                    components=[],
-                    wires=[],
-                    nets=[],
-                    netLabels=[],
-                    powerSymbols=[]
+                    components=[], wires=[], nets=[], netLabels=[], powerSymbols=[]
                 ),
                 pcb=pcb_data.model_dump(),
                 token_used=pcb_token,
-                model_used="pcb_generator"
+                model_used="pcb_generator",
             )
         except Exception as e:
             logger.error(f"PCB 生成失败: {e}")
-            logger.error(f"PCB 生成失败: {e}"); raise HTTPException(status_code=500, detail=f"PCB 生成失败: {str(e)}")
+            logger.error(f"PCB 生成失败: {e}")
+            raise HTTPException(status_code=500, detail=f"PCB 生成失败: {str(e)}")
 
     # ========== Schematic Only 或 Full 模式 ==========
     # 验证需求不为空 (仅在非 PCB Only 模式下)
-    if mode != 'pcb_only':
+    if mode != "pcb_only":
         if not request.requirements or not request.requirements.strip():
             raise HTTPException(status_code=400, detail="requirements cannot be empty")
 
+    # 检测已知模板关键词，匹配时跳过 AI 调用直接使用模板
+    req_lower = request.requirements.lower() if request.requirements else ""
+    template_keywords = ["ne555", "555振荡", "555定时", "555 oscillator", "555 timer",
+                         "esp32", "npn", "三极管led", "led驱动", "led driver",
+                         "ch340c", "ch340g", "usb转串口", "usb serial",
+                         "ams1117", "7805", "lm7805", "lm317"]
+    matched_template = None
+    for kw in template_keywords:
+        if kw in req_lower or kw in request.requirements:
+            matched_template = kw
+            break
+
     try:
+        # 如果匹配到已知模板，跳过 AI 调用直接使用 mock 实现
+        if matched_template:
+            logger.info(f"检测到模板关键词 '{matched_template}'，跳过 AI 调用")
+            return mock_ai_analyze(request.requirements, request.answers)
+
         # 优先使用 GLM-4 大模型
         # 优先使用 Kimi 大模型
         if is_kimi_available():
             try:
                 logger.info(f"使用 Kimi 分析需求: {request.requirements[:100]}...")
-                logger.info(f"附件数量: {len(request.attachments) if request.attachments else 0}")
+                logger.info(
+                    f"附件数量: {len(request.attachments) if request.attachments else 0}"
+                )
                 client = get_kimi_client()
                 project_spec = client.generate_project_spec(
-                    request.requirements,
-                    attachments=request.attachments
+                    request.requirements, attachments=request.attachments
                 )
 
                 # 转换 Kimi/GLM-4 返回的格式为 AnalyzeResponse
                 # Kimi返回: component_list, project_name, technical_parameters, schematic_layout
                 # GLM返回: components, name, parameters, schematic
                 components = []
-                comp_list = project_spec.get("components", []) or project_spec.get("component_list", []) or []
+                comp_list = (
+                    project_spec.get("components", [])
+                    or project_spec.get("component_list", [])
+                    or []
+                )
                 for comp in comp_list:
                     # 处理 quantity 可能是字符串的情况
                     qty = comp.get("quantity", 1)
@@ -2278,7 +2415,11 @@ async def analyze_requirements(request: AnalyzeRequest):
 
                 parameters = []
                 # 处理参数 - 支持多种格式
-                raw_params = project_spec.get("parameters") or project_spec.get("technical_parameters") or []
+                raw_params = (
+                    project_spec.get("parameters")
+                    or project_spec.get("technical_parameters")
+                    or []
+                )
                 if isinstance(raw_params, dict):
                     # technical_parameters 是字典格式
                     for key, value in raw_params.items():
@@ -2302,8 +2443,12 @@ async def analyze_requirements(request: AnalyzeRequest):
                             )
 
                 # 处理 name 字段 (Kimi: project_name)
-                project_name = project_spec.get("name") or project_spec.get("project_name", "AI生成项目")
-                project_desc = project_spec.get("description") or project_spec.get("project_description", "")
+                project_name = project_spec.get("name") or project_spec.get(
+                    "project_name", "AI生成项目"
+                )
+                project_desc = project_spec.get("description") or project_spec.get(
+                    "project_description", ""
+                )
 
                 spec = ProjectSpec(
                     name=project_name,
@@ -2313,36 +2458,115 @@ async def analyze_requirements(request: AnalyzeRequest):
                 )
 
                 # 处理原理图数据 (Kimi: schematic_layout)
-                schematic_data = project_spec.get("schematic", {}) or project_spec.get("schematic_layout", {})
+                schematic_data = project_spec.get("schematic", {}) or project_spec.get(
+                    "schematic_layout", {}
+                )
                 schematic_components = []
                 schematic_nets = []  # 初始化网络列表
 
-                # 如果没有原理图数据，从组件列表生成
-                if not schematic_data.get("components") and components:
-                    # 从 components 生成原理图元件
-                    for i, comp in enumerate(components):
-                        footprint = comp.package or "0805"
-                        if not footprint:
-                            footprint = _get_footprint_for_component(comp)
+                # 检查是否需要重新生成原理图导线坐标
+                # 条件1: 没有原理图数据但有组件列表
+                # 条件2: 有原理图数据但导线条points为空（Kimi/GLM返回的导线没有坐标）
+                wires = schematic_data.get("wires", [])
+                has_empty_wire_points = any(not w.get("points") for w in wires)
+                needs_schematic_regeneration = (
+                    (not schematic_data.get("components") and components) or
+                    (schematic_data.get("components") and has_empty_wire_points and components)
+                )
 
+                # 如果没有原理图数据或导线points为空，从组件列表生成并使用标准原理图生成器
+                if needs_schematic_regeneration:
+                    # 准备元件数据 - 从知识库补充引脚信息
+                    comp_dicts = []
+                    for comp in components:
+                        comp_dict = {
+                            "name": comp.name,
+                            "model": comp.model,
+                            "package": comp.package,
+                            "quantity": comp.quantity,
+                        }
+                        # 从知识库获取引脚定义
+                        comp_info = get_component_info(comp.model) if comp.model else None
+                        if comp_info and "pins" in comp_info:
+                            comp_dict["pins"] = comp_info["pins"]
+                            logger.info(f"从知识库获取引脚: {comp.model}, {len(comp_info['pins'])} 个引脚")
+                        # 从知识库获取符号库信息
+                        if comp_info and "symbol_library" in comp_info:
+                            comp_dict["symbol_library"] = comp_info["symbol_library"]
+                        if comp_info and "symbol_name" in comp_info:
+                            comp_dict["symbol_name"] = comp_info["symbol_name"]
+                        comp_dicts.append(comp_dict)
+
+                    # 确定电路类型
+                    req_lower = request.requirements.lower() if request.requirements else ""
+                    circuit_type = "general"
+                    if any(kw in req_lower for kw in ["电源", "稳压", "power", "voltage"]):
+                        circuit_type = "power_supply"
+                    elif any(kw in req_lower for kw in ["esp32", "stm32", "mcu", "单片机"]):
+                        circuit_type = "mcu"
+
+                    # 使用标准原理图生成器生成完整原理图
+                    generated_schematic = generate_standard_schematic(comp_dicts, circuit_type)
+                    logger.info(
+                        f"原理图生成完成: {len(generated_schematic['components'])}个元件, "
+                        f"{len(generated_schematic['wires'])}条导线, "
+                        f"{len(generated_schematic['nets'])}个网络"
+                    )
+
+                    # 转换为 SchematicComponent 格式
+                    for i, c in enumerate(generated_schematic["components"]):
                         schematic_components.append(
                             SchematicComponent(
-                                id=f"comp-{i + 1}",
-                                name=comp.name or "",
-                                model=comp.model or "",
-                                position={"x": 150 + (i % 3) * 200, "y": 150 + (i // 3) * 180},
-                                pins=[],
-                                footprint=footprint,
-                                symbol_library=None,
-                                reference=f"{comp.name[0] if comp.name else 'U'}{i + 1}" if comp.name else f"U{i + 1}",
+                                id=c["id"],
+                                name=c["name"],
+                                model=c["model"],
+                                position=c["position"],
+                                pins=c["pins"],
+                                footprint=c.get("footprint", ""),
+                                symbol_library=c.get("symbol_library", ""),
+                                symbol_name=c.get("symbol_name", ""),  # 保留符号名称
+                                reference=c.get("reference", f"U{i+1}"),
                             )
                         )
 
-                        # 为每个元件创建网络
-                        if i == 0:
-                            schematic_nets.append(SchematicNet(id="net-vcc", name="VCC"))
-                        if i == len(components) - 1:
-                            schematic_nets.append(SchematicNet(id="net-gnd", name="GND"))
+                    # 转换导线
+                    schematic_wires = []
+                    for w in generated_schematic["wires"]:
+                        schematic_wires.append(
+                            SchematicWire(
+                                id=w["id"],
+                                points=w["points"],
+                                net=w["net"],
+                            )
+                        )
+
+                    # 转换网络
+                    for n in generated_schematic["nets"]:
+                        schematic_nets.append(
+                            SchematicNet(id=n["id"], name=n["name"])
+                        )
+
+                    # 转换电源符号
+                    for s in generated_schematic.get("powerSymbols", []):
+                        schematic_power_symbols.append(
+                            PowerSymbol(
+                                id=s["id"],
+                                netName=s["netName"],
+                                position=s["position"],
+                                type=s["type"],
+                            )
+                        )
+
+                    # 转换网络标签
+                    for l in generated_schematic.get("netLabels", []):
+                        schematic_net_labels.append(
+                            SchematicNetLabel(
+                                id=l["id"],
+                                name=l["name"],
+                                position=l["position"],
+                                direction=l.get("direction", "right"),
+                            )
+                        )
 
                 # 如果有原理图数据，解析它
                 for i, comp in enumerate(schematic_data.get("components", [])):
@@ -2369,7 +2593,8 @@ async def analyze_requirements(request: AnalyzeRequest):
                             ),
                             pins=comp.get("pins", []),
                             footprint=footprint,
-                            symbol_library=comp.get("symbol_library"),
+                            symbol_library=comp.get("symbol_library")
+                            or get_symbol_library(comp.get("model", "")),
                             reference=comp.get("reference"),
                         )
                     )
@@ -2399,7 +2624,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                             id=label.get("id", f"label-{i + 1}"),
                             name=label.get("name", ""),
                             position=label.get("position", {"x": 0, "y": 0}),
-                            direction=label.get("direction", "right")
+                            direction=label.get("direction", "right"),
                         )
                     )
 
@@ -2411,7 +2636,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                             id=symbol.get("id", f"power-{i + 1}"),
                             netName=symbol.get("netName", symbol.get("net_name", "")),
                             position=symbol.get("position", {"x": 0, "y": 0}),
-                            type=symbol.get("type", "vcc")
+                            type=symbol.get("type", "vcc"),
                         )
                     )
 
@@ -2426,32 +2651,37 @@ async def analyze_requirements(request: AnalyzeRequest):
                 # 提取 token 使用信息
                 usage = project_spec.get("usage", {})
                 token_used = usage.get("total_tokens", 0) if usage else 0
-                
+
                 logger.info(
                     f"Kimi 生成方案成功: {spec.name}, {len(components)} 个元件, 消耗Token: {token_used}"
                 )
-                
+
                 # 记录token消耗（从虚拟余额中扣除）
                 try:
                     # 获取当前用户（从请求中或使用默认用户）
                     from fastapi import Request
+
                     # 默认用户ID为1（管理员）
                     user_id = 1
-                    deduct_token(user_id, "ai_analyze", token_used * 3, "kimi", is_test=False)
-                    logger.info(f"Token消耗已记录: user={user_id}, action=ai_analyze, token={token_used}, model=kimi")
+                    deduct_token(
+                        user_id, "ai_analyze", token_used * 3, "kimi", is_test=False
+                    )
+                    logger.info(
+                        f"Token消耗已记录: user={user_id}, action=ai_analyze, token={token_used}, model=kimi"
+                    )
                 except Exception as e:
                     logger.error(f"记录Token消耗失败: {e}")
-                
+
                 return AnalyzeResponse(
-                    spec=spec, 
+                    spec=spec,
                     schematic=schematic,
                     token_used=token_used,
-                    model_used="kimi"
+                    model_used="kimi",
                 )
             except Exception as glm_error:
                 # GLM调用失败，记录详细错误信息
                 error_msg = str(glm_error)
-                print(f"DEBUG: Caught error: {error_msg}")
+                logger.debug(f"Caught error: {error_msg}")
                 logger.warning(f"GLM-4 调用失败: {error_msg}")
 
                 # 检查是否是余额不足错误，回退到模拟实现
@@ -2472,13 +2702,17 @@ async def analyze_requirements(request: AnalyzeRequest):
                             "detail": "AI服务暂时不可用：智谱AI API余额不足或请求频率过高，请前往 https://open.bigmodel.cn/ 充值或稍后重试"
                         }
                 elif "timeout" in error_msg.lower() or "超时" in error_msg:
-                    raise HTTPException(status_code=504, detail="AI服务响应超时，请稍后重试")
+                    raise HTTPException(
+                        status_code=504, detail="AI服务响应超时，请稍后重试"
+                    )
                 elif (
                     "json" in error_msg.lower()
                     or "解析" in error_msg
                     or "parse" in error_msg.lower()
                 ):
-                    raise HTTPException(status_code=502, detail="AI返回的数据格式错误，请重试")
+                    raise HTTPException(
+                        status_code=502, detail="AI返回的数据格式错误，请重试"
+                    )
                 else:
                     # 其他错误，尝试回退到模拟实现
                     logger.warning("准备回退到模拟AI分析...")
@@ -2488,7 +2722,9 @@ async def analyze_requirements(request: AnalyzeRequest):
                         return result
                     except Exception as mock_err:
                         logger.error(f"回退到模拟AI也失败: {mock_err}")
-                        raise HTTPException(status_code=500, detail=f"AI分析失败: {error_msg}")
+                        raise HTTPException(
+                            status_code=500, detail=f"AI分析失败: {error_msg}"
+                        )
         else:
             # 没有配置 API Key，使用模拟实现
             logger.warning("未配置 ZHIPU_API_KEY，使用模拟AI分析")
@@ -2792,7 +3028,58 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
         return None
 
     # 简单的关键词匹配
-    if "封装" in message:
+    # 精确芯片型号优先匹配（ISS-20260322-001/003修复）
+    if "ams1117" in message.lower() or "AMS1117" in original_message:
+        # AMS1117 稳压器检测
+        is_3v3 = "3.3" in message or "3.3v" in message.lower()
+        chip_model = "AMS1117-3.3" if is_3v3 else "AMS1117-5V"
+        response = f"已应用模板: {chip_model} 降压芯片\n"
+        response += f"描述: {'3.3V' if is_3v3 else '5V'} 输出低压差稳压器\n"
+        response += "元件: U1:AMS1117, C1:输入电容(10uF), C2:输出电容(22uF)\n"
+        response += "网络: VIN → C1 → U1 → VOUT, GND → C1/C2/U1"
+        actions.append({"type": "add", "target": "components", "description": f"添加{chip_model}稳压器电路"})
+        modifications = [{
+            "action": "apply_template",
+            "id": "ams1117-3.3",
+        }]
+
+    elif re.search(r"ch340[cgek]", message, re.IGNORECASE):
+        # CH340C USB转串口检测
+        response = "已应用模板: CH340C USB转串口\n"
+        response += "描述: CH340C USB转TTL串口模块，内置晶振，支持3.3V/5V\n"
+        response += "元件: U1:CH340C, J1:USB-C, Y1:12MHz晶振, C1:去耦电容\n"
+        response += "网络: VBUS, GND, D+, D-, TXD, RXD"
+        actions.append({"type": "add", "target": "components", "description": "添加CH340C USB转串口电路"})
+        modifications = [{
+            "action": "apply_template",
+            "id": "ch340-usb-serial",
+        }]
+
+    elif re.search(r"ne555|555.*振荡|振荡器.*555", message, re.IGNORECASE):
+        # NE555 振荡器检测
+        response = "已应用模板: NE555 方波振荡器\n"
+        response += "描述: 基于NE555定时器的方波振荡器电路，产生1kHz方波输出\n"
+        response += "元件: U1:NE555, R1:上拉电阻(10k), R2:定时电阻(4.7k), C1:定时电容(100nF), C2:滤波电容\n"
+        response += "网络: VCC, GND, OUT"
+        actions.append({"type": "add", "target": "components", "description": "添加NE555振荡器电路"})
+        modifications = [{
+            "action": "apply_template",
+            "id": "ne555-oscillator",
+        }]
+
+    elif re.search(r"npn|三极管.*led|led.*驱动", message, re.IGNORECASE):
+        # NPN LED驱动检测
+        response = "已应用模板: NPN三极管LED驱动\n"
+        response += "描述: 基于NPN三极管的LED驱动电路，用于大功率LED控制\n"
+        response += "元件: Q1:S8050(NPN), R1:限流电阻(330Ω), R2:LED限流电阻, LED1:红色LED\n"
+        response += "网络: VCC, GND, IN, OUT"
+        actions.append({"type": "add", "target": "components", "description": "添加NPN LED驱动电路"})
+        modifications = [{
+            "action": "apply_template",
+            "id": "npn-led-driver",
+        }]
+
+    elif "封装" in message:
         # 检查是否包含具体的封装值
         package_match = re.search(r"(\d{4})", message)
         if package_match:

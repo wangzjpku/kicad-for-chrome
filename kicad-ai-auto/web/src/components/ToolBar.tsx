@@ -129,6 +129,26 @@ export default function ToolBar({ dataTestId }: ToolBarProps) {
     }
   }
 
+  // 自动布线
+  const handleAutoRoute = async () => {
+    try {
+      const result = await kicadApi.autoRoute()
+      if (result.success) {
+        addLog({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          level: 'info',
+          message: result.message || '自动布线已启动',
+        })
+      } else {
+        throw new Error(result.error || '自动布线失败')
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '自动布线失败'
+      addError(message)
+    }
+  }
+
   // DRC/ERC
   const handleDRC = async () => {
     clearErrors()
@@ -296,6 +316,14 @@ export default function ToolBar({ dataTestId }: ToolBarProps) {
 
       {/* 检查工具 */}
       <div className="flex items-center gap-1 px-2 border-r border-gray-700">
+        <button
+          className="toolbar-button"
+          title="自动布线 (A)"
+          onClick={handleAutoRoute}
+          data-testid="btn-auto-route"
+        >
+          ⚡ 自动布线
+        </button>
         <button
           className="toolbar-button"
           title="运行 DRC (Ctrl+D)"

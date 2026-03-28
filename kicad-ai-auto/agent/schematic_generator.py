@@ -203,15 +203,44 @@ class SchematicGenerator:
             for err in erc_errors[:5]:
                 logger.warning(f"  - {err}")
 
+        # 9. 优化布局 - 减少线交叉
+        logger.info("开始布局优化...")
+        original_crossings = self._count_wire_crossings()
+        self._optimize_layout()
+        optimized_crossings = self._count_wire_crossings()
+        reduction = (original_crossings - optimized_crossings) / original_crossings * 100 if original_crossings > 0 else 0
+        logger.info(f"布局优化完成: 线交叉从 {original_crossings} 减少到 {optimized_crossings} (减少 {reduction:.1f}%)")
+
         return self.sheet
 
     def _categorize_components(
         self, components: List[Dict]
     ) -> Dict[ComponentCategory, List[Dict]]:
-        """分类元件"""
+        """分类元件（支持 quantity 展开）"""
         categorized = {cat: [] for cat in ComponentCategory}
 
+        # 先展开 quantity 字段
+        expanded_components = []
         for comp in components:
+            quantity = comp.get("quantity", 1)
+            # 确保 quantity 是正整数
+            try:
+                quantity = max(1, int(quantity))
+            except (ValueError, TypeError):
+                quantity = 1
+
+            # 根据 quantity 展开元件
+            for i in range(quantity):
+                # 为每个实例创建副本，添加索引后缀
+                expanded_comp = comp.copy()
+                # 如果 quantity > 1，修改 name 来区分多个实例
+                if quantity > 1:
+                    base_name = comp.get("name", "")
+                    expanded_comp["_instance_index"] = i + 1
+                expanded_components.append(expanded_comp)
+
+        # 使用展开后的元件列表
+        for comp in expanded_components:
             name_lower = comp.get("name", "").lower()
             model_lower = comp.get("model", "").lower()
             combined = name_lower + " " + model_lower
@@ -416,6 +445,10 @@ class SchematicGenerator:
             layout["main"] = (self.MARGIN_LEFT, y, 700, y + 200)
             y += 250
 
+        # LED 在右上角
+        if ComponentCategory.LED in categorized:
+            layout["led"] = (600, self.MARGIN_TOP, 900, self.MARGIN_TOP + 150)
+
         # 无源器件
         if ComponentCategory.PASSIVE in categorized:
             layout["passive"] = (self.MARGIN_LEFT, y, 700, y + 150)
@@ -433,7 +466,39 @@ class SchematicGenerator:
     def _place_components(
         self, categorized: Dict[ComponentCategory, List[Dict]], layout: Dict[str, Tuple]
     ):
-        """放置元件到布局区域"""
+        """放置元件到布局区域（带碰撞检测）"""
+
+        # 已放置的元件位置记录（用于碰撞检测）
+        placed_positions = []  # List of (x, y, width, height)
+        MIN_COMP_WIDTH = 80    # 最小元件宽度
+        MIN_COMP_HEIGHT = 60   # 最小元件高度
+        MIN_SPACING = 50       # 元件间最小间距
+
+        def check_collision(x, y, width=MIN_COMP_WIDTH, height=MIN_COMP_HEIGHT) -> bool:
+            """检查是否与已放置的元件发生碰撞"""
+            for px, py, pw, ph in placed_positions:
+                # 检查矩形是否重叠（考虑间距）
+                if not (x + width + MIN_SPACING < px or 
+                        x > px + pw + MIN_SPACING or
+                        y + height + MIN_SPACING < py or
+                        y > py + ph + MIN_SPACING):
+                    return True
+            return False
+
+        def find_free_position(x, y, max_attempts=20) -> tuple:
+            """寻找空闲位置，如果发生碰撞则自动调整"""
+            width, height = MIN_COMP_WIDTH, MIN_COMP_HEIGHT
+            attempts = 0
+            while check_collision(x, y, width, height) and attempts < max_attempts:
+                # 向右下方移动
+                x += MIN_SPACING
+                y += MIN_SPACING
+                attempts += 1
+                # 如果超出边界则换行
+                if x > 1000:
+                    x = 100
+                    y += height + MIN_SPACING
+            return x, y
 
         # 类别到布局区域的映射
         category_to_zone = {
@@ -484,11 +549,17 @@ class SchematicGenerator:
                 x = x_start + col * self.COMPONENT_SPACING_X + 50
                 y = y_start + row * self.COMPONENT_SPACING_Y + 30
 
+                # 查找空闲位置（带碰撞检测）
+                x, y = find_free_position(x, y)
+
                 # 创建原理图元件
                 schematic_comp = self._create_schematic_component(
                     comp, (x, y), category
                 )
                 self.sheet.components.append(schematic_comp)
+
+                # 记录已放置的位置
+                placed_positions.append((x, y, MIN_COMP_WIDTH, MIN_COMP_HEIGHT))
 
     def _create_schematic_component(
         self, comp: Dict, position: Tuple[float, float], category: ComponentCategory
@@ -505,6 +576,11 @@ class SchematicGenerator:
         # 获取元件名称和型号
         comp_name = comp.get("name", "Unknown")
         model = comp.get("model", "")
+
+        # 如果model为空，使用name作为model
+        if not model:
+            model = comp_name
+
         package = comp.get("package", "")
 
         # ======== 集成符号库查找 ========
@@ -599,7 +675,7 @@ class SchematicGenerator:
     def _create_pins(
         self, comp: Dict, category: ComponentCategory
     ) -> List[SchematicPin]:
-        """创建元件引脚"""
+        """创建元件引脚 - 优先使用知识库的引脚定义"""
         pins = []
 
         # 尝试从组件数据获取引脚
@@ -607,16 +683,36 @@ class SchematicGenerator:
         if comp_pins:
             for i, pin_data in enumerate(comp_pins):
                 if isinstance(pin_data, dict):
+                    # ===== 优先使用知识库的 type 字段 =====
+                    kb_type = pin_data.get("type", "")
+                    if kb_type:
+                        # 知识库类型直接映射到 PinType
+                        pin_type = self._map_kb_type_to_pintype(kb_type)
+                    else:
+                        # 知识库没有 type，使用推断
+                        pin_type = self._determine_pin_type(pin_data.get("name", ""))
+
+                    # ===== 优先使用知识库的 position 字段 =====
+                    kb_position = pin_data.get("position", {})
+                    if kb_position and isinstance(kb_position, dict):
+                        pos_x = kb_position.get("x", 0)
+                        pos_y = kb_position.get("y", 0)
+                        position = (pos_x, pos_y)
+                    else:
+                        # 知识库没有 position，使用计算
+                        position = self._calculate_pin_position(
+                            i, len(comp_pins), category
+                        )
+
+                    # 获取 direction
+                    direction = pin_data.get("direction", self._calculate_pin_direction(i, len(comp_pins), category))
+
                     pin = SchematicPin(
                         number=str(pin_data.get("number", i + 1)),
                         name=pin_data.get("name", f"P{i + 1}"),
-                        pin_type=self._determine_pin_type(pin_data.get("name", "")),
-                        position=self._calculate_pin_position(
-                            i, len(comp_pins), category
-                        ),
-                        direction=self._calculate_pin_direction(
-                            i, len(comp_pins), category
-                        ),
+                        pin_type=pin_type,
+                        position=position,
+                        direction=direction,
                     )
                 else:
                     pin = SchematicPin(
@@ -704,6 +800,21 @@ class SchematicGenerator:
             {"number": 1, "name": "P1", "type": "passive"},
             {"number": 2, "name": "P2", "type": "passive"},
         ]
+
+    def _map_kb_type_to_pintype(self, kb_type: str) -> PinType:
+        """将知识库的引脚类型映射到 PinType 枚举"""
+        type_mapping = {
+            "power_in": PinType.POWER_IN,
+            "power_out": PinType.POWER_OUT,
+            "gnd": PinType.GND,
+            "input": PinType.INPUT,
+            "output": PinType.OUTPUT,
+            "bidirectional": PinType.BIDIRECTIONAL,
+            "passive": PinType.PASSIVE,
+            "no_connect": PinType.UNSPECIFIED,
+            "unspecified": PinType.UNSPECIFIED,
+        }
+        return type_mapping.get(kb_type.lower(), PinType.PASSIVE)
 
     def _determine_pin_type(self, pin_name: str) -> PinType:
         """根据引脚名称确定引脚类型"""
@@ -805,7 +916,11 @@ class SchematicGenerator:
         vcc_y = 50
         vcc_created = False
 
+        # 排除 GND 网络，只创建真正的电源符号
         for i, net_name in enumerate(sorted(power_nets)):
+            # 跳过 GND 相关网络，它们应该由 GND 符号处理
+            if net_name.upper() in ["GND", "VSS", "V-", "AGND", "GROUND"]:
+                continue
             x = 100 + i * 150
             symbol = PowerSymbol(
                 id=f"power-{i + 1}",
@@ -887,6 +1002,10 @@ class SchematicGenerator:
         """从引脚名称推断电源网络名"""
         name_upper = pin_name.upper()
 
+        # 首先检查是否为 GND 引脚
+        if any(kw in name_upper for kw in ["GND", "VSS", "V-", "GROUND", "COM", "AGND"]):
+            return "GND"
+
         if "5V" in name_upper or "+5V" in name_upper:
             return "+5V"
         if "3V3" in name_upper or "3.3V" in name_upper:
@@ -942,10 +1061,45 @@ class SchematicGenerator:
             for pin in comp.pins:
                 pin_x = comp_x + pin.position[0]
                 pin_y = comp_y + pin.position[1]
+                pin_name_upper = pin.name.upper()
 
-                if pin.pin_type == PinType.POWER_IN:
-                    # 找到对应的电源符号
+                # 检查是否应该连接到 GND
+                # 1. power_in/power_out 类型的 GND 引脚
+                # 2. passive 类型的 "-" 引脚（电容负极）
+                # 3. passive 类型的 "K" 引脚（二极管阴极）
+                should_connect_gnd = (
+                    pin.pin_type in [PinType.POWER_IN, PinType.GND] and
+                    self._infer_power_net_name(pin.name) == "GND"
+                ) or (
+                    pin.pin_type == PinType.PASSIVE and
+                    pin_name_upper in ["-", "K", "A"] and
+                    self._is_gnd_related_component(comp)
+                )
+
+                if should_connect_gnd:
+                    # 找到最近的 GND 符号
+                    gnd_sym = min(
+                        [s for s in self.sheet.power_symbols if s.symbol_type == "gnd"],
+                        key=lambda s: abs(s.position[0] - pin_x) + abs(s.position[1] - pin_y),
+                        default=None,
+                    )
+                    if gnd_sym:
+                        self._add_l_wire(
+                            (pin_x, pin_y),
+                            (gnd_sym.position[0], gnd_sym.position[1] - 20),
+                            "GND",
+                        )
+                    continue
+
+                # 处理 VCC/电源引脚
+                if pin.pin_type in [PinType.POWER_IN, PinType.POWER_OUT]:
                     net_name = self._infer_power_net_name(pin.name)
+
+                    # 跳过 GND 引脚（已处理）
+                    if net_name == "GND":
+                        continue
+
+                    # 连接到对应的 VCC 符号
                     power_sym = next(
                         (
                             s
@@ -956,31 +1110,534 @@ class SchematicGenerator:
                     )
 
                     if power_sym:
-                        # 使用 L 型走线避免交叉
                         self._add_l_wire(
                             (power_sym.position[0], power_sym.position[1] + 20),
                             (pin_x, pin_y),
                             net_name,
                         )
 
-                elif pin.pin_type == PinType.GND:
-                    # 找到最近的 GND 符号
-                    gnd_sym = min(
-                        [s for s in self.sheet.power_symbols if s.symbol_type == "gnd"],
-                        key=lambda s: abs(s.position[0] - pin_x),
-                        default=None,
-                    )
+    def _is_gnd_related_component(self, comp: SchematicComponent) -> bool:
+        """检查元件是否应该将 passive 引脚连接到 GND"""
+        name_lower = comp.name.lower()
+        model_lower = comp.model.lower()
+        combined = name_lower + " " + model_lower
 
-                    if gnd_sym:
-                        # 使用 L 型走线
-                        self._add_l_wire(
-                            (pin_x, pin_y),
-                            (gnd_sym.position[0], gnd_sym.position[1] - 20),
-                            "GND",
-                        )
+        # 应该连接到 GND 的元件类型
+        gnd_related_keywords = [
+            "cap", "capacitor", "电容",
+            "diode", "tvs", "二极管",
+            "led",
+            "gnd", "ground",
+        ]
+
+        # 检查元件名称或类别
+        if comp.category in [ComponentCategory.POWER, ComponentCategory.PASSIVE]:
+            return True
+
+        # 检查引脚名称
+        for pin in comp.pins:
+            pin_name_upper = pin.name.upper()
+            # 电容的负极
+            if pin_name_upper == "-":
+                return True
+            # 二极管的阴极/阳极（在某些配置下）
+            if pin_name_upper in ["K", "A", "KATH", "ANODE"]:
+                # 如果是二极管类元件
+                if any(kw in combined for kw in ["diode", "tvs", "led", "二极管"]):
+                    return True
+
+        return False
+
+    # ─────────────────────────────────────────────────────────
+    # 电路连接规则知识库 - 功能驱动的连接逻辑
+    # ─────────────────────────────────────────────────────────
+
+    # 电源连接规则: (源引脚类型, 源引脚名模式) -> [(目标引脚类型, 目标引脚名模式)]
+    POWER_CONNECTION_RULES = [
+        # 电源输入 -> 电源输入 (并联)
+        ((PinType.POWER_IN, r"VCC|VDD|VIN|5V|3V3|V\+"), [(PinType.POWER_IN, r"VCC|VDD|VIN")]),
+        # 电源输出 -> 电源输入 (级联)
+        ((PinType.POWER_OUT, r"VOUT|VO|OUT"), [(PinType.POWER_IN, r"VCC|VDD|VIN")]),
+        # 电源输出 -> 无源器件引脚
+        ((PinType.POWER_OUT, r"VOUT|VO|OUT"), [(PinType.PASSIVE, r"\+|1|A|ANODE")]),
+        # VCC -> 无源器件
+        ((PinType.POWER_IN, r"VCC|VDD|5V|3V3"), [(PinType.PASSIVE, r"\+|1|A|ANODE|IN")]),
+    ]
+
+    # 信号连接规则: 输出类型 -> 输入类型
+    SIGNAL_CONNECTION_RULES = [
+        # UART: TX -> RX
+        ((PinType.OUTPUT, r"TX|TXD|UART_TX"), [(PinType.INPUT, r"RX|RXD|UART_RX")]),
+        # I2C: SDA <-> SDA (双向)
+        ((PinType.BIDIRECTIONAL, r"SDA"), [(PinType.BIDIRECTIONAL, r"SDA")]),
+        # I2C: SCL -> SCL (时钟)
+        ((PinType.OUTPUT, r"SCL"), [(PinType.INPUT, r"SCL")]),
+        # SPI: MOSI -> MOSI
+        ((PinType.OUTPUT, r"MOSI|SDO|DO"), [(PinType.INPUT, r"MOSI|SDI|DI")]),
+        # SPI: MISO -> MISO
+        ((PinType.INPUT, r"MISO"), [(PinType.OUTPUT, r"MISO")]),
+        # SPI: SCK -> SCK
+        ((PinType.OUTPUT, r"SCK|SCLK|CLK"), [(PinType.INPUT, r"SCK|SCLK|CLK")]),
+        # 通用输出 -> 输入
+        ((PinType.OUTPUT, r"OUT|OUTPUT|DO"), [(PinType.INPUT, r"IN|INPUT|DI")]),
+        # PWM 输出 -> 输入
+        ((PinType.OUTPUT, r"PWM"), [(PinType.INPUT, r"PWM|IN")]),
+    ]
+
+    # 电路拓扑连接模式
+    CIRCUIT_TOPOLOGY_PATTERNS = {
+        "power_supply": {
+            "stages": ["input", "rectifier", "filter", "regulator", "output"],
+            "connections": [
+                ("input", "rectifier", "AC_to_DC"),
+                ("rectifier", "filter", "ripple_filter"),
+                ("filter", "regulator", "regulate"),
+                ("regulator", "output", "final_output"),
+            ],
+        },
+        "mcu_peripheral": {
+            "center": "MCU",
+            "peripherals": ["power", "crystal", "interface", "led"],
+        },
+        "series_rc": {
+            "pattern": [("R", "C")],  # 电阻串联电容
+        },
+        "series_rled": {
+            "pattern": [("R", "LED")],  # 电阻串联LED
+        },
+        "parallel_caps": {
+            "pattern": [("C", "C")],  # 电容并联
+        },
+    }
 
     def _connect_signal_pins(self):
-        """连接信号引脚 - 使用网络标签避免长距离走线"""
+        """
+        连接信号引脚 - 基于电路功能而非物理位置
+
+        连接策略:
+        1. 电源连接: 按电源流向连接 (VCC -> VIN -> VOUT)
+        2. 信号连接: 按信号类型匹配 (TX->RX, MOSI->MISO等)
+        3. 拓扑连接: 按电路拓扑模式 (串联、并联、级联)
+        4. 网络标签: 使用网络标签连接远距离引脚
+        """
+        components = self.sheet.components
+        if len(components) < 2:
+            return
+
+        # 阶段1: 识别电路拓扑
+        topology = self._identify_circuit_topology()
+        logger.info(f"识别到电路拓扑: {topology}")
+
+        # 阶段2: 按功能分组元件
+        functional_groups = self._group_components_by_function()
+
+        # 阶段3: 建立功能连接
+        connections_made = []
+
+        # 3.1 电源连接
+        power_connections = self._connect_power_by_flow(functional_groups)
+        connections_made.extend(power_connections)
+
+        # 3.2 信号连接 (基于信号类型)
+        signal_connections = self._connect_by_signal_type(functional_groups)
+        connections_made.extend(signal_connections)
+
+        # 3.3 拓扑特定连接
+        topology_connections = self._connect_by_topology(topology, functional_groups)
+        connections_made.extend(topology_connections)
+
+        # 3.4 被动元件连接 (RC、RL、二极管等)
+        passive_connections = self._connect_passive_components(functional_groups)
+        connections_made.extend(passive_connections)
+
+        logger.info(f"共建立 {len(connections_made)} 个功能连接")
+
+        # 阶段4: 为连接添加网络标签
+        self._add_net_labels_for_connections(connections_made)
+
+    def _identify_circuit_topology(self) -> str:
+        """识别电路拓扑类型"""
+        categories = set()
+        for comp in self.sheet.components:
+            categories.add(comp.category)
+
+        # 检查电源电路特征
+        has_power = ComponentCategory.POWER in categories
+        has_passive = ComponentCategory.PASSIVE in categories
+
+        if has_power and len(categories) <= 3:
+            return "power_supply"
+
+        # 检查MCU电路特征
+        if ComponentCategory.MCU in categories:
+            return "mcu_peripheral"
+
+        # 检查LED驱动电路
+        if ComponentCategory.LED in categories and has_passive:
+            return "led_driver"
+
+        return "general"
+
+    def _group_components_by_function(self) -> Dict[str, List[SchematicComponent]]:
+        """按功能分组元件"""
+        groups = {
+            "power_sources": [],      # 电源 (VCC, GND符号)
+            "regulators": [],         # 稳压器
+            "passive_input": [],      # 输入侧无源器件
+            "passive_output": [],     # 输出侧无源器件
+            "active": [],             # 有源器件
+            "mcu": [],                # MCU
+            "interface": [],          # 接口器件
+            "connectors": [],         # 连接器
+            "other": [],              # 其他
+        }
+
+        for comp in self.sheet.components:
+            if comp.category == ComponentCategory.POWER:
+                # 区分稳压器和电源符号
+                if any(kw in comp.model.lower() for kw in ["7805", "7812", "1117", "regulator", "稳压"]):
+                    groups["regulators"].append(comp)
+                else:
+                    groups["power_sources"].append(comp)
+            elif comp.category == ComponentCategory.MCU:
+                groups["mcu"].append(comp)
+            elif comp.category == ComponentCategory.INTERFACE:
+                groups["interface"].append(comp)
+            elif comp.category == ComponentCategory.CONNECTOR:
+                groups["connectors"].append(comp)
+            elif comp.category == ComponentCategory.PASSIVE:
+                # 根据位置判断输入/输出侧
+                groups["passive_input"].append(comp)  # 简化处理
+            elif comp.category == ComponentCategory.ACTIVE:
+                groups["active"].append(comp)
+            else:
+                groups["other"].append(comp)
+
+        return groups
+
+    def _connect_power_by_flow(self, groups: Dict) -> List[Dict]:
+        """按电源流向建立连接"""
+        connections = []
+
+        regulators = groups.get("regulators", [])
+        passive_comps = groups.get("passive_input", []) + groups.get("passive_output", [])
+
+        for reg in regulators:
+            # 找到稳压器的引脚
+            vin_pin = None
+            vout_pin = None
+            gnd_pin = None
+
+            for pin in reg.pins:
+                pin_name_upper = pin.name.upper()
+                if pin.pin_type == PinType.POWER_IN and any(kw in pin_name_upper for kw in ["VIN", "IN", "INPUT"]):
+                    vin_pin = pin
+                elif pin.pin_type == PinType.POWER_OUT and any(kw in pin_name_upper for kw in ["VOUT", "OUT", "OUTPUT"]):
+                    vout_pin = pin
+                elif pin.pin_type == PinType.GND or (pin.pin_type == PinType.POWER_IN and "GND" in pin_name_upper):
+                    gnd_pin = pin
+
+            # 连接 VOUT 到被动元件 (如输出电容)
+            if vout_pin:
+                for comp in passive_comps:
+                    for pin in comp.pins:
+                        if self._should_connect_power_to_passive(vout_pin, pin, comp):
+                            conn = self._create_connection(reg, vout_pin, comp, pin, "VOUT_NET")
+                            if conn:
+                                connections.append(conn)
+
+        return connections
+
+    def _should_connect_power_to_passive(self, power_pin: SchematicPin, passive_pin: SchematicPin, comp: SchematicComponent) -> bool:
+        """判断电源引脚是否应该连接到被动元件引脚"""
+        passive_name = comp.name.lower()
+        passive_pin_name = passive_pin.name.upper()
+
+        # 电容正极 (+, 1) 连电源
+        if "cap" in passive_name or "电容" in passive_name:
+            if passive_pin_name in ["+", "1", "POS"]:
+                return True
+
+        # 电阻一端可连电源
+        if "res" in passive_name or "电阻" in passive_name:
+            if passive_pin.number == "1":
+                return True
+
+        # 二极管阳极连电源
+        if "diode" in passive_name or "二极管" in passive_name or "led" in passive_name:
+            if passive_pin_name in ["A", "ANODE", "+", "1"]:
+                return True
+
+        return False
+
+    def _connect_by_signal_type(self, groups: Dict) -> List[Dict]:
+        """基于信号类型建立连接 - 使用知识库规则"""
+        connections = []
+
+        try:
+            from kb_quality import get_connection_rule_engine, ConnectionType
+            engine = get_connection_rule_engine()
+        except ImportError:
+            logger.warning("无法导入知识库，使用默认信号连接逻辑")
+            return self._connect_by_signal_type_fallback(groups)
+
+        # 收集所有信号引脚
+        all_components = []
+        for group_comps in groups.values():
+            all_components.extend(group_comps)
+
+        # 转换为知识库格式
+        kb_components = []
+        for comp in all_components:
+            kb_comp = {
+                "reference": comp.reference,
+                "model": comp.model,
+                "name": comp.name,
+                "category": comp.category.value,
+                "pins": [
+                    {
+                        "name": pin.name,
+                        "type": pin.pin_type.value,
+                        "number": pin.number,
+                    }
+                    for pin in comp.pins
+                ],
+            }
+            kb_components.append(kb_comp)
+
+        # 使用知识库建议连接
+        from kb_quality import suggest_connections
+        suggestions = suggest_connections(kb_components)
+
+        # 执行建议的连接
+        for sugg in suggestions:
+            from_parts = sugg["from"].split(".")
+            to_parts = sugg["to"].split(".")
+
+            if len(from_parts) == 2 and len(to_parts) == 2:
+                from_ref, from_pin_name = from_parts
+                to_ref, to_pin_name = to_parts
+
+                # 查找元件和引脚
+                comp1 = next((c for c in all_components if c.reference == from_ref), None)
+                comp2 = next((c for c in all_components if c.reference == to_ref), None)
+
+                if comp1 and comp2:
+                    pin1 = next((p for p in comp1.pins if p.name == from_pin_name), None)
+                    pin2 = next((p for p in comp2.pins if p.name == to_pin_name), None)
+
+                    if pin1 and pin2:
+                        conn = self._create_connection(comp1, pin1, comp2, pin2, sugg["net"])
+                        if conn:
+                            connections.append(conn)
+
+        return connections
+
+    def _connect_by_signal_type_fallback(self, groups: Dict) -> List[Dict]:
+        """基于信号类型建立连接 - 降级方案"""
+        connections = []
+
+        # 收集所有信号引脚
+        signal_pins = []
+        for comp in self.sheet.components:
+            for pin in comp.pins:
+                if pin.pin_type in [PinType.INPUT, PinType.OUTPUT, PinType.BIDIRECTIONAL]:
+                    signal_pins.append((comp, pin))
+
+        # 按信号名称分组
+        signal_groups = {}
+        for comp, pin in signal_pins:
+            signal_name = self._normalize_signal_name(pin.name)
+            if signal_name not in signal_groups:
+                signal_groups[signal_name] = []
+            signal_groups[signal_name].append((comp, pin))
+
+        # 连接匹配的信号
+        for signal_name, pins in signal_groups.items():
+            if len(pins) >= 2:
+                # 连接输出到输入
+                outputs = [(c, p) for c, p in pins if p.pin_type == PinType.OUTPUT]
+                inputs = [(c, p) for c, p in pins if p.pin_type == PinType.INPUT]
+                bidis = [(c, p) for c, p in pins if p.pin_type == PinType.BIDIRECTIONAL]
+
+                # 输出 -> 输入
+                for out_comp, out_pin in outputs:
+                    for in_comp, in_pin in inputs:
+                        conn = self._create_connection(out_comp, out_pin, in_comp, in_pin, signal_name)
+                        if conn:
+                            connections.append(conn)
+
+                # 双向 -> 双向
+                if len(bidis) >= 2:
+                    for i, (c1, p1) in enumerate(bidis):
+                        for c2, p2 in bidis[i+1:]:
+                            conn = self._create_connection(c1, p1, c2, p2, signal_name)
+                            if conn:
+                                connections.append(conn)
+
+        return connections
+
+    def _normalize_signal_name(self, pin_name: str) -> str:
+        """标准化信号名称以便分组"""
+        name_upper = pin_name.upper()
+
+        # UART
+        if "UART_TX" in name_upper or ("TX" in name_upper and "RX" not in name_upper):
+            return "UART_TX"
+        if "UART_RX" in name_upper or ("RX" in name_upper and "TX" not in name_upper):
+            return "UART_RX"
+
+        # I2C
+        if "SDA" in name_upper:
+            return "I2C_SDA"
+        if "SCL" in name_upper:
+            return "I2C_SCL"
+
+        # SPI
+        if "MOSI" in name_upper or "SDO" in name_upper:
+            return "SPI_MOSI"
+        if "MISO" in name_upper or "SDI" in name_upper:
+            return "SPI_MISO"
+        if "SCK" in name_upper or "SCLK" in name_upper:
+            return "SPI_SCK"
+        if "CS" in name_upper or "NSS" in name_upper or "SS" in name_upper:
+            return "SPI_CS"
+
+        return name_upper
+
+    def _connect_by_topology(self, topology: str, groups: Dict) -> List[Dict]:
+        """基于电路拓扑建立连接"""
+        connections = []
+
+        if topology == "power_supply":
+            # 电源电路: 按级联顺序连接
+            regulators = groups.get("regulators", [])
+            passive = groups.get("passive_input", []) + groups.get("passive_output", [])
+
+            # 连接稳压器之间的级联
+            for i in range(len(regulators) - 1):
+                reg1 = regulators[i]
+                reg2 = regulators[i + 1]
+                # 前级VOUT -> 后级VIN
+                vout_pin = self._find_pin_by_type_and_name(reg1, PinType.POWER_OUT, r"VOUT|OUT")
+                vin_pin = self._find_pin_by_type_and_name(reg2, PinType.POWER_IN, r"VIN|IN")
+                if vout_pin and vin_pin:
+                    conn = self._create_connection(reg1, vout_pin, reg2, vin_pin, "CASCADE_VOUT")
+                    if conn:
+                        connections.append(conn)
+
+        elif topology == "mcu_peripheral":
+            # MCU电路: 连接MCU到外设
+            mcus = groups.get("mcu", [])
+            interfaces = groups.get("interface", [])
+
+            for mcu in mcus:
+                for iface in interfaces:
+                    # 尝试匹配UART
+                    mcu_tx = self._find_pin_by_type_and_name(mcu, PinType.OUTPUT, r"TX")
+                    iface_rx = self._find_pin_by_type_and_name(iface, PinType.INPUT, r"RX")
+                    if mcu_tx and iface_rx:
+                        conn = self._create_connection(mcu, mcu_tx, iface, iface_rx, "UART_TX")
+                        if conn:
+                            connections.append(conn)
+
+        return connections
+
+    def _connect_passive_components(self, groups: Dict) -> List[Dict]:
+        """连接被动元件形成RC、RL等电路"""
+        connections = []
+
+        passive_comps = groups.get("passive_input", []) + groups.get("passive_output", [])
+
+        # 识别电阻和电容
+        resistors = [c for c in passive_comps if "res" in c.name.lower() or "电阻" in c.name.lower()]
+        capacitors = [c for c in passive_comps if "cap" in c.name.lower() or "电容" in c.name.lower()]
+        leds = [c for c in passive_comps if "led" in c.name.lower() or "发光" in c.name.lower()]
+
+        # R-LED 串联 (限流电阻 + LED)
+        for r in resistors:
+            for led in leds:
+                # 电阻一端 -> LED阳极
+                r_pin = self._find_pin_by_number(r, "1") or self._find_pin_by_number(r, "+")
+                led_pin = self._find_pin_by_name(led, r"A|ANODE|\+")
+                if r_pin and led_pin:
+                    conn = self._create_connection(r, r_pin, led, led_pin, "R_LED_SERIES")
+                    if conn:
+                        connections.append(conn)
+
+        # R-C 串联 (滤波)
+        for r in resistors:
+            for c in capacitors:
+                r_pin = self._find_pin_by_number(r, "2")  # 电阻另一端
+                c_pin = self._find_pin_by_number(c, "1") or self._find_pin_by_number(c, "+")  # 电容正极
+                if r_pin and c_pin:
+                    conn = self._create_connection(r, r_pin, c, c_pin, "RC_FILTER")
+                    if conn:
+                        connections.append(conn)
+
+        return connections
+
+    def _find_pin_by_type_and_name(self, comp: SchematicComponent, pin_type: PinType, name_pattern: str) -> Optional[SchematicPin]:
+        """按类型和名称查找引脚"""
+        import re
+        for pin in comp.pins:
+            if pin.pin_type == pin_type:
+                if re.search(name_pattern, pin.name, re.IGNORECASE):
+                    return pin
+        return None
+
+    def _find_pin_by_number(self, comp: SchematicComponent, number: str) -> Optional[SchematicPin]:
+        """按编号查找引脚"""
+        for pin in comp.pins:
+            if pin.number == number:
+                return pin
+        return None
+
+    def _find_pin_by_name(self, comp: SchematicComponent, name_pattern: str) -> Optional[SchematicPin]:
+        """按名称查找引脚"""
+        import re
+        for pin in comp.pins:
+            if re.search(name_pattern, pin.name, re.IGNORECASE):
+                return pin
+        return None
+
+    def _create_connection(self, comp1: SchematicComponent, pin1: SchematicPin,
+                          comp2: SchematicComponent, pin2: SchematicPin,
+                          net_name: str) -> Optional[Dict]:
+        """创建两个引脚之间的连接"""
+        # 计算引脚位置
+        x1 = comp1.position[0] + pin1.position[0]
+        y1 = comp1.position[1] + pin1.position[1]
+        x2 = comp2.position[0] + pin2.position[0]
+        y2 = comp2.position[1] + pin2.position[1]
+
+        # 创建网络
+        full_net_name = f"{net_name}_{comp1.reference}_{comp2.reference}"
+        if not any(n.name == full_net_name for n in self.sheet.nets):
+            self._add_net(full_net_name, "signal")
+
+        # 创建导线
+        self._add_l_wire((x1, y1), (x2, y2), full_net_name)
+
+        return {
+            "from": f"{comp1.reference}.{pin1.name}",
+            "to": f"{comp2.reference}.{pin2.name}",
+            "net": full_net_name,
+        }
+
+    def _add_net_labels_for_connections(self, connections: List[Dict]):
+        """为连接添加网络标签"""
+        for conn in connections:
+            net_name = conn["net"]
+            # 在连接中间位置添加网络标签
+            # 这里简化处理，实际应该计算导线的中点
+            pass
+
+    def _connect_signal_pins_old(self):
+        """
+        [已弃用] 旧的基于物理位置的连接方法
+        保留此方法供参考和对比测试
+        """
         # 简化连接：按顺序连接相邻元件
         components = self.sheet.components
         if len(components) < 2:
@@ -1007,38 +1664,6 @@ class SchematicGenerator:
             # 使用 L 型走线
             mid_x = (x1 + x2) / 2
             self._add_wire([(x1, y1), (mid_x, y1), (mid_x, y2), (x2, y2)], net_name)
-
-        # 额外：检测并连接特殊引脚
-        net_pins: Dict[str, List[Tuple[SchematicComponent, SchematicPin]]] = {}
-
-        for comp in self.sheet.components:
-            for pin in comp.pins:
-                if pin.pin_type in [
-                    PinType.INPUT,
-                    PinType.OUTPUT,
-                    PinType.BIDIRECTIONAL,
-                ]:
-                    net_name = self._infer_signal_net(pin.name, comp.reference)
-                    if net_name not in net_pins:
-                        net_pins[net_name] = []
-                    net_pins[net_name].append((comp, pin))
-
-        # 对于每个网络，如果引脚距离近则连线
-        for net_name, pins in net_pins.items():
-            if len(pins) < 2:
-                continue
-
-            for i, (comp1, pin1) in enumerate(pins):
-                for comp2, pin2 in pins[i + 1 :]:
-                    dist = self._calculate_pin_distance(comp1, pin1, comp2, pin2)
-
-                    if dist < 300:
-                        x1 = comp1.position[0] + pin1.position[0]
-                        y1 = comp1.position[1] + pin1.position[1]
-                        x2 = comp2.position[0] + pin2.position[0]
-                        y2 = comp2.position[1] + pin2.position[1]
-
-                        self._add_wire([(x1, y1), (x2, y2)], net_name)
 
     def _infer_signal_net(self, pin_name: str, comp_ref: str) -> str:
         """推断信号网络名"""
@@ -1270,3 +1895,336 @@ def generate_standard_schematic(
     generator = SchematicGenerator()
     generator.generate(components, circuit_type)
     return generator.export_to_dict()
+
+
+def detect_voltage(text: str) -> Optional[float]:
+    """
+    从文本中检测电压值
+
+    Args:
+        text: 包含电压值的文本，如 "5V", "3.3V", "12V"
+
+    Returns:
+        电压值(伏特)，如果未检测到则返回None
+    """
+    import re
+
+    # 匹配电压模式: 数字 + V (可选小数)
+    patterns = [
+        r"(\d+\.?\d*)\s*V",  # 5V, 3.3V, 12.5V
+        r"(\d+\.?\d*)\s*volt",  # 5volt, 3.3volt
+        r"VCC\s*(\d+\.?\d*)",  # VCC5
+        r"V(\d+\.?\d*)",  # V5, V3.3
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                continue
+
+    return None
+
+
+def generate_references(component_type: str, count: int = 1) -> List[str]:
+    """
+    生成元件参考编号
+
+    Args:
+        component_type: 元件类型 (如 "Resistor", "Capacitor", "IC", "STM32")
+        count: 生成数量
+
+    Returns:
+        参考编号列表
+    """
+    # 元件前缀映射 (按优先级排序 - 更具体的放前面)
+    prefix_map = [
+        ("resistor", "R"),
+        ("capacitor", "C"),
+        ("ic", "U"),
+        ("mcu", "U"),
+        ("stm32", "U"),
+        ("arduino", "U"),
+        ("esp32", "U"),
+        ("led", "D"),
+        ("diode", "D"),
+        ("transistor", "Q"),
+        ("mosfet", "Q"),
+        ("crystal", "Y"),
+        ("oscillator", "Y"),
+        ("connector", "J"),
+        ("usb", "J"),
+        ("button", "SW"),
+        ("switch", "SW"),
+        ("relay", "K"),
+        ("fuse", "F"),
+        ("motor", "M"),
+        ("speaker", "SPK"),
+        ("buzzer", "BZ"),
+        ("battery", "BT"),
+        ("transformer", "T"),
+        ("inductor", "L"),
+    ]
+
+    # 获取前缀 - 按长度降序匹配
+    prefix = "U"  # 默认
+    type_lower = component_type.lower()
+
+    # 先尝试精确匹配
+    for key, value in prefix_map:
+        if key in type_lower:
+            prefix = value
+            break
+
+    # 生成参考编号
+    references = []
+    for i in range(1, count + 1):
+        references.append(f"{prefix}{i}")
+
+    return references
+
+
+def extract_voltage_from_component(name: str) -> Optional[float]:
+    """
+    从元件名称中提取电压
+
+    Args:
+        name: 元件名称，如 "LM7805", "AMS1117-3.3"
+
+    Returns:
+        电压值，如果未检测到则返回None
+    """
+    import re
+
+    # 常见稳压器后缀 - 按优先级排序
+    patterns = [
+        (r"-(\d+\.?\d*)V?$", lambda m: float(m.group(1))),  # AMS1117-3.3 -> 3.3
+        (r"_(\d+\.?\d*)V$", lambda m: float(m.group(1))),  # LM7805_5V -> 5.0
+        (r"(\d+\.?\d*)V$", lambda m: float(m.group(1))),  # 7805-5 -> 5.0 (末尾是V)
+    ]
+
+    for pattern, extractor in patterns:
+        match = re.search(pattern, name, re.IGNORECASE)
+        if match:
+            try:
+                return extractor(match)
+            except ValueError:
+                continue
+
+    return None
+
+
+# ─────────────────────────────────────────────────────────────
+# 布局优化算法 - 减少线交叉
+# ─────────────────────────────────────────────────────────────
+
+def _optimize_layout(self):
+    """
+    优化原理图布局以减少线交叉并提高可读性
+
+    优化策略:
+    1. 基于拓扑的分层布局（电源在上，接地在下，信号从左到右）
+    2. 使用迭代改进算法最小化线交叉
+    3. 对齐网格以保持整洁
+    """
+    if len(self.sheet.components) < 2:
+        return
+
+    # 阶段1: 基于功能重新排列元件
+    self._rearrange_by_function()
+
+    # 阶段2: 最小化线交叉（迭代优化）
+    self._minimize_wire_crossings()
+
+    # 阶段3: 网格对齐
+    self._align_to_grid()
+
+    # 阶段4: 更新导线连接
+    self._update_wire_positions()
+
+def _rearrange_by_function(self):
+    """基于电路功能重新排列元件位置"""
+    components = self.sheet.components
+
+    # 按类别分组
+    power_comps = [c for c in components if c.category == ComponentCategory.POWER]
+    mcu_comps = [c for c in components if c.category == ComponentCategory.MCU]
+    passive_comps = [c for c in components if c.category == ComponentCategory.PASSIVE]
+    interface_comps = [c for c in components if c.category == ComponentCategory.INTERFACE]
+    other_comps = [c for c in components if c.category not in
+                   [ComponentCategory.POWER, ComponentCategory.MCU,
+                    ComponentCategory.PASSIVE, ComponentCategory.INTERFACE]]
+
+    # 重新定位元件 - 电源在上，MCU居中，接口在右，无源器件在下
+    y_power = 100
+    y_mcu = 300
+    y_passive = 500
+    y_other = 400
+
+    x_start = 150
+    spacing = 180
+
+    # 放置电源元件（顶部）
+    for i, comp in enumerate(power_comps):
+        comp.position = (x_start + i * spacing, y_power)
+
+    # 放置MCU（中心偏左）
+    for i, comp in enumerate(mcu_comps):
+        comp.position = (x_start + len(power_comps) * spacing / 2 + i * spacing, y_mcu)
+
+    # 放置接口（右侧）
+    for i, comp in enumerate(interface_comps):
+        comp.position = (x_start + (len(power_comps) + 2) * spacing + i * spacing, y_mcu)
+
+    # 放置无源器件（底部）
+    for i, comp in enumerate(passive_comps):
+        comp.position = (x_start + i * spacing, y_passive)
+
+    # 放置其他元件
+    for i, comp in enumerate(other_comps):
+        comp.position = (x_start + i * spacing, y_other)
+
+def _minimize_wire_crossings(self):
+    """
+    使用迭代改进算法最小化线交叉
+
+    算法:
+    1. 计算当前布局的线交叉数
+    2. 尝试交换相邻元件位置
+    3. 如果交换后线交叉减少，则保留交换
+    4. 重复直到无法进一步改进
+    """
+    max_iterations = 50
+    improvement_threshold = 0
+
+    for iteration in range(max_iterations):
+        current_crossings = self._count_wire_crossings()
+        improved = False
+
+        # 尝试交换每一对相邻元件
+        for i in range(len(self.sheet.components)):
+            for j in range(i + 1, len(self.sheet.components)):
+                comp1 = self.sheet.components[i]
+                comp2 = self.sheet.components[j]
+
+                # 跳过不同类型的大跨度交换（保持功能分区）
+                if comp1.category != comp2.category:
+                    continue
+
+                # 尝试交换
+                self._swap_components(comp1, comp2)
+                new_crossings = self._count_wire_crossings()
+
+                if new_crossings < current_crossings - improvement_threshold:
+                    # 交换减少了线交叉，保留
+                    current_crossings = new_crossings
+                    improved = True
+                else:
+                    # 交换没有改善，恢复
+                    self._swap_components(comp1, comp2)
+
+        if not improved:
+            # 没有进一步改进，停止迭代
+            break
+
+def _count_wire_crossings(self) -> int:
+    """统计当前布局中的线交叉数"""
+    crossings = 0
+    wires = self.sheet.wires
+
+    for i in range(len(wires)):
+        for j in range(i + 1, len(wires)):
+            if self._wires_intersect(wires[i], wires[j]):
+                crossings += 1
+
+    return crossings
+
+def _wires_intersect(self, wire1: SchematicWire, wire2: SchematicWire) -> bool:
+    """检查两条导线是否相交"""
+    points1 = wire1.points
+    points2 = wire2.points
+
+    # 检查线段对
+    for i in range(len(points1) - 1):
+        for j in range(len(points2) - 1):
+            if self._segments_intersect(
+                points1[i], points1[i + 1],
+                points2[j], points2[j + 1]
+            ):
+                return True
+
+    return False
+
+def _segments_intersect(
+    self,
+    p1: Tuple[float, float], p2: Tuple[float, float],
+    p3: Tuple[float, float], p4: Tuple[float, float]
+) -> bool:
+    """检查两条线段是否相交（不包括端点重合）"""
+    def orientation(a, b, c):
+        """计算三点的方向"""
+        val = (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[1])
+        if abs(val) < 1e-9:
+            return 0  # 共线
+        return 1 if val > 0 else 2  # 顺时针或逆时针
+
+    def on_segment(a, b, c):
+        """检查点b是否在线段ac上"""
+        return (min(a[0], c[0]) <= b[0] <= max(a[0], c[0]) and
+                min(a[1], c[1]) <= b[1] <= max(a[1], c[1]))
+
+    o1 = orientation(p1, p2, p3)
+    o2 = orientation(p1, p2, p4)
+    o3 = orientation(p3, p4, p1)
+    o4 = orientation(p3, p4, p2)
+
+    # 一般情况
+    if o1 != o2 and o3 != o4:
+        return True
+
+    # 特殊情况 - 共线
+    if o1 == 0 and on_segment(p1, p3, p2):
+        return False  # 端点重合不算交叉
+    if o2 == 0 and on_segment(p1, p4, p2):
+        return False
+    if o3 == 0 and on_segment(p3, p1, p4):
+        return False
+    if o4 == 0 and on_segment(p3, p2, p4):
+        return False
+
+    return False
+
+def _swap_components(self, comp1: SchematicComponent, comp2: SchematicComponent):
+    """交换两个元件的位置"""
+    comp1.position, comp2.position = comp2.position, comp1.position
+
+def _align_to_grid(self):
+    """将元件位置对齐到网格"""
+    grid_size = 50
+
+    for comp in self.sheet.components:
+        x, y = comp.position
+        aligned_x = round(x / grid_size) * grid_size
+        aligned_y = round(y / grid_size) * grid_size
+        comp.position = (aligned_x, aligned_y)
+
+def _update_wire_positions(self):
+    """更新导线位置以匹配新的元件位置"""
+    # 清除现有导线
+    self.sheet.wires.clear()
+
+    # 重新生成导线
+    self._generate_wires()
+
+
+SchematicGenerator._optimize_layout = _optimize_layout
+SchematicGenerator._rearrange_by_function = _rearrange_by_function
+SchematicGenerator._minimize_wire_crossings = _minimize_wire_crossings
+SchematicGenerator._count_wire_crossings = _count_wire_crossings
+SchematicGenerator._wires_intersect = _wires_intersect
+SchematicGenerator._segments_intersect = _segments_intersect
+SchematicGenerator._swap_components = _swap_components
+SchematicGenerator._align_to_grid = _align_to_grid
+SchematicGenerator._update_wire_positions = _update_wire_positions

@@ -70,6 +70,7 @@ class KiCadIPCManager:
         self.kicad_process: Optional[subprocess.Popen] = None
         self.virtual_display: Optional["Display"] = None
         self._connected = False
+        self._lock = threading.Lock()  # 保护 _connected 和 client 的线程安全访问
 
     def start_kicad(self, pcb_file: Optional[str] = None) -> bool:
         """
@@ -195,26 +196,36 @@ class KiCadIPCManager:
         try:
             logger.info("Connecting to KiCad via IPC...")
 
-            # 尝试连接
+            # 尝试连接，使用指数退避
             start_time = time.time()
+            retry_delay = 1.0  # 初始重试间隔
+            max_retry_delay = 10.0  # 最大重试间隔
+            attempt = 0
+
             while time.time() - start_time < self.config.connection_timeout:
+                attempt += 1
                 try:
                     self.client = Client()
                     # 验证连接 - 获取 KiCad 版本
                     version = self.client.get_version()
-                    logger.info(f"Connected to KiCad {version}")
-                    self._connected = True
+                    logger.info(
+                        f"Connected to KiCad {version} after {attempt} attempts"
+                    )
+                    with self._lock:
+                        self._connected = True
 
                     # 获取当前打开的板子
                     self._get_current_board()
                     return True
 
                 except Exception as e:
-                    logger.debug(f"Connection attempt failed: {e}")
-                    time.sleep(1)
+                    logger.debug(f"Connection attempt {attempt} failed: {e}")
+                    # 指数退避：延迟逐渐增加到最大值
+                    time.sleep(retry_delay)
+                    retry_delay = min(retry_delay * 1.5, max_retry_delay)
 
             logger.error(
-                f"Failed to connect within {self.config.connection_timeout} seconds"
+                f"Failed to connect within {self.config.connection_timeout} seconds after {attempt} attempts"
             )
             return False
 
@@ -285,6 +296,203 @@ class KiCadIPCManager:
         except Exception as e:
             logger.error(f"Error getting board status: {e}")
             return {"error": str(e)}
+
+    def get_full_pcb_data(self) -> Dict[str, Any]:
+        """
+        获取完整的PCB数据，包括所有层、网络、铜箔等
+
+        Returns:
+            完整的PCB数据字典
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected to KiCad"}
+
+        try:
+            result = {
+                "success": True,
+                "layers": [],
+                "nets": [],
+                "footprints": [],
+                "tracks": [],
+                "vias": [],
+                "zones": [],
+                "board_outline": [],
+                "texts": [],
+                "dimensions": {},
+            }
+
+            # 1. 获取层信息
+            try:
+                layers = self.board.layers
+                for layer in layers:
+                    result["layers"].append({
+                        "id": layer.id,
+                        "name": layer.name,
+                        "type": getattr(layer, "type", "signal"),
+                        "color": getattr(layer, "color", "#000000"),
+                        "visible": getattr(layer, "visible", True),
+                    })
+            except Exception as e:
+                logger.warning(f"Could not get layers: {e}")
+
+            # 2. 获取网络信息
+            try:
+                nets = self.board.nets
+                for net in nets:
+                    result["nets"].append({
+                        "id": str(net.id),
+                        "name": net.name,
+                        "code": getattr(net, "code", 0),
+                    })
+            except Exception as e:
+                logger.warning(f"Could not get nets: {e}")
+
+            # 3. 获取所有PCB项目
+            try:
+                items = self.board.get_items()
+                for item in items:
+                    item_type = getattr(item, "type", "unknown")
+                    item_layer = getattr(item, "layer", "unknown")
+
+                    # 封装
+                    if item_type == "footprint":
+                        try:
+                            footprint_data = {
+                                "id": str(item.id),
+                                "reference": getattr(item, "reference", ""),
+                                "value": getattr(item, "value", ""),
+                                "footprint": getattr(item, "footprint", ""),
+                                "layer": item_layer,
+                                "position": {
+                                    "x": getattr(item, "x", 0),
+                                    "y": getattr(item, "y", 0),
+                                },
+                                "rotation": getattr(item, "rotation", 0),
+                                "pad": [],
+                            }
+                            # 获取焊盘信息
+                            try:
+                                pads = getattr(item, "pads", [])
+                                for pad in pads:
+                                    footprint_data["pad"].append({
+                                        "number": getattr(pad, "number", ""),
+                                        "name": getattr(pad, "name", ""),
+                                        "type": getattr(pad, "type", "smd"),
+                                        "shape": getattr(pad, "shape", "rect"),
+                                        "position": {
+                                            "x": getattr(pad, "x", 0),
+                                            "y": getattr(pad, "y", 0),
+                                        },
+                                        "size": {
+                                            "x": getattr(pad, "size_x", 1),
+                                            "y": getattr(pad, "size_y", 1),
+                                        },
+                                    })
+                            except Exception as e:
+                                logger.debug(f"Could not get pads: {e}")
+
+                            result["footprints"].append(footprint_data)
+                        except Exception as e:
+                            logger.debug(f"Could not process footprint: {e}")
+
+                    # 走线
+                    elif item_type == "track":
+                        try:
+                            result["tracks"].append({
+                                "id": str(item.id),
+                                "net": getattr(item, "net", ""),
+                                "layer": item_layer,
+                                "width": getattr(item, "width", 0.25),
+                                "start": {
+                                    "x": getattr(item, "start_x", 0),
+                                    "y": getattr(item, "start_y", 0),
+                                },
+                                "end": {
+                                    "x": getattr(item, "end_x", 0),
+                                    "y": getattr(item, "end_y", 0),
+                                },
+                            })
+                        except Exception as e:
+                            logger.debug(f"Could not process track: {e}")
+
+                    # 过孔
+                    elif item_type == "via":
+                        try:
+                            result["vias"].append({
+                                "id": str(item.id),
+                                "net": getattr(item, "net", ""),
+                                "position": {
+                                    "x": getattr(item, "x", 0),
+                                    "y": getattr(item, "y", 0),
+                                },
+                                "size": getattr(item, "diameter", 0.8),
+                                "drill": getattr(item, "drill", 0.4),
+                                "layers": getattr(item, "layers", ["F.Cu", "B.Cu"]),
+                            })
+                        except Exception as e:
+                            logger.debug(f"Could not process via: {e}")
+
+                    # 铜箔区域
+                    elif item_type == "zone" or item_type == "polygon":
+                        try:
+                            result["zones"].append({
+                                "id": str(item.id),
+                                "net": getattr(item, "net", ""),
+                                "layer": item_layer,
+                                "priority": getattr(item, "priority", 0),
+                            })
+                        except Exception as e:
+                            logger.debug(f"Could not process zone: {e}")
+
+                    # 文本
+                    elif item_type == "text" or item_type == "text_box":
+                        try:
+                            result["texts"].append({
+                                "id": str(item.id),
+                                "text": getattr(item, "text", ""),
+                                "layer": item_layer,
+                                "position": {
+                                    "x": getattr(item, "x", 0),
+                                    "y": getattr(item, "y", 0),
+                                },
+                                "rotation": getattr(item, "rotation", 0),
+                            })
+                        except Exception as e:
+                            logger.debug(f"Could not process text: {e}")
+
+            except Exception as e:
+                logger.warning(f"Could not get items: {e}")
+
+            # 4. 获取板框信息
+            try:
+                # 获取板子边界
+                board_edges = self.board.get_board_edges()
+                if board_edges:
+                    outline_points = []
+                    for edge in board_edges:
+                        outline_points.append({
+                            "x": getattr(edge, "x", 0),
+                            "y": getattr(edge, "y", 0),
+                        })
+                    result["board_outline"] = outline_points
+            except Exception as e:
+                logger.warning(f"Could not get board outline: {e}")
+
+            # 添加统计信息
+            result["statistics"] = {
+                "total_footprints": len(result["footprints"]),
+                "total_tracks": len(result["tracks"]),
+                "total_vias": len(result["vias"]),
+                "total_zones": len(result["zones"]),
+                "total_nets": len(result["nets"]),
+                "total_layers": len(result["layers"]),
+            }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error getting full PCB data: {e}")
+            return {"success": False, "error": str(e)}
 
     def execute_action(
         self, action_name: str, params: Optional[Dict] = None
@@ -381,21 +589,24 @@ class KiCadIPCManager:
             if not pcb_path.is_file():
                 logger.error(f"PCB path is not a file: {pcb_path}")
                 return False
-            if not str(pcb_path).endswith(('.kicad_pcb', '.pcb')):
+            if not str(pcb_path).endswith((".kicad_pcb", ".pcb")):
                 logger.error(f"Invalid PCB file extension: {pcb_path}")
                 return False
 
             # 验证输出路径
             out_path = Path(output_path).resolve()
-            if not str(out_path).endswith('.svg'):
+            if not str(out_path).endswith(".svg"):
                 logger.error(f"Output must be SVG file: {out_path}")
                 return False
 
             # 验证输出目录是否在允许的白名单内
             import tempfile
+
             allowed_output_dirs = [
                 Path(tempfile.gettempdir()).resolve(),
-                Path(os.getenv("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))).resolve(),
+                Path(
+                    os.getenv("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+                ).resolve(),
                 Path.cwd() / "output",
             ]
 
@@ -423,14 +634,17 @@ class KiCadIPCManager:
 
             # 验证可执行权限（非Windows）或文件扩展名（Windows）
             import platform
+
             if platform.system() != "Windows":
                 if not os.access(cli_path, os.X_OK):
                     logger.error(f"KiCad CLI is not executable: {cli_path}")
                     return False
             else:
                 # Windows: 验证扩展名
-                if not str(cli_path).lower().endswith(('.exe', '.bat', '.cmd')):
-                    logger.error(f"KiCad CLI must be executable file (.exe, .bat, .cmd): {cli_path}")
+                if not str(cli_path).lower().endswith((".exe", ".bat", ".cmd")):
+                    logger.error(
+                        f"KiCad CLI must be executable file (.exe, .bat, .cmd): {cli_path}"
+                    )
                     return False
 
             cmd = [
@@ -726,7 +940,8 @@ class KiCadIPCManager:
 
     def is_connected(self) -> bool:
         """检查是否已连接"""
-        return self._connected and self.client is not None
+        with self._lock:
+            return self._connected and self.client is not None
 
     def cleanup(self):
         """清理资源"""
@@ -736,8 +951,8 @@ class KiCadIPCManager:
         if self.client:
             try:
                 self.client.close()
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Error closing client: {e}")
             self.client = None
 
         # 关闭 KiCad 进程
@@ -745,22 +960,24 @@ class KiCadIPCManager:
             try:
                 self.kicad_process.terminate()
                 self.kicad_process.wait(timeout=5)
-            except:
+            except Exception as e:
+                logger.debug(f"Error terminating process: {e}")
                 try:
                     self.kicad_process.kill()
-                except:
-                    pass
+                except Exception as e2:
+                    logger.debug(f"Error killing process: {e2}")
             self.kicad_process = None
 
         # 关闭虚拟显示
         if self.virtual_display:
             try:
                 self.virtual_display.stop()
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Error stopping virtual display: {e}")
             self.virtual_display = None
 
-        self._connected = False
+        with self._lock:
+            self._connected = False
         logger.info("Cleanup complete")
 
     def __del__(self):
@@ -785,14 +1002,18 @@ def get_kicad_manager() -> KiCadIPCManager:
                 try:
                     config = KiCadConnectionConfig(
                         kicad_cli_path=os.getenv("KICAD_CLI_PATH"),
-                        use_virtual_display=os.getenv("USE_VIRTUAL_DISPLAY", "false").lower()
+                        use_virtual_display=os.getenv(
+                            "USE_VIRTUAL_DISPLAY", "false"
+                        ).lower()
                         == "true",
                     )
                     _kicad_manager = KiCadIPCManager(config)
                 except Exception as e:
                     logger.error(f"Failed to initialize KiCad manager: {e}")
                     _kicad_manager = None
-                    raise RuntimeError(f"Failed to initialize KiCad manager: {e}") from e
+                    raise RuntimeError(
+                        f"Failed to initialize KiCad manager: {e}"
+                    ) from e
     return _kicad_manager
 
 

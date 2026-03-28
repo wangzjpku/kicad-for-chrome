@@ -25,5 +25,11 @@
   "engines": {
     "node": ">=18.0.0",
     "python": ">=3.11"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
   }
 }

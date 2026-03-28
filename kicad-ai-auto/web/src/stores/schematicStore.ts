@@ -13,7 +13,7 @@ import {
   Project,
   Point2D
 } from '../types';
-import apiClient from '../services/api';
+import apiClient, { schematicApi } from '../services/api';
 
 interface HistoryState {
   components: SchematicComponent[];
@@ -32,6 +32,7 @@ interface SchematicStoreState {
   schematicData: SchematicData | null;
   setSchematicData: (data: SchematicData) => void;
   loadSchematicData: (projectId: string) => Promise<void>;
+  saveSchematicData: () => Promise<void>;
   
   // 当前工作表
   currentSheetId: string | null;
@@ -81,6 +82,10 @@ interface SchematicStoreState {
   pushHistory: () => void;
   undo: () => void;
   redo: () => void;
+
+  // 保存状态
+  isSaving: boolean;
+  lastSaved: Date | null;
 }
 
 export const useSchematicStore = create<SchematicStoreState>()(
@@ -108,6 +113,8 @@ export const useSchematicStore = create<SchematicStoreState>()(
       historyIndex: -1,
       canUndo: false,
       canRedo: false,
+      isSaving: false,
+      lastSaved: null,
 
       // 加载原理图数据
       loadSchematicData: async (projectId: string) => {
@@ -115,7 +122,9 @@ export const useSchematicStore = create<SchematicStoreState>()(
         try {
           const axiosResponse = await apiClient.get(`/projects/${projectId}/schematic`);
           // axios 返回的响应在 data 属性中
-          const data = axiosResponse.data;
+          const response = axiosResponse.data;
+          // 兼容后端返回的两种格式: { success: true, data: {...} } 或直接 {...}
+          const data = response.data || response;
           console.log('[SchematicStore] Load schematic response:', data);
           if (data && typeof data === 'object') {
             // 后端直接返回数据，没有 success 包装器
@@ -150,7 +159,9 @@ export const useSchematicStore = create<SchematicStoreState>()(
             const MIN_DISTANCE = 30; // 元器件之间的最小允许距离
 
             // 自动布局：检查是否需要自动排列元器件
-            const hasInvalidPosition = data.components?.some((comp: BackendComponent) =>
+            // 注意：后端返回 {"symbols": []} 表示无数据，需要检查 components 是否存在且有内容
+            const backendComponents = (data.components?.length > 0 ? data.components : data.symbols) || [];
+            const hasInvalidPosition = backendComponents.some((comp: BackendComponent) =>
               !comp.position ||
               typeof comp.position.x !== 'number' ||
               typeof comp.position.y !== 'number' ||
@@ -159,7 +170,7 @@ export const useSchematicStore = create<SchematicStoreState>()(
 
             // 检查元器件是否过于密集（彼此距离小于阈值）
             const isTooDense = (() => {
-              const positions = (data.components || [])
+              const positions = (backendComponents)
                 .filter((comp: BackendComponent) => comp.position && typeof comp.position.x === 'number' && typeof comp.position.y === 'number')
                 .map((comp: BackendComponent) => ({ x: comp.position!.x, y: comp.position!.y }));
 
@@ -179,7 +190,7 @@ export const useSchematicStore = create<SchematicStoreState>()(
 
             const needsAutoLayout = hasInvalidPosition || isTooDense;
 
-            const components = (data.components || []).map((comp: BackendComponent, idx: number) => {
+            const components = (backendComponents).map((comp: BackendComponent, idx: number) => {
               // 安全获取 position 值，确保不是 null/undefined
               let posX = (comp.position && typeof comp.position.x === 'number') ? comp.position.x : 0;
               let posY = (comp.position && typeof comp.position.y === 'number') ? comp.position.y : 0;
@@ -221,7 +232,7 @@ export const useSchematicStore = create<SchematicStoreState>()(
               };
             });
 
-            const rawPositions = data.components?.map((c, i) => ({ id: c.id || `comp-${i}`, name: c.name, pos: c.position, ref: c.reference }));
+            const rawPositions = backendComponents.map((c, i) => ({ id: c.id || `comp-${i}`, name: c.name, pos: c.position, ref: c.reference }));
             console.log('[SchematicStore] Component positions (raw from backend):', rawPositions);
             console.log('[SchematicStore] Needs auto-layout:', needsAutoLayout);
             console.log('[SchematicStore] Component positions (after transform/auto-layout):', components.map(c => ({ id: c.id, ref: c.reference, pos: c.position })));
@@ -246,17 +257,53 @@ export const useSchematicStore = create<SchematicStoreState>()(
             set({ schematicData });
           }
         } catch (error) {
-          console.error('Failed to load schematic data:', error);
+          // 忽略请求被取消的错误（快速切换页面时发生）
+          if (error instanceof Error && error.name !== 'CanceledError') {
+            console.error('Failed to load schematic data:', error);
+          }
+        }
+      },
+
+      // 保存原理图数据到后端
+      saveSchematicData: async () => {
+        const { schematicData, projectId } = get();
+        if (!schematicData || !projectId) {
+          console.warn('[SchematicStore] saveSchematicData: no data or projectId');
+          return;
+        }
+
+        // 防止空数据覆盖后端生成的数据
+        if (!schematicData.components || schematicData.components.length === 0) {
+          console.warn('[SchematicStore] No components to save, skipping');
+          return;
+        }
+
+        set({ isSaving: true });
+        try {
+          // 调用真实API保存原理图数据
+          const response = await schematicApi.saveSchematic(projectId, schematicData);
+          if (response.success) {
+            set({ isSaving: false, lastSaved: new Date() });
+            console.log('[SchematicStore] Schematic saved successfully');
+          } else {
+            set({ isSaving: false });
+            console.error('[SchematicStore] Failed to save schematic:', response);
+          }
+        } catch (error) {
+          set({ isSaving: false });
+          console.error('[SchematicStore] Failed to save schematic:', error);
         }
       },
 
       // 设置原理图数据
       setSchematicData: (data) => {
-        set({ schematicData: data });
-        if (data && data.sheets && data.sheets.length > 0) {
-          set({ currentSheetId: data.sheets[0].id });
+        // 深拷贝防止外部 mutation 影响 store 内部状态
+        const clonedData = data ? JSON.parse(JSON.stringify(data)) : data;
+        set({ schematicData: clonedData });
+        if (clonedData && clonedData.sheets && clonedData.sheets.length > 0) {
+          set({ currentSheetId: clonedData.sheets[0].id });
         }
-        if (data) {
+        if (clonedData) {
           get().pushHistory();
         }
       },

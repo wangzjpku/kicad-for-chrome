@@ -84,26 +84,41 @@ class GLM4Client:
 
         return result["choices"][0]["message"]["content"]
 
-    def generate_project_spec(self, requirements: str) -> Dict[str, Any]:
+    def generate_project_spec(self, requirements: str, attachments: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        根据用户需求生成电路项目方案
+        Generate circuit project specification based on user requirements
 
         Args:
-            requirements: 用户输入的项目需求描述
+            requirements: User input project requirements
+            attachments: Optional list of attachments (reference materials)
 
         Returns:
-            包含项目方案、原理图数据的字典
+            Dict containing project specification and schematic data
         """
-        system_prompt = """你是一个专业的电子电路设计助手，能够根据用户的需求描述，分析并生成完整的电路项目方案。
+        # Build attachments info
+        attachments_info = ""
+        if attachments and len(attachments) > 0:
+            attachments_info = "\n\n## Reference Materials Provided:\n"
+            for att in attachments:
+                att_type = att.get('type', 'unknown')
+                att_name = att.get('name', 'unknown')
+                att_path = att.get('path', '')
+                attachments_info += f"- {att_name} ({att_type}): {att_path}\n"
+            attachments_info += "\nPlease analyze circuit requirements based on reference materials."
 
-你的任务是：
-1. 理解用户的需求描述
-2. 分析需要哪些电子元器件
-3. 确定电路的技术参数
-4. 生成合理的原理图布局和连线
-5. 输出结构化的项目方案
+        system_prompt_template = """You are a professional electronic circuit design assistant.
 
-请严格按照以下JSON格式输出，不要输出其他内容：
+Your tasks are:
+1. Understand user requirements
+2. Analyze provided reference materials (if any)
+3. Determine required components
+4. Define technical parameters
+5. Generate schematic layout
+6. Output structured project specification
+
+{attachments_info}
+
+Output strictly in this JSON format:
 {
   "name": "项目名称",
   "description": "项目描述",
@@ -144,6 +159,14 @@ class GLM4Client:
 }
 
 重要提示：
+
+【关键芯片选择规则 - 必须严格遵守】：
+- 如果用户提到"ne555"或"555"或"定时器"或"振荡器"，必须使用NE555定时器芯片（如NE555P），禁止使用ATtiny85、STM32等单片机替代
+- 如果用户提到"ch340c"或"ch340"或"usb转串口"，必须使用CH340C芯片，禁止用FT232、PL2303等其他USB-UART芯片替代
+- 如果用户提到"esp32-wroom"、"esp32-wrover"、"esp32-c3"、"esp32-s3"，必须使用该型号的ESP32模块
+- 如果用户提到"ams1117"，必须使用AMS1117稳压器
+- 最关键：当用户明确指定某个芯片时，方案中必须包含该芯片，不能用其他芯片替代
+
 - components中的封装请使用标准的KiCad封装格式，如0805, SOT-223, TO-220等
 - schematic.components中必须包含footprint字段，格式为"库名:封装名"，例如：
   - 电阻: Resistor_SMD:R_0603_1608Metric 或 Resistor_SMD:R_0805_2012Metric
@@ -171,11 +194,14 @@ class GLM4Client:
 
 请直接输出JSON格式的结果。"""
 
+        # Replace placeholder in system prompt
+        system_prompt = system_prompt_template.replace("{attachments_info}", attachments_info)
+
         try:
             result = self.chat(
                 user_prompt,
                 system_prompt=system_prompt,
-                temperature=0.7,
+                temperature=0.1,  # Lower temperature for more deterministic output
                 max_tokens=4096,
             )
 
@@ -240,8 +266,8 @@ class GLM4Client:
                     project_spec = json.loads(result_brute)
                     logger.info("JSON解析成功 (暴力修复单引号)")
                     return project_spec
-                except:
-                    pass
+                except json.JSONDecodeError as e:
+                    logger.debug(f"暴力解析JSON失败: {e}")
 
             # 所有方法都失败
             logger.error(f"解析GLM-4响应失败 - 已尝试所有修复方法")

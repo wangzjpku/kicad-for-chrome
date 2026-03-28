@@ -12,6 +12,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useSchematicStore } from '../stores/schematicStore';
+import { useAuthStore } from '../stores/authStore';
 import './AIProjectDialog.css';
 
 interface AIProjectDialogProps {
@@ -98,7 +100,68 @@ interface SchematicData {
   nets: SchematicNet[];
 }
 
-type DialogStep = 'input' | 'clarifying' | 'analyzing' | 'preview' | 'editing' | 'generating' | 'confirm' | 'error';
+// PCB 数据类型
+interface PCBData {
+  width: number;
+  height: number;
+  layers: number;
+  thickness: number;
+  silkscreen: boolean;
+  soldermask: string;
+  components: Array<{
+    id: string;
+    reference: string;
+    footprint: string;
+    position: { x: number; y: number };
+    rotation: number;
+  }>;
+  nets: Array<{
+    id: string;
+    name: string;
+  }>;
+  traces: Array<{
+    net: string;
+    width: number;
+    points: Array<{ x: number; y: number }>;
+  }>;
+}
+
+// PCB 参数
+interface PCBParams {
+  width: number;
+  height: number;
+  layers: number;
+  thickness: number;
+  silkscreen: boolean;
+  soldermask: string;
+}
+
+type DialogStep =
+  | 'input'           // 输入需求
+  | 'clarifying'      // 明确细节
+  | 'analyzing'       // 分析中
+  | 'schematic_preview' // 原理图预览
+  | 'pcb_params'     // PCB 参数询问
+  | 'pcb_preview'    // PCB 预览
+  | 'editing'         // 编辑确认
+  | 'generating'      // 生成项目
+  | 'confirm'         // 最终确认
+  | 'error';          // 错误
+
+// H3 Fix: BOM去重函数 - 合并相同(name, model, package)的元件，累加数量
+function deduplicateComponents(components: ComponentSpec[]): ComponentSpec[] {
+  const seen = new Map<string, ComponentSpec>();
+  for (const comp of components) {
+    const key = `${comp.name}|${comp.model}|${comp.package || comp.footprint || ''}`;
+    if (seen.has(key)) {
+      const existing = seen.get(key)!;
+      existing.quantity += comp.quantity || 1;
+    } else {
+      seen.set(key, { ...comp, quantity: comp.quantity || 1 });
+    }
+  }
+  return Array.from(seen.values());
+}
 
 const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   isOpen,
@@ -112,7 +175,27 @@ const AIProjectDialog: React.FC<AIProjectDialogProps> = ({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [projectSpec, setProjectSpec] = useState<ProjectSpec | null>(null);
   const [schematicData, setSchematicData] = useState<SchematicData | null>(null);
+  const [pcbData, setPcbData] = useState<PCBData | null>(null);
+  const [pcbParams, setPcbParams] = useState<PCBParams>({
+    width: 100,
+    height: 80,
+    layers: 2,
+    thickness: 1.6,
+    silkscreen: true,
+    soldermask: 'green'
+  });
   const [error, setError] = useState<string | null>(null);
+
+  // 缩放和拖动状态
+  const [schematicZoom, setSchematicZoom] = useState(1);
+  const [schematicPan, setSchematicPan] = useState({ x: 0, y: 0 });
+  const [isDraggingSchematic, setIsDraggingSchematic] = useState(false);
+  const [dragStartSchematic, setDragStartSchematic] = useState({ x: 0, y: 0 });
+
+  const [pcbZoom, setPcbZoom] = useState(1);
+  const [pcbPan, setPcbPan] = useState({ x: 0, y: 0 });
+  const [isDraggingPcb, setIsDraggingPcb] = useState(false);
+  const [dragStartPcb, setDragStartPcb] = useState({ x: 0, y: 0 });
   const [progress, setProgress] = useState<string>('');
 
   // 编辑状态
@@ -128,8 +211,21 @@ interface FinalResult {
   message: string;
 }
 
+// 上传文件类型
+interface UploadedFile {
+  id: string;
+  name: string;
+  path: string;
+  type: string;
+  size: number;
+}
+
   // 最终结果
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
+
+  // 文件上传状态
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [fileInputValue, setFileInputValue] = useState('');
 
   // 重置状态
   useEffect(() => {
@@ -140,13 +236,103 @@ interface FinalResult {
       setAnswers({});
       setProjectSpec(null);
       setSchematicData(null);
+      setPcbData(null);
+      setPcbParams({
+        width: 100,
+        height: 80,
+        layers: 2,
+        thickness: 1.6,
+        silkscreen: true,
+        soldermask: 'green'
+      });
       setError(null);
       setProgress('');
       setEditingComponent(null);
       setEditingParameter(null);
       setFinalResult(null);
+      setUploadedFiles([]);
+      setFileInputValue('');
+      // 重置缩放和拖动状态
+      setSchematicZoom(1);
+      setSchematicPan({ x: 0, y: 0 });
+      setPcbZoom(1);
+      setPcbPan({ x: 0, y: 0 });
     }
   }, [isOpen]);
+
+  // ========== 缩放和拖动处理函数 ==========
+  // 原理图缩放
+  const handleSchematicWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.2, Math.min(5, schematicZoom * delta));
+    setSchematicZoom(newZoom);
+  };
+
+  // 原理图拖动开始
+  const handleSchematicMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsDraggingSchematic(true);
+      setDragStartSchematic({ x: e.clientX - schematicPan.x, y: e.clientY - schematicPan.y });
+    }
+  };
+
+  // 原理图拖动中
+  const handleSchematicMouseMove = (e: React.MouseEvent) => {
+    if (isDraggingSchematic) {
+      setSchematicPan({
+        x: e.clientX - dragStartSchematic.x,
+        y: e.clientY - dragStartSchematic.y
+      });
+    }
+  };
+
+  // 原理图拖动结束
+  const handleSchematicMouseUp = () => {
+    setIsDraggingSchematic(false);
+  };
+
+  // PCB 缩放
+  const handlePcbWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.2, Math.min(5, pcbZoom * delta));
+    setPcbZoom(newZoom);
+  };
+
+  // PCB 拖动开始
+  const handlePcbMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsDraggingPcb(true);
+      setDragStartPcb({ x: e.clientX - pcbPan.x, y: e.clientY - pcbPan.y });
+    }
+  };
+
+  // PCB 拖动中
+  const handlePcbMouseMove = (e: React.MouseEvent) => {
+    if (isDraggingPcb) {
+      setPcbPan({
+        x: e.clientX - dragStartPcb.x,
+        y: e.clientY - dragStartPcb.y
+      });
+    }
+  };
+
+  // PCB 拖动结束
+  const handlePcbMouseUp = () => {
+    setIsDraggingPcb(false);
+  };
+
+  // 重置视图
+  const resetSchematicView = () => {
+    setSchematicZoom(1);
+    setSchematicPan({ x: 0, y: 0 });
+  };
+
+  const resetPcbView = () => {
+    setPcbZoom(1);
+    setPcbPan({ x: 0, y: 0 });
+  };
 
   // ========== Step 1: 提交需求，获取澄清问题 ==========
   const handleSubmitRequirements = async () => {
@@ -164,11 +350,18 @@ interface FinalResult {
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
-      // 尝试调用 clarify API
+      // 尝试调用 clarify API（包含文件信息）
       const clarifyResponse = await fetch('/api/v1/ai/clarify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requirements: inputText }),
+        body: JSON.stringify({
+          requirements: inputText,
+          attachments: uploadedFiles.map(f => ({
+            name: f.name,
+            path: f.path,
+            type: f.type
+          }))
+        }),
         signal: controller.signal
       });
 
@@ -177,14 +370,13 @@ interface FinalResult {
       if (clarifyResponse.ok) {
         const data: ClarificationResponse = await clarifyResponse.json();
 
-        // 初始化默认答案
+        // 初始化默认答案（H1 Fix: 不自动选择，让用户主动选择）
         const defaultAnswers: Record<string, string> = {};
         data.questions.forEach(q => {
           if (q.default) {
             defaultAnswers[q.id] = q.default;
-          } else if (q.options && q.options.length > 0) {
-            defaultAnswers[q.id] = q.options[0];
           }
+          // 不再自动选择第一个选项，避免"220V AC"等错误预选
         });
 
         setAnswers(defaultAnswers);
@@ -235,7 +427,12 @@ interface FinalResult {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           requirements: inputText,
-          answers: {}
+          answers: {},
+          attachments: uploadedFiles.map(f => ({
+            name: f.name,
+            path: f.path,
+            type: f.type
+          }))
         }),
         signal: controller.signal
       });
@@ -250,12 +447,34 @@ interface FinalResult {
       const data = await response.json();
 
       setProgress('正在生成项目方案...');
-      setProjectSpec(data.spec);
+      // H3 Fix: 对AI返回的BOM进行去重
+      const dedupedSpec = {
+        ...data.spec,
+        components: deduplicateComponents(data.spec?.components || []),
+      };
+      setProjectSpec(dedupedSpec);
+
+      // 从AI返回的参数中提取PCB尺寸
+      if (data.spec?.parameters) {
+        const pcbSizeParam = data.spec.parameters.find(
+          (p: ParameterSpec) => p.key === 'PCB尺寸' || p.key === 'pcb_size' || p.key === 'PCB尺寸(mm)'
+        );
+        if (pcbSizeParam?.value) {
+          const sizeMatch = pcbSizeParam.value.match(/(\d+)\s*[xX*×]\s*(\d+)/);
+          if (sizeMatch) {
+            const width = parseInt(sizeMatch[1], 10);
+            const height = parseInt(sizeMatch[2], 10);
+            if (width > 0 && height > 0) {
+              setPcbParams(prev => ({ ...prev, width, height }));
+            }
+          }
+        }
+      }
 
       setProgress('正在生成原理图...');
       setSchematicData(data.schematic);
 
-      setStep('preview');
+      setStep('schematic_preview');
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {
@@ -269,7 +488,7 @@ interface FinalResult {
   const handleSubmitAnswers = async () => {
     setStep('analyzing');
     setError(null);
-    setProgress('正在根据您的需求生成 BOM 和原理图...');
+    setProgress('正在生成原理图方案...');
 
     // 创建超时控制器 (60秒超时)
     const controller = new AbortController();
@@ -281,7 +500,13 @@ interface FinalResult {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           requirements: inputText,
-          answers: answers
+          answers: answers,
+          attachments: uploadedFiles.map(f => ({
+            name: f.name,
+            path: f.path,
+            type: f.type
+          })),
+          mode: 'schematic_only'  // 只生成原理图
         }),
         signal: controller.signal
       });
@@ -296,12 +521,37 @@ interface FinalResult {
       const data = await response.json();
 
       setProgress('正在生成项目方案...');
-      setProjectSpec(data.spec);
+      // H3 Fix: 对AI返回的BOM进行去重
+      const dedupedSpec = {
+        ...data.spec,
+        components: deduplicateComponents(data.spec?.components || []),
+      };
+      setProjectSpec(dedupedSpec);
+
+      // 从AI返回的参数中提取PCB尺寸
+      if (data.spec?.parameters) {
+        const pcbSizeParam = data.spec.parameters.find(
+          (p: ParameterSpec) => p.key === 'PCB尺寸' || p.key === 'pcb_size' || p.key === 'PCB尺寸(mm)'
+        );
+        if (pcbSizeParam?.value) {
+          // 解析尺寸格式: "50x40" 或 "50*40" 或 "50×40"
+          const sizeMatch = pcbSizeParam.value.match(/(\d+)\s*[xX*×]\s*(\d+)/);
+          if (sizeMatch) {
+            const width = parseInt(sizeMatch[1], 10);
+            const height = parseInt(sizeMatch[2], 10);
+            if (width > 0 && height > 0) {
+              setPcbParams(prev => ({ ...prev, width, height }));
+              console.log('[AIProjectDialog] PCB尺寸从AI提取:', width, 'x', height);
+            }
+          }
+        }
+      }
 
       setProgress('正在生成原理图...');
       setSchematicData(data.schematic);
 
-      setStep('preview');
+      // 跳转到原理图预览步骤
+      setStep('schematic_preview');
 
     } catch (err: unknown) {
       clearTimeout(timeoutId);
@@ -409,7 +659,7 @@ interface FinalResult {
 
   // 退出编辑模式
   const exitEditMode = () => {
-    setStep('preview');
+    setStep('schematic_preview');
     setEditingComponent(null);
     setEditingParameter(null);
   };
@@ -420,43 +670,103 @@ interface FinalResult {
     setError(null);
     setProgress('正在生成最终项目...');
 
-    // 创建超时控制器 (60秒超时)
+    // 创建超时控制器 (120秒超时)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
+      // Start project creation
+
+      // 确保projectSpec和schematicData有值
+      if (!projectSpec) {
+        throw new Error('项目规格不存在，请重新开始');
+      }
+
+      // 构建请求数据 - 确保所有字段都有值
+      const requestData = {
+        name: projectSpec?.name || 'AI生成项目',
+        description: projectSpec?.description || '',
+        components: projectSpec?.components || [],
+        parameters: projectSpec?.parameters || [],
+        schematicData: schematicData || { components: [], wires: [], nets: [], netLabels: [], powerSymbols: [] },
+        pcbData: pcbData || null,  // PCB数据
+        pcbParams: pcbParams || null  // PCB参数
+      };
+
+      // 获取认证token
+      const token = useAuthStore.getState().token;
+      const authHeaders = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+
       const response = await fetch('/api/v1/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: projectSpec!.name,
-          description: projectSpec!.description,
-          components: projectSpec!.components,
-          parameters: projectSpec!.parameters,
-          schematicData: schematicData
-        }),
+        headers: authHeaders,
+        body: JSON.stringify(requestData),
         signal: controller.signal
       });
 
+
       clearTimeout(timeoutId);
 
+
       if (!response.ok) {
-        throw new Error('创建项目失败');
+        // 处理409冲突错误（项目名称已存在）
+        if (response.status === 409) {
+          // 自动重命名项目（添加时间戳）
+          const timestamp = Date.now();
+          requestData.name = `${requestData.name}-${timestamp}`;
+          console.log('Project name conflict, retrying with:', requestData.name);
+
+          const retryResponse = await fetch('/api/v1/projects', {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify(requestData),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!retryResponse.ok) {
+            throw new Error('创建项目失败: ' + retryResponse.status);
+          }
+
+          const result = await retryResponse.json();
+          const finalRes = result.project ? result : {
+            project: result,
+            schematic: null,
+            message: '项目创建成功'
+          };
+          setFinalResult(finalRes);
+          setStep('confirm');
+          return;
+        }
+        const errorText = await response.text(); void errorText;
+        throw new Error('创建项目失败: ' + response.status);
       }
 
       const result = await response.json();
-      setFinalResult(result);
+
+      // 处理API返回格式：直接返回项目对象或包装格式
+      const finalRes = result.project ? result : {
+        project: result,
+        schematic: null,
+        message: '项目创建成功'
+      };
+      setFinalResult(finalRes);
       setStep('confirm');
 
     } catch (err: unknown) {
       clearTimeout(timeoutId);
+
       if (err instanceof Error && err.name === 'AbortError') {
         setError('创建项目超时，请稍后重试');
       } else {
         const errorMessage = err instanceof Error ? err.message : '生成最终结果失败';
         setError(errorMessage);
       }
-      setStep('error');
+      // 即使出错也进入confirm阶段，允许用户重试
+      setStep('confirm');
     }
   };
 
@@ -469,30 +779,88 @@ interface FinalResult {
   };
 
   // 处理返回修改
+  // 确认原理图，进入 PCB 参数步骤
+  const confirmSchematic = () => {
+    setStep('pcb_params');
+  };
+
+  // 提交 PCB 参数，生成 PCB 方案
+  const handleSubmitPcbParams = async () => {
+    setStep('analyzing');
+    setError(null);
+    setProgress('正在生成 PCB 方案...');
+
+    // 创建超时控制器 (60秒超时)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const response = await fetch('/api/v1/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requirements: inputText,
+          answers: answers,
+          attachments: uploadedFiles.map(f => ({
+            name: f.name,
+            path: f.path,
+            type: f.type
+          })),
+          mode: 'pcb_only',
+          pcb_params: pcbParams,
+          schematic: schematicData
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '生成PCB方案失败');
+      }
+
+      const data = await response.json();
+      setPcbData(data.pcb);
+      setStep('pcb_preview');
+
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('AI 分析超时，请稍后重试');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : '生成PCB方案出错';
+        setError(errorMessage);
+      }
+      setStep('error');
+    }
+  };
+
   const handleBack = () => {
     if (step === 'clarifying') {
       setStep('input');
-    } else if (step === 'preview' || step === 'editing') {
+    } else if (step === 'schematic_preview') {
       setStep('clarifying');
+    } else if (step === 'pcb_params') {
+      setStep('schematic_preview');
+    } else if (step === 'pcb_preview' || step === 'editing') {
+      setStep('pcb_params');
     } else if (step === 'confirm') {
-      setStep('preview');
+      setStep('pcb_preview');
     } else if (step === 'error') {
       setStep('input');
       setError(null);
     }
   };
 
-  // 计算已回答的问题数量（只计算必答问题，且用户实际选择的）
+  // 计算已回答的问题数量（只计算必答问题）
   const getAnsweredCount = () => {
     if (!clarificationData) return 0;
     const requiredQuestions = clarificationData.questions.filter(q => q.required);
     let count = 0;
     requiredQuestions.forEach(q => {
-      // 检查用户是否实际选择了（与默认值不同，或者有用户交互）
-      if (answers[q.id] && answers[q.id] !== q.default) {
-        count++;
-      } else if (answers[q.id]) {
-        // 如果答案等于默认值，仍然算作已回答（因为有默认值）
+      // H1 Fix: 只要用户选择了答案（不为空）就算已回答
+      if (answers[q.id] && answers[q.id].trim() !== '') {
         count++;
       }
     });
@@ -509,6 +877,69 @@ interface FinalResult {
     handleSubmitAnswers();
   };
 
+  // ========== 文件上传功能 ==========
+
+  // 处理文件路径输入
+  const handleFilePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileInputValue(e.target.value);
+  };
+
+  // 添加文件到列表
+  const handleAddFile = () => {
+    const filePath = fileInputValue.trim();
+    if (!filePath) return;
+
+    // 检查文件是否已存在
+    if (uploadedFiles.some(f => f.path === filePath)) {
+      setError('该文件已添加');
+      setTimeout(() => setError(null), 2000);
+      return;
+    }
+
+    // 提取文件名
+    const fileName = filePath.split(/[/\\]/).pop() || filePath;
+
+    // 根据文件扩展名判断类型
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    let fileType = 'other';
+    if (ext === 'pdf') fileType = 'pdf';
+    else if (['sch', 'schdoc'].includes(ext)) fileType = 'schematic';
+    else if (['kicad_pcb', 'pcb'].includes(ext)) fileType = 'pcb';
+    else if (['bom', 'csv'].includes(ext)) fileType = 'bom';
+    else if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) fileType = 'image';
+
+    const newFile: UploadedFile = {
+      id: Date.now().toString(),
+      name: fileName,
+      path: filePath,
+      type: fileType,
+      size: 0
+    };
+
+    setUploadedFiles([...uploadedFiles, newFile]);
+    setFileInputValue('');
+    setError(null);
+  };
+
+  // 移除文件
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles(uploadedFiles.filter(f => f.id !== fileId));
+  };
+
+  // 获取文件类型图标
+  const getFileTypeIcon = (type: string) => {
+    switch (type) {
+      case 'pdf': return '📄';
+      case 'schematic': return '📐';
+      case 'pcb': return '🔲';
+      case 'bom': return '📋';
+      case 'image': return '🖼️';
+      default: return '📁';
+    }
+  };
+
+  if (!isOpen) return null;
+
   if (!isOpen) return null;
 
   return (
@@ -522,33 +953,43 @@ interface FinalResult {
 
         {/* 进度指示器 */}
         <div className="progress-indicator">
-          <div className={`progress-step ${step === 'input' ? 'active' : ''} ${['clarifying', 'analyzing', 'preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'input' ? 'active' : ''} ${['clarifying', 'schematic_preview', 'pcb_params', 'pcb_preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">1</span>
             <span className="step-label">输入需求</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${step === 'clarifying' ? 'active' : ''} ${['analyzing', 'preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'clarifying' ? 'active' : ''} ${['schematic_preview', 'pcb_params', 'pcb_preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">2</span>
             <span className="step-label">明确细节</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${['analyzing'].includes(step) ? 'active' : ''} ${['preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'schematic_preview' ? 'active' : ''} ${['pcb_params', 'pcb_preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">3</span>
-            <span className="step-label">生成方案</span>
+            <span className="step-label">原理图确认</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${['preview', 'editing'].includes(step) ? 'active' : ''} ${['generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+          <div className={`progress-step ${step === 'pcb_params' ? 'active' : ''} ${['pcb_preview', 'editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
             <span className="step-number">4</span>
+            <span className="step-label">PCB参数</span>
+          </div>
+          <div className="progress-line"></div>
+          <div className={`progress-step ${step === 'pcb_preview' ? 'active' : ''} ${['editing', 'generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+            <span className="step-number">5</span>
+            <span className="step-label">PCB确认</span>
+          </div>
+          <div className="progress-line"></div>
+          <div className={`progress-step ${['editing'].includes(step) ? 'active' : ''} ${['generating', 'confirm'].includes(step) ? 'completed' : ''}`}>
+            <span className="step-number">6</span>
             <span className="step-label">编辑确认</span>
           </div>
           <div className="progress-line"></div>
-          <div className={`progress-step ${['generating'].includes(step) ? 'active' : ''} ${step === 'confirm' ? 'completed' : ''}`}>
-            <span className="step-number">5</span>
+          <div className={`progress-step ${step === 'generating' ? 'active' : ''} ${step === 'confirm' ? 'completed' : ''}`}>
+            <span className="step-number">7</span>
             <span className="step-label">生成项目</span>
           </div>
           <div className="progress-line"></div>
           <div className={`progress-step ${step === 'confirm' ? 'active' : ''}`}>
-            <span className="step-number">6</span>
+            <span className="step-number">8</span>
             <span className="step-label">最终确认</span>
           </div>
         </div>
@@ -571,6 +1012,73 @@ interface FinalResult {
               <p className="hint">
                 💡 提示：描述越详细，AI 生成的问题越精准，最终方案越符合您的需求
               </p>
+
+              {/* 文件上传区域 - 左下角 */}
+              <div className="file-upload-section">
+                <div className="file-upload-header">
+                  <span className="file-upload-icon">📎</span>
+                  <span className="file-upload-title">附加参考资料（可选）</span>
+                  <span className="file-upload-hint">可添加芯片PDF手册、原理图等参考资料</span>
+                </div>
+
+                <div className="file-input-row">
+                  <input
+                    type="text"
+                    className="file-path-input"
+                    value={fileInputValue}
+                    onChange={handleFilePathChange}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddFile()}
+                    placeholder="输入文件路径，例如：C:\docs\chip_manual.pdf"
+                  />
+                  <button
+                    className="browse-btn"
+                    onClick={() => {
+                      // 触发系统文件选择对话框
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.multiple = false;
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          // 浏览器中 File 对象没有 path，使用 name 并提示用户补全路径
+                          setFileInputValue(file.name);
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    📂 浏览
+                  </button>
+                  <button
+                    className="add-file-btn"
+                    onClick={handleAddFile}
+                    disabled={!fileInputValue.trim()}
+                  >
+                    + 添加
+                  </button>
+                </div>
+
+                {/* 已添加的文件列表 */}
+                {uploadedFiles.length > 0 && (
+                  <div className="file-list">
+                    {uploadedFiles.map((file) => (
+                      <div key={file.id} className="file-item">
+                        <span className="file-icon">{getFileTypeIcon(file.type)}</span>
+                        <span className="file-name" title={file.path}>{file.name}</span>
+                        <span className="file-type-badge">{file.type.toUpperCase()}</span>
+                        <button
+                          className="remove-file-btn"
+                          onClick={() => handleRemoveFile(file.id)}
+                          title="移除文件"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {error && <p className="error-message">{error}</p>}
             </div>
           )}
@@ -645,27 +1153,144 @@ interface FinalResult {
             </div>
           )}
 
-          {/* Step 4: 预览结果（带编辑功能） */}
-          {(step === 'preview' || step === 'editing') && projectSpec && (
+          {/* Step 3: 原理图预览和方案 */}
+          {(step === 'schematic_preview' || step === 'editing') && projectSpec && (
             <div className="step-preview">
+              {/* 原理图预览 */}
+              <div className="spec-section">
+                <div className="preview-header">
+                  <h3>📐 原理图预览</h3>
+                  <div className="zoom-controls">
+                    <button onClick={() => setSchematicZoom(z => Math.max(0.2, z - 0.2))} title="缩小">➖</button>
+                    <span>{Math.round(schematicZoom * 100)}%</span>
+                    <button onClick={() => setSchematicZoom(z => Math.min(5, z + 0.2))} title="放大">➕</button>
+                    <button onClick={resetSchematicView} title="重置">🔄</button>
+                  </div>
+                </div>
+                <div className="schematic-stats">
+                  <p>器件数量: {schematicData?.components.length || 0}</p>
+                  <p>导线数量: {schematicData?.wires.length || 0}</p>
+                  <p>网络数量: {schematicData?.nets.length || 0}</p>
+                </div>
+
+                {schematicData && (
+                  <div
+                    className="schematic-canvas-wrapper"
+                    onWheel={handleSchematicWheel}
+                    onMouseDown={handleSchematicMouseDown}
+                    onMouseMove={handleSchematicMouseMove}
+                    onMouseUp={handleSchematicMouseUp}
+                    onMouseLeave={handleSchematicMouseUp}
+                    style={{ cursor: isDraggingSchematic ? 'grabbing' : 'grab' }}
+                  >
+                    <svg
+                      className="schematic-canvas"
+                      viewBox={`${-schematicPan.x / schematicZoom} ${-schematicPan.y / schematicZoom} ${600 / schematicZoom} ${400 / schematicZoom}`}
+                      preserveAspectRatio="xMidYMid meet"
+                    >
+                      <defs>
+                        <pattern id="schematic-grid" width={20 * schematicZoom} height={20 * schematicZoom} patternUnits="userSpaceOnUse">
+                          <path d={`M ${20 * schematicZoom} 0 L 0 0 0 ${20 * schematicZoom}`} fill="none" stroke="#1a3a5a" strokeWidth="0.5"/>
+                        </pattern>
+                      </defs>
+                      <rect
+                        x={-schematicPan.x / schematicZoom - 1000}
+                        y={-schematicPan.y / schematicZoom - 1000}
+                        width={2000 / schematicZoom}
+                        height={2000 / schematicZoom}
+                        fill="url(#schematic-grid)"
+                      />
+
+                      {/* 绘制导线 */}
+                      {schematicData.wires?.map((wire: SchematicWire, index: number) => {
+                        const points = wire.points || [];
+                        if (points.length < 2) return null;
+                        let pathD = `M ${points[0].x} ${points[0].y}`;
+                        for (let i = 1; i < points.length; i++) {
+                          pathD += ` L ${points[i].x} ${points[i].y}`;
+                        }
+                        return (
+                          <path
+                            key={wire.id || `wire-${index}`}
+                            d={pathD}
+                            fill="none"
+                            stroke={wire.net === 'VCC' ? '#4CAF50' : wire.net === 'GND' ? '#F44336' : '#2196F3'}
+                            strokeWidth={2 / schematicZoom}
+                          />
+                        );
+                      })}
+
+                      {/* 绘制元件 */}
+                      {schematicData.components.map((comp: SchematicComponent, index: number) => {
+                        const x = comp.position?.x || 50;
+                        const y = comp.position?.y || 50;
+                        const color = '#607D8B';
+                        const size = 60 / schematicZoom;
+                        return (
+                          <g key={comp.id || `comp-${index}`} transform={`translate(${x - size/2}, ${y - size/3})`}>
+                            <rect width={size} height={size * 0.67} rx={4/schematicZoom} fill={color} fillOpacity="0.3" stroke={color} strokeWidth={2/schematicZoom}/>
+                            <text x={size/2} y={size/4} textAnchor="middle" fontSize={10/schematicZoom} fill="#fff">
+                              {comp.reference || comp.name?.substring(0, 8) || 'U'}
+                            </text>
+                            <text x={size/2} y={size/2} textAnchor="middle" fontSize={8/schematicZoom} fill="#aaa">
+                              {comp.name?.substring(0, 8) || 'Component'}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* BOM 器件清单（带封装信息） */}
+              <div className="spec-section">
+                <h3>📋 器件清单 ({projectSpec.components.length} 个器件)</h3>
+                <table className="components-table">
+                  <thead>
+                    <tr>
+                      <th>器件</th>
+                      <th>型号</th>
+                      <th>KiCad封装</th>
+                      <th>数量</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectSpec.components.map((comp, idx) => (
+                      <tr key={idx}>
+                        <td>{comp.name}</td>
+                        <td>{comp.model}</td>
+                        <td className="footprint-cell">{comp.package || comp.footprint || '-'}</td>
+                        <td>{comp.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
               {/* 工具栏 */}
               <div className="preview-toolbar">
-                {step === 'preview' ? (
-                  <button className="edit-mode-btn" onClick={enterEditMode}>
-                    ✏️ 进入编辑模式
-                  </button>
-                ) : (
-                  <button className="exit-edit-btn" onClick={exitEditMode}>
-                    ✓ 完成编辑
-                  </button>
-                )}
+                <button className="edit-mode-btn" onClick={enterEditMode}>
+                  ✏️ 进入编辑模式
+                </button>
               </div>
 
               {/* 项目方案 */}
               <div className="spec-section">
                 <h3>📦 项目方案 {step === 'editing' && <span className="edit-badge">编辑中</span>}</h3>
                 <div className="spec-content">
-                  <h4>{projectSpec.name}</h4>
+                  <div className="project-name-edit">
+                    {step === 'editing' ? (
+                      <input
+                        type="text"
+                        value={projectSpec.name}
+                        onChange={(e) => setProjectSpec({ ...projectSpec, name: e.target.value })}
+                        className="project-name-input"
+                      />
+                    ) : (
+                      <h4>{projectSpec.name}</h4>
+                    )}
+                  </div>
                   <p>{projectSpec.description}</p>
 
                   {/* 技术参数表格 */}
@@ -740,9 +1365,9 @@ interface FinalResult {
                     </>
                   )}
 
-                  {/* BOM 器件清单 */}
+                  {/* BOM 器件清单 - 可编辑 */}
                   <h5>
-                    📋 BOM 器件清单 ({projectSpec.components.length} 个器件)
+                    📋 器件清单 ({projectSpec.components.length} 个器件)
                     {step === 'editing' && (
                       <button className="add-btn small" onClick={addComponent}>+ 添加器件</button>
                     )}
@@ -820,69 +1445,211 @@ interface FinalResult {
                   </table>
                 </div>
               </div>
-
-              {/* 原理图预览 */}
-              {schematicData && (
-                <div className="schematic-section">
-                  <h3>📐 原理图预览</h3>
-                  <div className="schematic-preview">
-                    <p>器件数量: {schematicData.components.length}</p>
-                    <p>导线数量: {schematicData.wires.length}</p>
-                    <p>网络数量: {schematicData.nets.length}</p>
-
-                    <div className="schematic-canvas-wrapper">
-                      <svg
-                        className="schematic-canvas"
-                        viewBox="0 0 500 400"
-                        preserveAspectRatio="xMidYMid meet"
-                      >
-                        <defs>
-                          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a3a5a" strokeWidth="0.5"/>
-                          </pattern>
-                        </defs>
-                        <rect width="100%" height="100%" fill="url(#grid)" />
-
-                        {schematicData.wires?.map((wire: SchematicWire, index: number) => {
-                          const points = wire.points || [];
-                          if (points.length < 2) return null;
-                          let pathD = `M ${points[0].x} ${points[0].y}`;
-                          for (let i = 1; i < points.length; i++) {
-                            pathD += ` L ${points[i].x} ${points[i].y}`;
-                          }
-                          return (
-                            <path
-                              key={wire.id || `wire-${index}`}
-                              d={pathD}
-                              fill="none"
-                              stroke={wire.net === 'VCC' ? '#4CAF50' : wire.net === 'GND' ? '#F44336' : '#2196F3'}
-                              strokeWidth="2"
-                            />
-                          );
-                        })}
-
-                        {schematicData.components.map((comp: SchematicComponent, index: number) => {
-                          const x = comp.position?.x || 50;
-                          const y = comp.position?.y || 50;
-                          const color = '#607D8B';
-                          return (
-                            <g key={comp.id || `comp-${index}`} transform={`translate(${x - 30}, ${y - 20})`}>
-                              <rect width="60" height="40" rx="6" fill={color} fillOpacity="0.2" stroke={color} strokeWidth="2"/>
-                              <text x="30" y="25" textAnchor="middle" fontSize="8" fill="#fff">
-                                {comp.name?.substring(0, 8) || 'Component'}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* Step 5: 生成中 */}
+          {/* Step 4: PCB 参数询问 */}
+          {step === 'pcb_params' && (
+            <div className="step-pcb-params">
+              <div className="pcb-params-intro">
+                <h3>🔧 PCB 板参数设置</h3>
+                <p>请设置 PCB 板的规格参数</p>
+              </div>
+
+              <div className="pcb-params-grid">
+                <div className="param-group">
+                  <label>PCB 宽度 (mm)</label>
+                  <input
+                    type="number"
+                    value={pcbParams.width}
+                    onChange={(e) => setPcbParams({ ...pcbParams, width: parseFloat(e.target.value) || 100 })}
+                    min={10}
+                    max={500}
+                  />
+                </div>
+
+                <div className="param-group">
+                  <label>PCB 高度 (mm)</label>
+                  <input
+                    type="number"
+                    value={pcbParams.height}
+                    onChange={(e) => setPcbParams({ ...pcbParams, height: parseFloat(e.target.value) || 80 })}
+                    min={10}
+                    max={500}
+                  />
+                </div>
+
+                <div className="param-group">
+                  <label>板层数量</label>
+                  <select
+                    value={pcbParams.layers}
+                    onChange={(e) => setPcbParams({ ...pcbParams, layers: parseInt(e.target.value) })}
+                  >
+                    <option value={1}>单面板 (1层)</option>
+                    <option value={2}>双面板 (2层)</option>
+                    <option value={4}>四层板 (4层)</option>
+                    <option value={6}>六层板 (6层)</option>
+                  </select>
+                </div>
+
+                <div className="param-group">
+                  <label>板厚度 (mm)</label>
+                  <select
+                    value={pcbParams.thickness}
+                    onChange={(e) => setPcbParams({ ...pcbParams, thickness: parseFloat(e.target.value) })}
+                  >
+                    <option value={0.8}>0.8mm (轻薄型)</option>
+                    <option value={1.0}>1.0mm</option>
+                    <option value={1.2}>1.2mm</option>
+                    <option value={1.6}>1.6mm (标准)</option>
+                    <option value={2.0}>2.0mm</option>
+                  </select>
+                </div>
+
+                <div className="param-group">
+                  <label>丝印层</label>
+                  <div className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      id="silkscreen"
+                      checked={pcbParams.silkscreen}
+                      onChange={(e) => setPcbParams({ ...pcbParams, silkscreen: e.target.checked })}
+                    />
+                    <label htmlFor="silkscreen">包含丝印层 (元器件标识)</label>
+                  </div>
+                </div>
+
+                <div className="param-group">
+                  <label>阻焊颜色</label>
+                  <select
+                    value={pcbParams.soldermask}
+                    onChange={(e) => setPcbParams({ ...pcbParams, soldermask: e.target.value })}
+                  >
+                    <option value="green">绿色 (标准)</option>
+                    <option value="red">红色</option>
+                    <option value="blue">蓝色</option>
+                    <option value="yellow">黄色</option>
+                    <option value="white">白色</option>
+                    <option value="black">黑色</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pcb-preview-size">
+                <span className="size-label">PCB 尺寸预览:</span>
+                <div
+                  className="pcb-size-visual"
+                  style={{
+                    width: `${Math.min(pcbParams.width * 2, 200)}px`,
+                    height: `${Math.min(pcbParams.height * 2, 160)}px`,
+                    backgroundColor: pcbParams.soldermask,
+                  }}
+                >
+                  <span>{pcbParams.width} x {pcbParams.height} mm</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: PCB 预览 */}
+          {step === 'pcb_preview' && pcbData && (
+            <div className="step-pcb-preview">
+              <div className="spec-section">
+                <div className="preview-header">
+                  <h3>🔲 PCB 预览</h3>
+                  <div className="zoom-controls">
+                    <button onClick={() => setPcbZoom(z => Math.max(0.2, z - 0.2))} title="缩小">➖</button>
+                    <span>{Math.round(pcbZoom * 100)}%</span>
+                    <button onClick={() => setPcbZoom(z => Math.min(5, z + 0.2))} title="放大">➕</button>
+                    <button onClick={resetPcbView} title="重置">🔄</button>
+                  </div>
+                </div>
+                <div className="pcb-stats">
+                  <p>PCB 尺寸: {pcbData.width} x {pcbData.height} mm</p>
+                  <p>板层: {pcbData.layers} 层</p>
+                  <p>器件数量: {pcbData.components.length}</p>
+                  <p>网络数量: {pcbData.nets.length}</p>
+                </div>
+
+                <div
+                  className="pcb-canvas-wrapper"
+                  onWheel={handlePcbWheel}
+                  onMouseDown={handlePcbMouseDown}
+                  onMouseMove={handlePcbMouseMove}
+                  onMouseUp={handlePcbMouseUp}
+                  onMouseLeave={handlePcbMouseUp}
+                  style={{ cursor: isDraggingPcb ? 'grabbing' : 'grab' }}
+                >
+                  <svg
+                    className="pcb-canvas"
+                    viewBox={`${-pcbPan.x / pcbZoom} ${-pcbPan.y / pcbZoom} ${400 / pcbZoom} ${320 / pcbZoom}`}
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    <defs>
+                      <pattern id="pcb-grid" width={20 * pcbZoom} height={20 * pcbZoom} patternUnits="userSpaceOnUse">
+                        <path d={`M ${20 * pcbZoom} 0 L 0 0 0 ${20 * pcbZoom}`} fill="none" stroke="#1a3a5a" strokeWidth="0.5"/>
+                      </pattern>
+                    </defs>
+
+                    {/* 网格背景 */}
+                    <rect
+                      x={-pcbPan.x / pcbZoom - 1000}
+                      y={-pcbPan.y / pcbZoom - 1000}
+                      width={2000 / pcbZoom}
+                      height={2000 / pcbZoom}
+                      fill="url(#pcb-grid)"
+                    />
+
+                    {/* PCB 边框 */}
+                    <rect
+                      x="10" y="10"
+                      width={pcbData.width * 2}
+                      height={pcbData.height * 2}
+                      fill={pcbData.soldermask === 'green' ? '#1a5a1a' : pcbData.soldermask === 'blue' ? '#1a3a5a' : pcbData.soldermask === 'red' ? '#5a1a1a' : pcbData.soldermask === 'white' ? '#3a3a3a' : '#1a5a1a'}
+                      stroke="#fff"
+                      strokeWidth={2 / pcbZoom}
+                    />
+
+                    {/* 器件位置 */}
+                    {pcbData.components.map((comp, idx) => {
+                      const x = comp.position?.x || 50;
+                      const y = comp.position?.y || 50;
+                      const size = 40 / pcbZoom;
+                      return (
+                        <g key={comp.id || idx} transform={`translate(${x * 2 - size/2}, ${y * 2 - size/3})`}>
+                          <rect
+                            width={size}
+                            height={size * 0.67}
+                            rx={4 / pcbZoom}
+                            fill="#444"
+                            stroke="#888"
+                            strokeWidth={2 / pcbZoom}
+                          />
+                          <text x={size/2} y={size/4} textAnchor="middle" fontSize={10 / pcbZoom} fill="#fff">
+                            {comp.reference}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* 走线 */}
+                    {pcbData.traces && pcbData.traces.map((trace, idx) => (
+                      <polyline
+                        key={`trace-${idx}`}
+                        points={trace.points.map(p => `${p.x * 2},${p.y * 2}`).join(' ')}
+                        fill="none"
+                        stroke="#ffa500"
+                        strokeWidth={trace.width * 2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+
           {step === 'generating' && (
             <div className="step-analyzing">
               <div className="spinner"></div>
@@ -899,7 +1666,12 @@ interface FinalResult {
               <div className="final-result-card">
                 <div className="result-item">
                   <span className="label">项目名称</span>
-                  <span className="value">{projectSpec?.name}</span>
+                  <input
+                    type="text"
+                    value={projectSpec?.name}
+                    onChange={(e) => setProjectSpec({ ...projectSpec!, name: e.target.value })}
+                    className="project-name-input-confirm"
+                  />
                 </div>
                 <div className="result-item">
                   <span className="label">项目 ID</span>
@@ -957,13 +1729,45 @@ interface FinalResult {
               <button className="skip-btn" onClick={handleSkipOptional}>
                 跳过可选问题
               </button>
-              <button className="submit-btn" onClick={handleSubmitAnswers}>
+              <button
+                className="submit-btn"
+                onClick={handleSubmitAnswers}
+                disabled={getAnsweredCount() < clarificationData.questions.filter(q => q.required).length}
+              >
                 生成方案
               </button>
             </>
           )}
 
-          {step === 'preview' && (
+          {step === 'schematic_preview' && (
+            <>
+              <button className="back-btn" onClick={handleBack}>
+                返回修改
+              </button>
+              <button className="abandon-btn" onClick={onClose}>
+                放弃
+              </button>
+              <button className="edit-btn" onClick={enterEditMode}>
+                ✏️ 编辑方案
+              </button>
+              <button className="submit-btn" onClick={confirmSchematic}>
+                确认原理图，下一步
+              </button>
+            </>
+          )}
+
+          {step === 'pcb_params' && (
+            <>
+              <button className="back-btn" onClick={handleBack}>
+                返回原理图
+              </button>
+              <button className="submit-btn" onClick={handleSubmitPcbParams}>
+                生成 PCB 方案
+              </button>
+            </>
+          )}
+
+          {step === 'pcb_preview' && (
             <>
               <button className="back-btn" onClick={handleBack}>
                 返回修改

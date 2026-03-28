@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { PCBData, Footprint, Track, Via, Project } from '../types';
 // projectApi 未使用，暂时移除
-import { pcbApi } from '../services/api';
+import { pcbApi, kicadIpcApi, FullPCBData } from '../services/api';
 
 export type ToolType = 'select' | 'move' | 'route' | 'place_footprint' | 'place_via' | 'rotate' | 'mirror' | 'place_zone' | 'place_text';
 
@@ -27,6 +27,11 @@ interface PCBStoreState {
   setPCBData: (data: PCBData) => void;
   loadPCBData: (projectId: string) => Promise<void>;
   savePCBData: () => Promise<void>;
+
+  // ========== KiCad IPC 完整数据 ==========
+  fullPCBData: FullPCBData | null;
+  loadFullPCBData: () => Promise<void>;
+  isIPCConnected: boolean;
   
   // ========== 选择状态 ==========
   selectedIds: string[];
@@ -47,7 +52,19 @@ interface PCBStoreState {
   setGridSize: (size: number) => void;
   snapToGrid: boolean;
   setSnapToGrid: (snap: boolean) => void;
-  
+
+  // ========== 层状态 ==========
+  activeLayer: string;
+  visibleLayers: string[];
+  setActiveLayer: (layer: string) => void;
+  toggleLayerVisibility: (layer: string) => void;
+  showAllLayers: () => void;
+  hideAllLayers: () => void;
+
+  // ========== 网络高亮状态 ==========
+  highlightedNet: string | null;
+  setHighlightedNet: (net: string | null) => void;
+
   // ========== 元素操作 ==========
   updateFootprintPosition: (id: string, position: { x: number; y: number }) => void;
   updateFootprintRotation: (id: string, rotation: number) => void;
@@ -105,12 +122,32 @@ export const usePCBStore = create<PCBStoreState>()(
         set({ isLoading: true, error: null });
         try {
           // pcbApi.getPCB 返回后端数据
+          // pcbApi.getPCB 返回 ApiResponse<PCBData>，需要从 response 获取 data
           const response = await pcbApi.getPCB(projectId);
           console.log('[PCBStore] Load PCB response:', response);
+          let pcbData = (response as any).data || response;
+          console.log('[PCBStore] pcbData type:', typeof pcbData, 'has tracks:', pcbData?.tracks?.length);
 
-          // 后端直接返回 PCBData 对象（没有 success 包装器）
-          // 需要进行类型断言
-          const pcbData = response as unknown as PCBData;
+          // 转换 tracks 格式：从 {start, end} 转换为 {points}
+          if (pcbData && Array.isArray(pcbData.tracks)) {
+            pcbData = {
+              ...pcbData,
+              tracks: pcbData.tracks.map((track: any) => {
+                // 如果已经有 points 数组，直接返回
+                if (track.points && track.points.length > 0) {
+                  return track;
+                }
+                // 从 start/end 转换为 points
+                if (track.start && track.end) {
+                  return {
+                    ...track,
+                    points: [track.start, track.end]
+                  };
+                }
+                return track;
+              })
+            };
+          }
 
           if (pcbData && typeof pcbData === 'object' && 'id' in pcbData) {
             set({
@@ -125,9 +162,17 @@ export const usePCBStore = create<PCBStoreState>()(
             console.error('[PCBStore] Invalid PCB data:', response);
             set({ error: 'Failed to load PCB data', isLoading: false });
           }
-        } catch (error) {
-          console.error('[PCBStore] Load PCB error:', error);
-          set({ error: 'Network error', isLoading: false });
+        } catch (error: any) {
+          // 忽略请求被取消的错误（快速切换页面时发生）
+          console.log('[PCBStore] ===== Catch error =====:', JSON.stringify(error?.message || error));
+          if (error instanceof Error && error.name === 'CanceledError') {
+            console.log('[PCBStore] PCB load cancelled (page navigation)');
+          } else if (error?.name === 'CanceledError' || (error?.message && error.message.includes('cancel'))) {
+            console.log('[PCBStore] PCB load cancelled');
+          } else {
+            console.error('[PCBStore] Load PCB error:', error);
+          }
+          set({ error: null, isLoading: false });
         }
       },
       
@@ -152,6 +197,37 @@ export const usePCBStore = create<PCBStoreState>()(
           }
         } catch {
           set({ error: 'Failed to save', isSaving: false });
+        }
+      },
+
+      // ========== KiCad IPC 完整数据 ==========
+      fullPCBData: null,
+      isIPCConnected: false,
+
+      loadFullPCBData: async () => {
+        console.log("[PCBStore] loadFullPCBData called");
+        try {
+          const response = await kicadIpcApi.getFullPCB();
+          console.log("[PCBStore] Full PCB response:", response);
+          if (response.success && response.connected) {
+            set({
+              fullPCBData: response,
+              isIPCConnected: true
+            });
+            console.log("[PCBStore] Full PCB data loaded:", {
+              layers: response.layers?.length,
+              nets: response.nets?.length,
+              footprints: response.footprints?.length,
+              tracks: response.tracks?.length,
+              zones: response.zones?.length
+            });
+          } else {
+            console.log("[PCBStore] KiCad not connected or error:", (response as any).message || response.error);
+            set({ isIPCConnected: false });
+          }
+        } catch (error: any) {
+          console.error("[PCBStore] Failed to load full PCB data:", error);
+          set({ isIPCConnected: false });
         }
       },
       
@@ -181,7 +257,26 @@ export const usePCBStore = create<PCBStoreState>()(
       setGridSize: (size) => set({ gridSize: size }),
       snapToGrid: true,
       setSnapToGrid: (snap) => set({ snapToGrid: snap }),
-      
+
+      // ========== 层状态 ==========
+      activeLayer: 'F.Cu',
+      visibleLayers: ['F.Cu', 'B.Cu', 'F.SilkS', 'B.SilkS', 'F.Mask', 'B.Mask', 'Edge.Cuts'],
+      setActiveLayer: (layer) => set({ activeLayer: layer }),
+      toggleLayerVisibility: (layer) => {
+        const { visibleLayers } = get();
+        if (visibleLayers.includes(layer)) {
+          set({ visibleLayers: visibleLayers.filter(l => l !== layer) });
+        } else {
+          set({ visibleLayers: [...visibleLayers, layer] });
+        }
+      },
+      showAllLayers: () => set({ visibleLayers: ['F.Cu', 'B.Cu', 'F.SilkS', 'B.SilkS', 'F.Mask', 'B.Mask', 'Edge.Cuts', 'F.Paste', 'B.Paste'] }),
+      hideAllLayers: () => set({ visibleLayers: [] }),
+
+      // ========== 网络高亮状态 ==========
+      highlightedNet: null,
+      setHighlightedNet: (net) => set({ highlightedNet: net }),
+
       // ========== 元素操作 ==========
       updateFootprintPosition: (id, position) => {
         const { pcbData } = get();

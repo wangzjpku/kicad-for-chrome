@@ -11,7 +11,7 @@ const MenuBar: React.FC = () => {
   const { 
     selectedIds, 
     clearSelection, 
-    currentTool, 
+    // currentTool, // 未使用
     setCurrentTool,
     undo,
     redo,
@@ -19,8 +19,8 @@ const MenuBar: React.FC = () => {
     canRedo,
     removeSelectedElements,
     savePCBData,
-    pcbData,
-    setPCBData,
+    // pcbData, // 未使用
+    // setPCBData, // 未使用
   } = usePCBStore();
 
   // 删除选中元素

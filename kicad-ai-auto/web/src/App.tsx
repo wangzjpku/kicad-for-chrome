@@ -8,12 +8,15 @@ import PCBEditor from './editors/PCBEditor';
 import SchematicEditor from './editors/SchematicEditor';
 import ProjectList from './pages/ProjectList';
 import AIChatAssistant from './components/AIChatAssistant';
-import { Project } from './types';
+import { Project, Footprint, SchematicComponent } from './types';
 import { usePCBStore } from './stores/pcbStore';
 import { useSchematicStore } from './stores/schematicStore';
 import { exportApi, drcApi } from './services/api';
 import AdminPanel from './pages/AdminPanel';
 import UserBar from './components/UserBar';
+import AuthDialog from './components/AuthDialog';
+import { MadLibsInput, DesignWizard, ParsedRequirements } from './components/DesignWizard';
+import { calculateLayerRecommendation, LayerRecommendation } from './services/layerCalculator';
 
 type EditorType = 'pcb' | 'schematic';
 type ViewType = 'project-list' | 'editor';
@@ -64,6 +67,11 @@ function App() {
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(true);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showDesignWizard, setShowDesignWizard] = useState(false);
+  const [wizardRequirements, setWizardRequirements] = useState('');
+  const [wizardParsedData, setWizardParsedData] = useState<ParsedRequirements | null>(null);
+  const [wizardLayerRecommendation, setWizardLayerRecommendation] = useState<LayerRecommendation | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -87,6 +95,7 @@ function App() {
   const {
     setCurrentProject: setSchematicProject,
     loadSchematicData,
+    schematicData,
     currentTool: schematicCurrentTool,
     setCurrentTool: setSchematicCurrentTool,
     zoom: schematicZoom,
@@ -104,7 +113,7 @@ function App() {
   const zoom = editorType === 'pcb' ? pcbZoom : schematicZoom;
   const setZoom = editorType === 'pcb' ? setPcbZoom : setSchematicZoom;
   const gridSize = editorType === 'pcb' ? pcbGridSize : 1;
-  const setGridSize = editorType === 'pcb' ? setPcbGridSize : () => {};
+  const _setGridSize = editorType === 'pcb' ? setPcbGridSize : () => {};
   const snapToGrid = editorType === 'pcb' ? pcbSnapToGrid : false;
   const setSnapToGrid = editorType === 'pcb' ? setPcbSnapToGrid : () => {};
   const undo = editorType === 'pcb' ? pcbUndo : schematicUndo;
@@ -144,7 +153,12 @@ function App() {
   };
 
   // 剪切板状态
-  const [clipboard, setClipboard] = useState<any>(null);
+  // 剪切板类型
+interface ClipboardData {
+  type: 'footprints' | 'components';
+  data: Footprint[] | SchematicComponent[];
+}
+const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
 
   // 底部面板标签状态
   const [activeBottomTab, setActiveBottomTab] = useState<'messages' | 'drc' | 'erc' | 'bom'>('messages');
@@ -154,6 +168,40 @@ function App() {
   const addMessage = useCallback((msg: string) => {
     const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
     setBottomPanelMessages(prev => [...prev.slice(-49), `[${timestamp}] ${msg}`]);
+  }, []);
+
+  // 设计向导处理
+  const handleOpenDesignWizard = useCallback((requirements: string, parsedData: ParsedRequirements) => {
+    // 计算层数推荐
+    const layerRec = calculateLayerRecommendation({
+      requirements,
+      components: parsedData.device ? [parsedData.device] : [],
+    });
+    setWizardRequirements(requirements);
+    setWizardParsedData(parsedData);
+    setWizardLayerRecommendation(layerRec);
+    setShowDesignWizard(true);
+    addMessage('打开设计向导');
+  }, [addMessage]);
+
+  const handleWizardComplete = useCallback(() => {
+    setShowDesignWizard(false);
+    setWizardRequirements('');
+    setWizardParsedData(null);
+    setWizardLayerRecommendation(null);
+    addMessage('设计完成');
+  }, [addMessage]);
+
+  const handleWizardCancel = useCallback(() => {
+    setShowDesignWizard(false);
+    setWizardRequirements('');
+    setWizardParsedData(null);
+    setWizardLayerRecommendation(null);
+    addMessage('取消设计向导');
+  }, [addMessage]);
+
+  const handleWizardBack = useCallback(() => {
+    setShowDesignWizard(false);
   }, []);
 
   // 菜单操作处理
@@ -225,7 +273,7 @@ function App() {
         break;
       case 'paste':
         if (clipboard?.type === 'footprints') {
-          const { addFootprint, pcbData } = usePCBStore.getState();
+          const { addFootprint } = usePCBStore.getState();
           const newIds: string[] = [];
           clipboard.data.forEach((fp: any, idx: number) => {
             const newId = `FP${Date.now()}_${idx}`;
@@ -338,8 +386,7 @@ function App() {
         if (currentProject?.id) {
           try {
             setActiveBottomTab('bom');
-            const result = await exportApi.exportGerber(currentProject.id);
-            console.log('Gerber export:', result);
+            await exportApi.exportGerber(currentProject.id);
             addMessage('Gerber导出成功');
             alert('Gerber导出成功！');
           } catch (e) {
@@ -352,8 +399,7 @@ function App() {
         if (currentProject?.id) {
           try {
             setActiveBottomTab('bom');
-            const result = await exportApi.exportBOM(currentProject.id);
-            console.log('BOM export:', result);
+            await exportApi.exportBOM(currentProject.id);
             addMessage('BOM导出成功');
             alert('BOM导出成功！');
           } catch (e) {
@@ -500,7 +546,7 @@ function App() {
             <span style={{ fontSize: 12, color: THEME.text.muted }}>
               后端服务: <span style={{ color: THEME.accent.success }}>●</span> 已连接
             </span>
-            <UserBar onOpenAdmin={() => setShowAdminPanel(true)} />
+            <UserBar onOpenAdmin={() => setShowAdminPanel(true)} onOpenLogin={() => setShowAuthDialog(true)} />
           </div>
         </header>
 
@@ -1207,7 +1253,7 @@ function App() {
                       try {
                         setActiveBottomTab('bom');
                         addMessage('开始导出 Gerber...');
-                        const result = await exportApi.exportGerber(currentProject.id);
+                        await exportApi.exportGerber(currentProject.id);
                         addMessage('Gerber导出成功');
                         alert('Gerber导出成功！');
                       } catch (e) {
@@ -1236,7 +1282,7 @@ function App() {
                       try {
                         setActiveBottomTab('bom');
                         addMessage('开始导出 BOM...');
-                        const result = await exportApi.exportBOM(currentProject.id);
+                        await exportApi.exportBOM(currentProject.id);
                         addMessage('BOM导出成功');
                         alert('BOM导出成功！');
                       } catch (e) {
@@ -1272,15 +1318,42 @@ function App() {
         zIndex: 1000,
       }}>
         <AIChatAssistant
-          schematicData={currentProject}
+          schematicData={schematicData}
           projectSpec={currentProject}
           defaultExpanded={false}
         />
       </div>
 
+      {/* ===== MadLibs 需求输入 (编辑器顶部居中) ===== */}
+      <MadLibsInput
+        onSubmit={handleOpenDesignWizard}
+        defaultExpanded={false}
+      />
+
+      {/* ===== 设计向导 (全屏覆盖) ===== */}
+      {showDesignWizard && wizardParsedData && (
+        <DesignWizard
+          requirements={wizardRequirements}
+          parsedData={wizardParsedData}
+          layerRecommendation={wizardLayerRecommendation || undefined}
+          onComplete={handleWizardComplete}
+          onCancel={handleWizardCancel}
+          onBack={handleWizardBack}
+        />
+      )}
+
       {/* ===== 运维管理后台 ===== */}
       {showAdminPanel && (
         <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
+
+      {/* ===== 认证对话框 ===== */}
+      {showAuthDialog && (
+        <AuthDialog
+          isOpen={true}
+          onClose={() => setShowAuthDialog(false)}
+          onSuccess={() => setShowAuthDialog(false)}
+        />
       )}
     </div>
   );

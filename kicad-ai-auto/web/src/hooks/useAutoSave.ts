@@ -6,16 +6,16 @@ import { useEffect, useRef, useCallback } from 'react';
 import { PCBData } from '../types';
 
 interface UseAutoSaveOptions {
-  pcbData: PCBData;
-  projectId: string;
+  pcbData: PCBData | null;
+  projectId?: string; // 可选，保留用于未来项目关联功能
   enabled?: boolean;
-  interval?: number; // 毫秒
-  onSave?: (data: PCBData) => Promise<void>;
+  interval?: number;
+  onSave?: (pcbData: PCBData) => Promise<void>;
 }
 
 export const useAutoSave = ({
   pcbData,
-  projectId,
+  projectId: _projectId, // 保留用于未来项目关联功能
   enabled = true,
   interval = 5000, // 5秒
   onSave,
@@ -23,12 +23,16 @@ export const useAutoSave = ({
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDataRef = useRef<string>('');
   const isSavingRef = useRef(false);
+  // 使用 ref 存储最新的 pcbData，避免 setTimeout 闭包捕获旧值
+  const pcbDataRef = useRef(pcbData);
+  pcbDataRef.current = pcbData;
 
-  // 执行保存
+  // 执行保存 - 始终读取 ref 中的最新数据
   const performSave = useCallback(async () => {
     if (isSavingRef.current || !onSave) return;
 
-    const currentData = JSON.stringify(pcbData);
+    const currentPcbData = pcbDataRef.current;
+    const currentData = JSON.stringify(currentPcbData);
     if (currentData === lastSavedDataRef.current) {
       console.log('[AutoSave] No changes to save');
       return;
@@ -38,7 +42,7 @@ export const useAutoSave = ({
     console.log('[AutoSave] Saving...', new Date().toLocaleTimeString());
 
     try {
-      await onSave(pcbData);
+      await onSave(currentPcbData);
       lastSavedDataRef.current = currentData;
       console.log('[AutoSave] Save successful');
     } catch (error) {
@@ -46,7 +50,7 @@ export const useAutoSave = ({
     } finally {
       isSavingRef.current = false;
     }
-  }, [pcbData, onSave]);
+  }, [onSave]);
 
   // 防抖保存
   const debouncedSave = useCallback(() => {

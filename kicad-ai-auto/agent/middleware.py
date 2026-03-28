@@ -7,8 +7,9 @@ import time
 import logging
 import json
 from typing import Callable
-from fastapi import Request, Response
+from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             return response
 
+        except (HTTPException, StarletteHTTPException):
+            raise  # Let FastAPI/Starlette handle HTTPException
         except Exception as e:
             # 计算处理时间
             process_time = (time.time() - start_time) * 1000
@@ -92,7 +95,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             return response
+        except (HTTPException, StarletteHTTPException):
+            raise  # Let FastAPI/Starlette handle HTTPException
         except Exception as e:
+            # 详细错误信息只写入日志，不返回给客户端（防止内部路径、栈信息泄露）
             logger.exception(f"Unhandled exception: {type(e).__name__}: {str(e)}")
 
             # 根据异常类型返回不同的状态码
@@ -113,8 +119,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 status_code=status_code,
                 content={
                     "error": error_type,
-                    "detail": str(e),
-                    "type": type(e).__name__,
+                    "detail": "请求处理失败，请稍后重试",
                 },
             )
 

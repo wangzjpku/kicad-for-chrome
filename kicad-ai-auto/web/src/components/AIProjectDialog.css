@@ -880,3 +880,382 @@
 .edit-btn:hover {
   background: #f57c00;
 }
+
+/* ========== 文件上传区域样式 ========== */
+.file-upload-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: #0a1628;
+  border: 1px dashed #2a4a6a;
+  border-radius: 8px;
+}
+
+.file-upload-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.file-upload-icon {
+  font-size: 18px;
+}
+
+.file-upload-title {
+  color: #eaeaea;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.file-upload-hint {
+  color: #666;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.file-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.file-path-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: #16213e;
+  border: 1px solid #2a4a6a;
+  border-radius: 6px;
+  color: #eaeaea;
+  font-size: 13px;
+}
+
+.file-path-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.file-path-input::placeholder {
+  color: #555;
+}
+
+.browse-btn {
+  padding: 10px 16px;
+  background: #2a4a6a;
+  border: none;
+  border-radius: 6px;
+  color: #eaeaea;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.browse-btn:hover {
+  background: #3a5a7a;
+}
+
+.add-file-btn {
+  padding: 10px 16px;
+  background: #4caf50;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-file-btn:hover {
+  background: #45a049;
+}
+
+.add-file-btn:disabled {
+  background: #2a4a4a;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.file-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #16213e;
+  border-radius: 6px;
+  border: 1px solid #1a4a7a;
+}
+
+.file-icon {
+  font-size: 18px;
+}
+
+.file-name {
+  flex: 1;
+  color: #eaeaea;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-type-badge {
+  background: #1a4a7a;
+  color: #4a9eff;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.remove-file-btn {
+  width: 24px;
+  height: 24px;
+  background: #3d3d3d;
+  border: none;
+  border-radius: 4px;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+  background: #f44336;
+  color: #fff;
+}
+
+/* ========== PCB 参数设置样式 ========== */
+.step-pcb-params {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pcb-params-intro {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1a4a7a;
+}
+
+.pcb-params-intro h3 {
+  color: #eaeaea;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.pcb-params-intro p {
+  color: #888;
+  font-size: 14px;
+}
+
+.pcb-params-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.param-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.param-group label {
+  color: #eaeaea;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.param-group input[type="number"],
+.param-group select {
+  padding: 10px 12px;
+  background: #16213e;
+  border: 1px solid #2a4a6a;
+  border-radius: 6px;
+  color: #eaeaea;
+  font-size: 14px;
+}
+
+.param-group input[type="number"]:focus,
+.param-group select:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4a9eff;
+}
+
+.checkbox-group label {
+  color: #ccc;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.pcb-preview-size {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #0a1628;
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.size-label {
+  color: #888;
+  font-size: 14px;
+}
+
+.pcb-size-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #333;
+  border-radius: 4px;
+  min-width: 100px;
+  min-height: 80px;
+}
+
+.pcb-size-visual span {
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ========== PCB 预览样式 ========== */
+.step-pcb-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pcb-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pcb-stats p {
+  background: #1a4a7a;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  color: #eaeaea;
+  font-size: 13px;
+  margin: 0;
+}
+
+.pcb-canvas-wrapper {
+  background: #0a1a2a;
+  border: 2px solid #2a5a8a;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.pcb-canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Zoom controls for preview */
+.zoom-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: flex-end;
+}
+
+.zoom-controls button {
+  background: #2a5a8a;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.zoom-controls button:hover {
+  background: #3a7aba;
+}
+
+.zoom-controls span {
+  color: #aaa;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+/* Preview header */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.preview-header h3 {
+  margin: 0;
+  color: #eee;
+  font-size: 16px;
+}
+
+/* Project name editing */
+.project-name-edit {
+  display: inline-block;
+}
+
+.project-name-input {
+  background: #1a2a3a;
+  color: #eee;
+  border: 1px solid #3a5a8a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 16px;
+  width: 200px;
+}
+
+.project-name-input:focus {
+  outline: none;
+  border-color: #4a8aca;
+}
+
+/* Project name input in confirm step */
+.project-name-input-confirm {
+  background: #1a2a3a;
+  color: #eee;
+  border: 1px solid #3a5a8a;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 180px;
+}
+
+.project-name-input-confirm:focus {
+  outline: none;
+  border-color: #4a8aca;
+}

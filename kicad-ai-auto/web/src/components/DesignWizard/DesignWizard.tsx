@@ -13,7 +13,7 @@
 import React, { useState, useCallback } from 'react';
 import { ParsedRequirements } from './MadLibsInput';
 import { LayerRecommendation } from '../../services/layerCalculator';
-import { aiApi, AIDesignResult } from '../../services/api';
+import { aiApi, pcbApi, AIDesignResult, CircuitData, PCBGenerationResult } from '../../services/api';
 
 interface DesignWizardProps {
   requirements: string;
@@ -76,6 +76,8 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
   const [designResult, setDesignResult] = useState<AIDesignResult | null>(null);
+  const [circuitData, setCircuitData] = useState<CircuitData | null>(null);
+  const [pcbResult, setPcbResult] = useState<PCBGenerationResult | null>(null);
 
   // 获取步骤索引
   const getStepIndex = (step: DesignStep): number => {
@@ -108,6 +110,11 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
 
           setDesignResult(result);
 
+          // 存储电路数据用于预览
+          if (result.circuit_data) {
+            setCircuitData(result.circuit_data);
+          }
+
           if (!result.success) {
             setGenerationProgress(`生成失败: ${result.message}`);
             // 显示错误但允许继续
@@ -119,8 +126,55 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
           setGenerationProgress('生成失败，请重试');
         }
       } else if (nextStep.id === 'layout') {
-        setGenerationProgress('正在生成PCB布局...');
-        // TODO: 调用PCB生成API
+        try {
+          setGenerationProgress('正在生成PCB布局...');
+
+          // 从电路数据构建 PCB 生成请求
+          const components = (circuitData?.components || []).map((comp: any) => ({
+            ref: comp.reference || comp.name || `C${Math.random()}`,
+            symbol: comp.symbol_library || comp.name || 'Device:R',
+            footprint: comp.footprint || 'Package:DIP-8',
+            width: 10.0,
+            height: 10.0,
+          }));
+
+          const nets = (circuitData?.nets || []).map((net: any, i: number) => ({
+            name: net.name || `N${i + 1}`,
+            source_ref: net.connections?.[0]?.component || 'U1',
+            source_pin: parseInt(net.connections?.[0]?.pin || '1', 10),
+            target_ref: net.connections?.[1]?.component || 'U2',
+            target_pin: parseInt(net.connections?.[1]?.pin || '1', 10),
+          }));
+
+          const layerCount = layerRecommendation?.layer_count || 2;
+          const layers = layerCount >= 4
+            ? ['F.Cu', 'In1.Cu', 'In2.Cu', 'B.Cu']
+            : ['F.Cu', 'B.Cu'];
+
+          const result = await pcbApi.generate({
+            requirements,
+            board: {
+              width: 100,
+              height: 80,
+              layers,
+            },
+            components,
+            nets,
+            placement_strategy: 'balanced',
+            routing_strategy: 'manhattan',
+          });
+
+          setPcbResult(result);
+
+          if (!result.success) {
+            setGenerationProgress(`布局生成失败: ${result.message}`);
+          } else {
+            setGenerationProgress('PCB布局生成完成!');
+          }
+        } catch (error) {
+          console.error('PCB generation failed:', error);
+          setGenerationProgress('布局生成失败，请重试');
+        }
       } else if (nextStep.id === 'manufacture') {
         setGenerationProgress('正在准备制造文件...');
         // TODO: 调用制造文件生成API
@@ -404,6 +458,59 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
             <div style={{ fontSize: 13, color: THEME.text.secondary, textAlign: 'center', maxWidth: 400 }}>
               {designResult.message}
             </div>
+
+            {/* 电路组件预览 */}
+            {designResult.success && circuitData && circuitData.components && (
+              <div style={{
+                marginTop: 20,
+                width: '100%',
+                maxWidth: 500,
+                maxHeight: 250,
+                overflow: 'auto',
+                padding: 12,
+                backgroundColor: THEME.bg.primary,
+                borderRadius: 8,
+                border: `1px solid ${THEME.border.default}`,
+              }}>
+                <div style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 8 }}>
+                  元件清单 ({circuitData.components.length} 个)
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {circuitData.components.slice(0, 10).map((comp: any, i: number) => (
+                    <div key={i} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '6px 8px',
+                      backgroundColor: THEME.bg.secondary,
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}>
+                      <span style={{
+                        minWidth: 50,
+                        fontWeight: 600,
+                        color: THEME.accent.primary,
+                      }}>
+                        {comp.reference || comp.name || `C${i + 1}`}
+                      </span>
+                      <span style={{ color: THEME.text.primary, marginLeft: 8 }}>
+                        {comp.value || comp.model || comp.name || 'Unknown'}
+                      </span>
+                      {comp.footprint && (
+                        <span style={{ color: THEME.text.muted, marginLeft: 'auto', fontSize: 10 }}>
+                          {comp.footprint}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {circuitData.components.length > 10 && (
+                    <div style={{ fontSize: 10, color: THEME.text.muted, textAlign: 'center', marginTop: 4 }}>
+                      还有 {circuitData.components.length - 10} 个元件...
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {designResult.output_path && (
               <div style={{
                 marginTop: 12,
@@ -429,6 +536,28 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
                 {designResult.errors.map((err, i) => (
                   <div key={i}>⚠ {String(err.message || JSON.stringify(err))}</div>
                 ))}
+              </div>
+            )}
+
+            {/* AI 助手集成提示 */}
+            {designResult.success && (
+              <div style={{
+                marginTop: 16,
+                padding: 12,
+                backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                borderRadius: 8,
+                border: `1px solid ${THEME.accent.primary}`,
+                fontSize: 12,
+                color: THEME.text.secondary,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, marginRight: 6 }}>🤖</span>
+                  <span style={{ color: THEME.accent.primary, fontWeight: 500 }}>需要微调原理图？</span>
+                </div>
+                <div>
+                  点击右下角 <span style={{ color: THEME.accent.primary }}>AI 助手</span> 按钮，
+                  可以用自然语言描述修改需求，如"把R1的值改为10k"或"添加一个LED指示灯"。
+                </div>
               </div>
             )}
           </>
@@ -474,22 +603,124 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔲</div>
-        <div style={{ color: THEME.text.secondary, fontSize: 14, textAlign: 'center' }}>
-          {isGenerating ? (
-            <>
-              <div style={{ marginBottom: 8 }}>{generationProgress}</div>
-              <div style={{ fontSize: 12, color: THEME.text.muted }}>正在优化布局...</div>
-            </>
-          ) : (
-            <>
-              <div style={{ marginBottom: 8 }}>PCB布局将在您确认后生成</div>
-              <div style={{ fontSize: 12, color: THEME.text.muted }}>
-                推荐层数: {layerRecommendation?.layer_count ?? 2}层
+        {isGenerating ? (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔲</div>
+            <div style={{ marginBottom: 8, color: THEME.text.primary }}>{generationProgress}</div>
+            <div style={{ fontSize: 12, color: THEME.text.muted }}>AI 正在优化布局...</div>
+          </>
+        ) : pcbResult ? (
+          <>
+            <div style={{
+              fontSize: 48,
+              marginBottom: 16,
+              color: pcbResult.success ? THEME.accent.success : THEME.accent.error
+            }}>
+              {pcbResult.success ? '✓' : '✗'}
+            </div>
+            <div style={{ marginBottom: 8, color: THEME.text.primary, fontWeight: 600 }}>
+              {pcbResult.success ? 'PCB布局生成成功!' : '布局生成失败'}
+            </div>
+            <div style={{ fontSize: 13, color: THEME.text.secondary, textAlign: 'center', maxWidth: 400 }}>
+              {pcbResult.message}
+            </div>
+
+            {/* PCB 布局预览 */}
+            {pcbResult.success && (
+              <div style={{
+                marginTop: 20,
+                width: '100%',
+                maxWidth: 500,
+                maxHeight: 250,
+                overflow: 'auto',
+                padding: 12,
+                backgroundColor: THEME.bg.primary,
+                borderRadius: 8,
+                border: `1px solid ${THEME.border.default}`,
+              }}>
+                <div style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 8 }}>
+                  布局摘要
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{
+                    padding: 8,
+                    backgroundColor: THEME.bg.secondary,
+                    borderRadius: 4,
+                    fontSize: 11,
+                  }}>
+                    <div style={{ color: THEME.text.muted }}>元件数量</div>
+                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
+                      {pcbResult.placements.length}
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: 8,
+                    backgroundColor: THEME.bg.secondary,
+                    borderRadius: 4,
+                    fontSize: 11,
+                  }}>
+                    <div style={{ color: THEME.text.muted }}>网络数量</div>
+                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
+                      {pcbResult.routes.length}
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: 8,
+                    backgroundColor: THEME.bg.secondary,
+                    borderRadius: 4,
+                    fontSize: 11,
+                  }}>
+                    <div style={{ color: THEME.text.muted }}>过孔数量</div>
+                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
+                      {pcbResult.vias.length}
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: 8,
+                    backgroundColor: THEME.bg.secondary,
+                    borderRadius: 4,
+                    fontSize: 11,
+                  }}>
+                    <div style={{ color: THEME.text.muted }}>PCB尺寸</div>
+                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
+                      {pcbResult.board_outline.width}×{pcbResult.board_outline.height}mm
+                    </div>
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
+
+            {/* AI 助手集成提示 */}
+            {pcbResult?.success && (
+              <div style={{
+                marginTop: 16,
+                padding: 12,
+                backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                borderRadius: 8,
+                border: `1px solid ${THEME.accent.primary}`,
+                fontSize: 12,
+                color: THEME.text.secondary,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, marginRight: 6 }}>🤖</span>
+                  <span style={{ color: THEME.accent.primary, fontWeight: 500 }}>需要调整布局？</span>
+                </div>
+                <div>
+                  点击右下角 <span style={{ color: THEME.accent.primary }}>AI 助手</span> 按钮，
+                  可以用自然语言描述修改需求，如"把晶振移到右下角"或"增加电源和地之间的距离"。
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔲</div>
+            <div style={{ marginBottom: 8 }}>PCB布局将在您确认后生成</div>
+            <div style={{ fontSize: 12, color: THEME.text.muted }}>
+              推荐层数: {layerRecommendation?.layer_count ?? 2}层
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{
@@ -512,12 +743,41 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         📦 导出制造文件
       </h3>
 
+      {/* 设计摘要 */}
+      <div style={{
+        padding: 16,
+        backgroundColor: THEME.bg.primary,
+        borderRadius: 8,
+        marginBottom: 16,
+        borderLeft: `3px solid ${THEME.accent.primary}`,
+      }}>
+        <div style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 8 }}>设计摘要</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          <div style={{ fontSize: 12 }}>
+            <span style={{ color: THEME.text.muted }}>原理图元件: </span>
+            <span style={{ color: THEME.text.primary }}>{circuitData?.components?.length || 0}</span>
+          </div>
+          <div style={{ fontSize: 12 }}>
+            <span style={{ color: THEME.text.muted }}>PCB元件: </span>
+            <span style={{ color: THEME.text.primary }}>{pcbResult?.placements?.length || 0}</span>
+          </div>
+          <div style={{ fontSize: 12 }}>
+            <span style={{ color: THEME.text.muted }}>推荐层数: </span>
+            <span style={{ color: THEME.text.primary }}>{layerRecommendation?.layer_count || 2}层</span>
+          </div>
+          <div style={{ fontSize: 12 }}>
+            <span style={{ color: THEME.text.muted }}>网络数量: </span>
+            <span style={{ color: THEME.text.primary }}>{pcbResult?.routes?.length || (circuitData?.nets?.length || 0)}</span>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {[
-          { icon: '📄', name: 'Gerber文件', desc: 'PCB制造文件', checked: true },
-          { icon: '🔧', name: '钻孔文件', desc: 'NC钻孔数据', checked: true },
-          { icon: '📋', name: 'BOM物料清单', desc: '元件采购清单', checked: true },
-          { icon: '📐', name: 'STEP文件', desc: '3D模型导出', checked: false },
+          { icon: '📄', name: 'Gerber文件', desc: 'PCB制造文件 (.gbr)', checked: true },
+          { icon: '🔧', name: '钻孔文件', desc: 'NC Drill (.drl)', checked: true },
+          { icon: '📋', name: 'BOM物料清单', desc: '元件采购清单 (.csv)', checked: true },
+          { icon: '📐', name: 'STEP文件', desc: '3D模型 (.step)', checked: false },
         ].map((item, i) => (
           <div
             key={i}
@@ -578,7 +838,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         fontSize: 12,
         color: THEME.text.secondary,
       }}>
-        📌 点击「完成」将开始生成所有选中的文件并保存到您的项目
+        📌 点击「完成」将生成所有选中的文件。文件将保存到您的项目目录，可通过项目菜单下载。
       </div>
     </div>
   );

@@ -19,8 +19,15 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# 符号库根目录
-SYMBOL_LIBS_ROOT = Path(__file__).parent.parent.parent / "kicad-symbols"
+# 符号库根目录（优先使用官方 KiCad 安装目录）
+_KICAD_SYMBOL_DIR = os.environ.get(
+    "KICAD_SYMBOL_DIR",
+    r"E:\Program Files\KiCad\9.0\share\kicad\symbols"
+)
+SYMBOL_LIBS_ROOT = Path(_KICAD_SYMBOL_DIR)
+# 验证存在，否则尝试本地目录
+if not SYMBOL_LIBS_ROOT.exists():
+    SYMBOL_LIBS_ROOT = Path(__file__).parent.parent.parent / "kicad-symbols"
 
 
 @dataclass
@@ -77,23 +84,24 @@ class SymbolLibParser:
         self._build_libs_cache()
 
     def _build_libs_cache(self):
-        """构建符号库缓存"""
+        """构建符号库缓存（支持官方 KiCad 目录结构）"""
         if not SYMBOL_LIBS_ROOT.exists():
             logger.warning(f"符号库目录不存在: {SYMBOL_LIBS_ROOT}")
             return
 
-        for lib_dir in SYMBOL_LIBS_ROOT.iterdir():
-            if lib_dir.is_dir() and lib_dir.name.endswith(".kicad_symdir"):
-                lib_name = lib_dir.name.replace(".kicad_symdir", "")
+        if SYMBOL_LIBS_ROOT.suffix == ".kicad_sym":
+            pass
+        else:
+            for sym_file in SYMBOL_LIBS_ROOT.glob("*.kicad_sym"):
+                lib_name = sym_file.stem
                 self._libs_cache[lib_name] = {}
-
-                for sym_file in lib_dir.glob("*.kicad_sym"):
-                    try:
-                        symbol = self._parse_symbol_file(sym_file, lib_name)
-                        if symbol:
+                try:
+                    symbols = self._parse_symbol_file(sym_file, lib_name)
+                    for symbol in symbols:
+                        if symbol and symbol.name:
                             self._libs_cache[lib_name][symbol.name] = symbol
-                    except Exception as e:
-                        logger.debug(f"解析符号文件失败 {sym_file}: {e}")
+                except Exception as e:
+                    logger.debug(f"解析符号文件失败 {sym_file}: {e}")
 
         total_symbols = sum(len(lib) for lib in self._libs_cache.values())
         logger.info(
@@ -102,24 +110,52 @@ class SymbolLibParser:
 
     def _parse_symbol_file(
         self, file_path: Path, lib_name: str
-    ) -> Optional[KiCadSymbol]:
-        """解析单个符号文件"""
+    ) -> List[KiCadSymbol]:
+        """解析符号文件，返回所有符号（支持多符号文件）"""
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
-            symbol_name = file_path.stem
+            # 找所有 (symbol "Name" ...) 块
+            symbol_names = re.findall(r'\(symbol\s+"([^"]+)"', content)
+            if not symbol_names:
+                return []
+
+            results = []
+            for symbol_name in symbol_names:
+                symbol = self._parse_single_symbol(content, symbol_name, lib_name)
+                if symbol:
+                    results.append(symbol)
+            return results
+        except Exception as e:
+            logger.warning(f"解析符号文件失败 {file_path}: {e}")
+            return []
+
+    def _parse_single_symbol(
+        self, content: str, symbol_name: str, lib_name: str
+    ) -> Optional[KiCadSymbol]:
+        """从内容中解析单个符号"""
+        try:
+            # 找到该符号块的开始和结束
+            start_marker = f'(symbol "{symbol_name}"'
+            start_idx = content.find(start_marker)
+            if start_idx == -1:
+                return None
+
+            # 找到下一个符号开始或文件结束
+            next_marker = content.find('(symbol "', start_idx + len(start_marker))
+            sym_content = content[start_idx:next_marker] if next_marker != -1 else content[start_idx:]
 
             # 提取属性
-            reference = self._extract_property(content, "Reference") or symbol_name[0]
-            value = self._extract_property(content, "Value") or symbol_name
-            description = self._extract_property(content, "Description") or ""
-            keywords = self._extract_property(content, "ki_keywords") or ""
-            footprint_filters = self._extract_property(content, "ki_fp_filters") or ""
+            reference = self._extract_property(sym_content, "Reference") or symbol_name[0]
+            value = self._extract_property(sym_content, "Value") or symbol_name
+            description = self._extract_property(sym_content, "Description") or ""
+            keywords = self._extract_property(sym_content, "ki_keywords") or ""
+            footprint_filters = self._extract_property(sym_content, "ki_fp_filters") or ""
 
             # 解析图形元素
-            graphics = self._parse_graphics(content)
+            graphics = self._parse_graphics(sym_content)
 
             # 解析引脚
-            pins = self._parse_pins(content)
+            pins = self._parse_pins(sym_content)
 
             return KiCadSymbol(
                 library=lib_name,
@@ -136,7 +172,7 @@ class SymbolLibParser:
                 pins=pins,
             )
         except Exception as e:
-            logger.warning(f"解析符号文件失败 {file_path}: {e}")
+            logger.debug(f"解析符号 '{symbol_name}' 失败: {e}")
             return None
 
     def _extract_property(self, content: str, prop_name: str) -> Optional[str]:
@@ -201,38 +237,63 @@ class SymbolLibParser:
         return graphics
 
     def _parse_pins(self, content: str) -> List[SymbolPin]:
-        """解析引脚"""
+        """解析引脚（支持 KiCad 9.0 多行嵌套格式）"""
         pins = []
 
-        # 匹配引脚定义
-        pin_pattern = r"\(pin\s+(\w+)\s+(?:line|tri_state)\s+\(at\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\)\s+\(length\s+([-\d.]+)\)"
-        for match in re.finditer(pin_pattern, content):
-            pin_type = match.group(1)
-            x = float(match.group(2))
-            y = float(match.group(3))
-            rotation = int(float(match.group(4)))
-            length = float(match.group(5))
+        # KiCad 9.0 pin 块格式：
+        # (pin type [line|tri_state|...]
+        #     (at x y rot)
+        #     (length n)
+        #     (name "PinName" ...)
+        #     (number "N" ...)
+        # )
+        # 使用 re.DOTALL 跨行匹配，但需要正确处理嵌套括号
 
-            # 在附近查找引脚编号和名称
-            pin_end = match.end()
-            remaining = content[pin_end : pin_end + 500]
+        # 先找到所有 (pin ...) 块的起止位置
+        pin_starts = [(m.start(), m.group(1))
+                      for m in re.finditer(r'\(pin\s+(\w+)', content)]
 
-            number_match = re.search(r'\(number\s+"([^"]+)"', remaining)
-            name_match = re.search(r'\(name\s+"([^"]*)"', remaining)
+        for pin_start, pin_type in pin_starts:
+            # 从 pin_start 开始，找到匹配的关闭括号
+            depth = 0
+            pin_end = pin_start
+            for i in range(pin_start, len(content)):
+                if content[i] == '(':
+                    depth += 1
+                elif content[i] == ')':
+                    depth -= 1
+                    if depth == 0:
+                        pin_end = i + 1
+                        break
 
-            pin_number = number_match.group(1) if number_match else "?"
-            pin_name = name_match.group(1) if name_match else ""
+            pin_block = content[pin_start:pin_end]
 
-            pins.append(
-                SymbolPin(
-                    number=pin_number,
-                    name=pin_name,
-                    position={"x": x, "y": y},
-                    length=length,
-                    direction=rotation,
-                    pin_type=pin_type,
-                )
+            # 提取引脚位置
+            at_match = re.search(
+                r'\(at\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\)', pin_block
             )
+            length_match = re.search(r'\(length\s+([-\d.]+)\)', pin_block)
+            name_match = re.search(r'\(name\s+"([^"]*)"', pin_block)
+            number_match = re.search(r'\(number\s+"([^"]+)"', pin_block)
+
+            if at_match and length_match:
+                x = float(at_match.group(1))
+                y = float(at_match.group(2))
+                rotation = int(float(at_match.group(3)))
+                length = float(length_match.group(1))
+                pin_number = number_match.group(1) if number_match else "?"
+                pin_name = name_match.group(1) if name_match else ""
+
+                pins.append(
+                    SymbolPin(
+                        number=pin_number,
+                        name=pin_name,
+                        position={"x": x, "y": y},
+                        length=length,
+                        direction=rotation,
+                        pin_type=pin_type,
+                    )
+                )
 
         return pins
 
@@ -337,6 +398,14 @@ class SymbolLibParser:
             "attiny85": ("MCU_Microchip_ATtiny", "ATtiny85-20PU"),
             "ch340": ("Interface_USB", "CH340G"),
             "cp2102": ("Interface_USB", "CP2102"),
+        }
+
+        # 知识库到KiCad实际库名的映射（解决knowledge_base与KiCad库名不一致问题）
+        KB_TO_KICAD_LIB = {
+            "MCU_ST_STM32": "MCU_ST_STM32F1",
+            "MCU_ST": "MCU_ST_STM32F1",
+            "MCU_Espressif": "MCU_Espressif",
+            "MCU_Microchip_AVR": "MCU_Microchip_ATmega",
         }
 
         # 优先匹配型号

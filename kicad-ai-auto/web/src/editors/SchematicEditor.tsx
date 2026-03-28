@@ -191,7 +191,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     pan,
     setPan,
     addComponent,
-    // addWire, // 未使用 - 未来功能
+    addWire,
     // addLabel, // 未使用 - 未来功能
     removeSelectedElements,
     // canUndo, // 未使用 - 未来功能
@@ -211,7 +211,19 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   const selectedWire = schematicData?.wires.find(w => selectedIds.includes(w.id));
   const selectedLabel = schematicData?.labels.find(l => selectedIds.includes(l.id));
   const selectedElement = selectedComponent || selectedWire || selectedLabel;
-  
+
+  // 连线绘制状态
+  const [drawingWire, setDrawingWire] = useState<{
+    points: { x: number; y: number }[];
+    isDrawing: boolean;
+  }>({ points: [], isDrawing: false });
+
+  // 正在拖拽的连线端点
+  const [draggingWirePoint, setDraggingWirePoint] = useState<{
+    wireId: string;
+    pointIndex: number;
+  } | null>(null);
+
   // 初始化数据 - 加载项目数据或使用示例数据
   useEffect(() => {
     if (projectId) {
@@ -226,16 +238,24 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  // 当原理图数据加载后，自动调整视图以显示所有元件
+  // 当原理图数据加载后，自动调整视图以显示所有元件（仅在首次加载时执行）
+  // 使用 ref 跟踪是否已完成初始适配
+  const initialFitDone = useRef(false);
+  // 记录已执行时的项目ID，防止跨项目重复执行
+  const fittedProjectId = useRef<string | null>(null);
   useEffect(() => {
-    console.log('[SchematicEditor] AutoView useEffect triggered:', {
-      hasData: !!schematicData,
-      components: schematicData?.components?.length,
-      width,
-      height
-    });
+    // 如果已经执行过当前项目的自动调整，跳过
+    if (initialFitDone.current && fittedProjectId.current === projectId) return;
+    // 如果数据为空或尺寸无效，跳过
     if (!schematicData || schematicData.components.length === 0) return;
     if (!width || !height) return;
+
+    // 标记为已执行
+    initialFitDone.current = true;
+    fittedProjectId.current = projectId;
+
+    console.log('[SchematicEditor] AutoView running for project:', projectId);
+
     // 延迟一点执行，确保 width/height 已经初始化
     const timer = setTimeout(() => {
       // 直接在这里计算，不用 handleAutoView 避免循环依赖
@@ -245,6 +265,10 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       const maxX = Math.max(...positions.map(p => p.x * MM_TO_PX));
       const minY = Math.min(...positions.map(p => p.y * MM_TO_PX));
       const maxY = Math.max(...positions.map(p => p.y * MM_TO_PX));
+
+      // 检查值是否有效
+      if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return;
+
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       const newPan = {
@@ -256,7 +280,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       setZoom(1);
     }, 100);
     return () => clearTimeout(timer);
-  }, [schematicData?.components?.length, width, height]);
+  }, [schematicData, projectId, width, height, setPan, setZoom]);
 
   // 简化重绘逻辑 - 直接使用 contentLayer ref
   useEffect(() => {
@@ -392,7 +416,74 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     addComponent(newComponent);
     setCurrentTool('select');
   };
-  
+
+  // 处理放置导线
+  const handlePlaceWire = (e: KonvaEventObject<MouseEvent>) => {
+    if (currentTool !== 'place_wire') return;
+
+    const stage = e.target.getStage();
+    if (!stage) return;
+
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const transform = stage.getAbsoluteTransform().copy();
+    transform.invert();
+    const pos = transform.point(pointer);
+
+    // 转换为毫米坐标
+    const mmPos = {
+      x: pos.x / MM_TO_PX,
+      y: pos.y / MM_TO_PX
+    };
+
+    if (!drawingWire.isDrawing) {
+      // 开始绘制新导线
+      setDrawingWire({
+        points: [mmPos],
+        isDrawing: true
+      });
+    } else {
+      // 继续添加点
+      setDrawingWire(prev => ({
+        ...prev,
+        points: [...prev.points, mmPos]
+      }));
+    }
+  };
+
+  // 完成导线绘制
+  const finishWireDrawing = () => {
+    if (drawingWire.isDrawing && drawingWire.points.length >= 2) {
+      const newWire: Wire = {
+        id: `wire-${uuidv4()}`,
+        points: drawingWire.points,
+        color: '#00ff00',
+        strokeWidth: 1
+      };
+      addWire(newWire);
+    }
+    setDrawingWire({ points: [], isDrawing: false });
+  };
+
+  // 取消导线绘制
+  const cancelWireDrawing = () => {
+    setDrawingWire({ points: [], isDrawing: false });
+  };
+
+  // 处理连线端点拖拽
+  const handleWirePointDrag = (wireId: string, pointIndex: number, newPos: { x: number; y: number }) => {
+    if (!schematicData) return;
+
+    const wire = (schematicData.wires ?? []).find(w => w.id === wireId);
+    if (!wire) return;
+
+    const newPoints = [...wire.points];
+    newPoints[pointIndex] = newPos;
+
+    updateWire(wireId, { points: newPoints });
+  };
+
   // 键盘事件
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -409,14 +500,18 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       else if (e.key === 'Delete' || e.key === 'Backspace') {
         removeSelectedElements();
       } else if (e.key === 'Escape') {
-        setCurrentTool('select');
-        clearSelection();
+        if (drawingWire.isDrawing) {
+          cancelWireDrawing();
+        } else {
+          setCurrentTool('select');
+          clearSelection();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [removeSelectedElements, setCurrentTool, clearSelection]);
+  }, [removeSelectedElements, setCurrentTool, clearSelection, drawingWire.isDrawing]);
   
   // 生成网格 - 相对于 Stage 坐标（Stage 已经应用了 pan）
   const generateGridLines = () => {
@@ -447,14 +542,29 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
     // 注意：Layer已经应用了pan和zoom变换，所以这里只需要传递原始毫米坐标
     // SchematicSymbol内部会进行MM_TO_PX转换
-    const mmX = comp.position?.x ?? 0;
-    const mmY = comp.position?.y ?? 0;
+    // 修复：确保元件有有效位置，如果为0则使用画布中心位置
+    let mmX = comp.position?.x ?? 0;
+    let mmY = comp.position?.y ?? 0;
+
+    // 如果位置为0,0且元件数量不多，可能是初始化位置，使用画布中心
+    if ((!comp.position || (mmX === 0 && mmY === 0)) && width > 0 && height > 0) {
+      // 计算画布中心（考虑pan和zoom后的逆运算）
+      const centerX = (width / 2 - pan.x) / zoom / MM_TO_PX;
+      const centerY = (height / 2 - pan.y) / zoom / MM_TO_PX;
+      // 添加一些随机偏移避免重叠
+      const offsetX = (Math.random() - 0.5) * 100;
+      const offsetY = (Math.random() - 0.5) * 100;
+      mmX = centerX + offsetX;
+      mmY = centerY + offsetY;
+      console.log(`[SchematicEditor] Component ${comp.id} position reset to center:`, { mmX, mmY });
+    }
 
     // 调试日志
     console.log(`[SchematicEditor] Rendering component ${comp.id}:`, {
       mmPosition: { x: mmX, y: mmY },
       pxPosition: { x: mmX * MM_TO_PX, y: mmY * MM_TO_PX },
       pan, zoom,
+      stageCenter: { x: width / 2, y: height / 2 },
       symbol_library: comp.symbol_library,
       category: comp.category,
       value: comp.value,
@@ -481,7 +591,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
           id: comp.id,
           name: comp.value || comp.symbolName || '',
           model: comp.value || '',
-          reference: comp.reference,
+          reference: comp.reference || '',  // 确保传递reference
           value: comp.value,
           // 传递原始毫米坐标，SchematicSymbol内部会进行转换
           position: { x: mmX, y: mmY },
@@ -517,13 +627,79 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     ]);
 
     return (
-      <Line
-        key={wire.id}
-        points={points}
-        stroke={selected ? '#ffff00' : '#00ff00'}
-        strokeWidth={selected ? 2 : 1}
-        onClick={() => toggleSelection(wire.id)}
-      />
+      <Group key={wire.id}>
+        <Line
+          points={points}
+          stroke={selected ? '#ffff00' : '#00ff00'}
+          strokeWidth={selected ? 2 : 1}
+          onClick={() => toggleSelection(wire.id)}
+          hitStrokeWidth={10} // 增加点击检测宽度
+        />
+        {/* 选中时显示端点手柄 */}
+        {selected && currentTool === 'select' && wire.points.map((point, index) => (
+          <Circle
+            key={`${wire.id}-point-${index}`}
+            x={point.x * MM_TO_PX}
+            y={point.y * MM_TO_PX}
+            radius={5}
+            fill="#ffff00"
+            stroke="#000000"
+            strokeWidth={1}
+            draggable
+            onDragMove={(e) => {
+              const stage = e.target.getStage();
+              if (!stage) return;
+              const pointer = stage.getPointerPosition();
+              if (!pointer) return;
+
+              const transform = stage.getAbsoluteTransform().copy();
+              transform.invert();
+              const pos = transform.point(pointer);
+
+              handleWirePointDrag(wire.id, index, {
+                x: pos.x / MM_TO_PX,
+                y: pos.y / MM_TO_PX
+              });
+            }}
+            onClick={(e) => {
+              e.cancelBubble = true;
+            }}
+          />
+        ))}
+      </Group>
+    );
+  };
+
+  // 渲染正在绘制的导线
+  const renderDrawingWire = () => {
+    if (!drawingWire.isDrawing || drawingWire.points.length === 0) return null;
+
+    const points = drawingWire.points.flatMap(p => [
+      p.x * MM_TO_PX,
+      p.y * MM_TO_PX
+    ]);
+
+    return (
+      <Group>
+        <Line
+          points={points}
+          stroke="#00ff00"
+          strokeWidth={1}
+          dash={[5, 5]} // 虚线表示正在绘制
+        />
+        {/* 显示所有端点 */}
+        {drawingWire.points.map((point, index) => (
+          <Circle
+            key={`drawing-point-${index}`}
+            x={point.x * MM_TO_PX}
+            y={point.y * MM_TO_PX}
+            radius={4}
+            fill="#00ff00"
+            stroke="#ffffff"
+            strokeWidth={1}
+          />
+        ))}
+      </Group>
     );
   };
 
@@ -556,15 +732,15 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
   // 调试日志：检查数据
   console.log('[SchematicEditor] Rendering with data:', {
-    componentsCount: schematicData.components.length,
-    wiresCount: schematicData.wires.length,
+    componentsCount: (schematicData.components ?? []).length,
+    wiresCount: (schematicData.wires ?? []).length,
     zoom,
     pan,
     canvasSize: { width, height },
   });
 
   // 额外调试：检查每个元件的渲染参数
-  if (schematicData.components.length > 0) {
+  if ((schematicData.components ?? []).length > 0) {
     schematicData.components.forEach((comp, idx) => {
       const renderX = (comp.position?.x ?? 0) * MM_TO_PX;
       const renderY = (comp.position?.y ?? 0) * MM_TO_PX;
@@ -605,7 +781,15 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             width={width}
             height={height}
             onWheel={handleWheel}
-            onClick={currentTool === 'place_symbol' ? handlePlaceSymbol : handleStageClick}
+            onClick={(e) => {
+              if (currentTool === 'place_symbol') {
+                handlePlaceSymbol(e);
+              } else if (currentTool === 'place_wire') {
+                handlePlaceWire(e);
+              } else {
+                handleStageClick(e);
+              }
+            }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -632,21 +816,26 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
               y={pan.y}
               scaleX={zoom}
               scaleY={zoom}
+              listening={true}
               ref={(node) => {
-                if (node !== contentLayer) {
-                  console.log('[SchematicEditor] Layer ref callback called, _id:', (node as any)?._id);
+                // 修复：确保 ref 正确设置，避免重复更新
+                if (node && node !== contentLayer) {
+                  console.log('[SchematicEditor] Content Layer ref set, _id:', (node as any)?._id);
                   setContentLayer(node);
                 }
               }}
             >
               {/* 导线 */}
-              {schematicData.wires.map(renderWire)}
+              {(schematicData.wires ?? []).map(renderWire)}
+
+              {/* 正在绘制的导线 */}
+              {renderDrawingWire()}
 
               {/* 元件 */}
-              {schematicData.components.map(renderComponent)}
+              {(schematicData.components ?? []).map(renderComponent)}
 
               {/* 标签 */}
-              {schematicData.labels.map(renderLabel)}
+              {(schematicData.labels ?? []).map(renderLabel)}
             </Layer>
           </Stage>
           ) : (
@@ -669,7 +858,7 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
               stageHeight={height}
               zoom={zoom}
               pan={pan}
-              components={schematicData.components.map(c => ({
+              components={(schematicData.components ?? []).map(c => ({
                 id: c.id,
                 position: c.position,
                 reference: c.reference,
@@ -697,9 +886,9 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             {/* 缩放显示 */}
             <span style={{ color: '#4a9eff', fontWeight: 600 }}>{(zoom * 100).toFixed(0)}%</span>
             <span style={{ color: '#555' }}>|</span>
-            <span>{schematicData.components.length} 元件</span>
+            <span>{(schematicData.components ?? []).length} 元件</span>
             <span style={{ color: '#555' }}>|</span>
-            <span>{schematicData.wires.length} 导线</span>
+            <span>{(schematicData.wires ?? []).length} 导线</span>
 
             {/* 分隔 */}
             <span style={{ color: '#555' }}>|</span>
@@ -806,6 +995,55 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             >
               删除选中元素
             </button>
+
+            {/* 连线绘制控制 */}
+            {drawingWire.isDrawing && (
+              <div style={{
+                padding: 12,
+                backgroundColor: '#2d5a3d',
+                borderRadius: 4,
+                marginBottom: 16
+              }}>
+                <div style={{ fontSize: 12, color: '#4aff4a', marginBottom: 8 }}>
+                  📍 正在绘制导线 ({drawingWire.points.length} 个点)
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={finishWireDrawing}
+                    disabled={drawingWire.points.length < 2}
+                    style={{
+                      flex: 1,
+                      padding: '6px 12px',
+                      backgroundColor: drawingWire.points.length < 2 ? '#3d3d3d' : '#4a9eff',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 4,
+                      cursor: drawingWire.points.length < 2 ? 'not-allowed' : 'pointer',
+                      fontSize: 12
+                    }}
+                  >
+                    完成
+                  </button>
+                  <button
+                    onClick={cancelWireDrawing}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#ff4444',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      fontSize: 12
+                    }}
+                  >
+                    取消
+                  </button>
+                </div>
+                <div style={{ fontSize: 10, color: '#888', marginTop: 8 }}>
+                  点击画布添加点，ESC取消
+                </div>
+              </div>
+            )}
 
             {/* 元件属性 */}
             {selectedComponent && (

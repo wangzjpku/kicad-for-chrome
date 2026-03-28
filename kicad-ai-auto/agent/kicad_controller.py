@@ -75,6 +75,7 @@ logger = logging.getLogger(__name__)
 # 安全配置：允许的输出目录
 # 在模块加载时确定路径，使用应用根目录而非当前工作目录
 from pathlib import Path
+
 _APP_ROOT = Path(__file__).parent.parent.resolve()  # agent 目录的父目录
 ALLOWED_OUTPUT_BASE = Path(os.getenv("OUTPUT_DIR", str(_APP_ROOT / "output"))).resolve()
 
@@ -102,9 +103,7 @@ def _validate_output_path(output_path: str) -> Path:
     try:
         path.relative_to(ALLOWED_OUTPUT_BASE)
     except ValueError:
-        raise ValueError(
-            f"Output path must be within {ALLOWED_OUTPUT_BASE}"
-        )
+        raise ValueError(f"Output path must be within {ALLOWED_OUTPUT_BASE}")
 
     return path
 
@@ -436,6 +435,16 @@ class KiCadController:
 
         self.kicad_process = None
         self.current_project = None
+        self._kicad_window_handle = None  # 清理窗口句柄
+
+        # 关闭 X11 显示连接 (Linux)
+        if IS_LINUX and hasattr(self, "_display") and self._display:
+            try:
+                self._display.close()
+                self._display = None
+                logger.debug("X11 display connection closed")
+            except Exception as e:
+                logger.warning(f"Failed to close X11 display: {e}")
 
         logger.info("KiCad closed")
 
@@ -720,23 +729,35 @@ class KiCadController:
             saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
             saveDC.SelectObject(saveBitMap)
 
-            # 截图（使用 SRCCOPY 复制源像素）
-            # 从 (0,0) 开始复制整个窗口（包括标题栏和非客户区）
-            saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
+            bmpinfo = None
+            bmpstr = None
 
-            # 转换为 PIL Image
-            bmpinfo = saveBitMap.GetInfo()
-            bmpstr = saveBitMap.GetBitmapBits(True)
+            try:
+                # 截图（使用 SRCCOPY 复制源像素）
+                # 从 (0,0) 开始复制整个窗口（包括标题栏和非客户区）
+                saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
 
-            logger.debug(
-                f"BitBlt 成功，位图大小: {bmpinfo['bmWidth']}x{bmpinfo['bmHeight']}"
-            )
+                # 转换为 PIL Image
+                bmpinfo = saveBitMap.GetInfo()
+                bmpstr = saveBitMap.GetBitmapBits(True)
 
-            # 清理资源
-            win32gui.DeleteObject(saveBitMap.GetHandle())
-            saveDC.DeleteDC()
-            mfcDC.DeleteDC()
-            win32gui.ReleaseDC(hwnd, hwndDC)
+                logger.debug(
+                    f"BitBlt 成功，位图大小: {bmpinfo['bmWidth']}x{bmpinfo['bmHeight']}"
+                )
+            finally:
+                # 确保资源释放 - 即使发生异常也要清理
+                try:
+                    win32gui.DeleteObject(saveBitMap.GetHandle())
+                    saveDC.DeleteDC()
+                    mfcDC.DeleteDC()
+                    win32gui.ReleaseDC(hwnd, hwndDC)
+                except Exception as cleanup_err:
+                    logger.warning(
+                        f"Failed to cleanup Windows DC resources: {cleanup_err}"
+                    )
+
+            if bmpinfo is None or bmpstr is None:
+                raise Exception("Failed to capture bitmap")
 
             # 创建 PIL Image
             image = Image.frombuffer(

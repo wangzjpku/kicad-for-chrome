@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-case-declarations
 /**
  * KiCad 符号渲染器
  * 根据 KiCad 符号库的真实数据渲染符号

@@ -139,9 +139,10 @@ class TestFindBestFootprint:
         assert result == "Resistor_SMD:R_0603_1608Metric"
 
     def test_unknown_returns_default(self):
-        """测试未知元件返回默认 - 实际上是电容"""
+        """测试未知元件返回默认电阻封装"""
         result = find_best_footprint("UnknownComponent")
-        assert result == "Capacitor_SMD:C_0603_1608Metric"
+        # 未知元件默认返回电阻封装作为fallback
+        assert result == "Resistor_SMD:R_0603_1608Metric"
 
 
 class TestInferComponentType:

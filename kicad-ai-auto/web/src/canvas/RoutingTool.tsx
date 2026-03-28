@@ -21,14 +21,18 @@ const RoutingTool: React.FC<RoutingToolProps> = ({ active }) => {
     setCurrentTool,
     snapToGrid, 
     gridSize,
-    pcbData 
+    // pcbData // 未使用
   } = usePCBStore();
   
   // 当前正在绘制的走线状态
   const [isRouting, setIsRouting] = useState(false);
   const [points, setPoints] = useState<{ x: number; y: number }[]>([]);
   const [currentMousePos, setCurrentMousePos] = useState<{ x: number; y: number } | null>(null);
+  // layer 保留用于未来功能扩展（切换布线层）
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [layer, setLayer] = useState('F.Cu');
+  // width 保留用于未来功能扩展
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [width, setWidth] = useState(0.2);
 
   // 吸附到网格

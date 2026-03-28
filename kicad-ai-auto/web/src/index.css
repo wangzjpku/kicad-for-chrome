@@ -20,7 +20,7 @@ body {
 
 /* KiCad style overrides */
 .kicad-canvas {
-  background-color: #000000;
+  background-color: transparent;
   image-rendering: pixelated;
 }
 

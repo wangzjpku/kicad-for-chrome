@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PCBData, Footprint, Track, Via } from '../types';
-import { samplePCB } from '../data/samplePCB';
+// samplePCB 已通过 props 传入，无需导入
 import { usePCBStore } from '../stores/pcbStore';
 
 interface PropertyPanelProps {
@@ -45,6 +45,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ pcbData }) => {
       setLocalPositions(positions);
       setLocalRotations(rotations);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedElement?.id]);
 
   // 处理位置输入变化

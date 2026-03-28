@@ -16,7 +16,7 @@ interface BoardOutlineRendererProps {
 const BoardOutlineRenderer: React.FC<BoardOutlineRendererProps> = ({
   outline,
   color = '#4A5568', // 深灰色
-  strokeWidth = 2,
+  strokeWidth = 4,
 }) => {
   // 将轮廓点转换为像素坐标
   const points = outline.flatMap((p) => [p.x * MM_TO_PX, p.y * MM_TO_PX]);
