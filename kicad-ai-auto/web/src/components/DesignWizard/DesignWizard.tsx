@@ -13,6 +13,7 @@
 import React, { useState, useCallback } from 'react';
 import { ParsedRequirements } from './MadLibsInput';
 import { LayerRecommendation } from '../../services/layerCalculator';
+import { aiApi, AIDesignResult } from '../../services/api';
 
 interface DesignWizardProps {
   requirements: string;
@@ -74,6 +75,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
   const [stepHistory, setStepHistory] = useState<DesignStep[]>(['plan']);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
+  const [designResult, setDesignResult] = useState<AIDesignResult | null>(null);
 
   // 获取步骤索引
   const getStepIndex = (step: DesignStep): number => {
@@ -89,13 +91,48 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
       setIsGenerating(true);
       setGenerationProgress('');
 
-      // 模拟生成过程
-      for (let i = 0; i < 5; i++) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        const step = STEPS[nextIndex];
-        setGenerationProgress(`正在生成${step.title}...`);
+      const nextStep = STEPS[nextIndex];
+
+      // 如果是进入原理图步骤，调用AI生成
+      if (nextStep.id === 'schematic') {
+        try {
+          setGenerationProgress('正在分析需求...');
+          const result = await aiApi.designCircuit({
+            requirements,
+            project_name: `design_${Date.now()}`,
+            generator_version: 'v2',
+            max_iterations: 3,
+            auto_fix: true,
+            validate: true,
+          });
+
+          setDesignResult(result);
+
+          if (!result.success) {
+            setGenerationProgress(`生成失败: ${result.message}`);
+            // 显示错误但允许继续
+          } else {
+            setGenerationProgress('原理图生成完成!');
+          }
+        } catch (error) {
+          console.error('AI design failed:', error);
+          setGenerationProgress('生成失败，请重试');
+        }
+      } else if (nextStep.id === 'layout') {
+        setGenerationProgress('正在生成PCB布局...');
+        // TODO: 调用PCB生成API
+      } else if (nextStep.id === 'manufacture') {
+        setGenerationProgress('正在准备制造文件...');
+        // TODO: 调用制造文件生成API
+      } else {
+        // 其他步骤模拟进度
+        for (let i = 0; i < 3; i++) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          setGenerationProgress(`正在生成${nextStep.title}...`);
+        }
       }
 
+      await new Promise(resolve => setTimeout(resolve, 500));
       setGenerationProgress('');
       setIsGenerating(false);
 
@@ -104,7 +141,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
     } else {
       onComplete();
     }
-  }, [currentIndex, onComplete]);
+  }, [currentIndex, onComplete, requirements]);
 
   // 上一步
   const handleBack = useCallback(() => {
@@ -346,22 +383,64 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
-        <div style={{ color: THEME.text.secondary, fontSize: 14, textAlign: 'center' }}>
-          {isGenerating ? (
-            <>
-              <div style={{ marginBottom: 8 }}>{generationProgress}</div>
-              <div style={{ fontSize: 12, color: THEME.text.muted }}>正在生成原理图...</div>
-            </>
-          ) : (
-            <>
-              <div style={{ marginBottom: 8 }}>原理图将在您确认后生成</div>
-              <div style={{ fontSize: 12, color: THEME.text.muted }}>
-                基于您的需求: {parsedData.device || '自定义电路'}
+        {isGenerating ? (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
+            <div style={{ marginBottom: 8, color: THEME.text.primary }}>{generationProgress}</div>
+            <div style={{ fontSize: 12, color: THEME.text.muted }}>AI 正在设计中...</div>
+          </>
+        ) : designResult ? (
+          <>
+            <div style={{
+              fontSize: 48,
+              marginBottom: 16,
+              color: designResult.success ? THEME.accent.success : THEME.accent.error
+            }}>
+              {designResult.success ? '✓' : '✗'}
+            </div>
+            <div style={{ marginBottom: 8, color: THEME.text.primary, fontWeight: 600 }}>
+              {designResult.success ? '原理图生成成功!' : '生成失败'}
+            </div>
+            <div style={{ fontSize: 13, color: THEME.text.secondary, textAlign: 'center', maxWidth: 400 }}>
+              {designResult.message}
+            </div>
+            {designResult.output_path && (
+              <div style={{
+                marginTop: 12,
+                padding: '8px 12px',
+                backgroundColor: THEME.bg.primary,
+                borderRadius: 4,
+                fontSize: 11,
+                color: THEME.text.muted,
+              }}>
+                输出路径: {designResult.output_path}
               </div>
-            </>
-          )}
-        </div>
+            )}
+            {designResult.errors.length > 0 && (
+              <div style={{
+                marginTop: 12,
+                padding: 8,
+                backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                borderRadius: 4,
+                fontSize: 11,
+                color: THEME.accent.error,
+                maxWidth: 400,
+              }}>
+                {designResult.errors.map((err, i) => (
+                  <div key={i}>⚠ {String(err.message || JSON.stringify(err))}</div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
+            <div style={{ marginBottom: 8 }}>原理图将在您确认后生成</div>
+            <div style={{ fontSize: 12, color: THEME.text.muted }}>
+              基于您的需求: {parsedData.device || '自定义电路'}
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{
