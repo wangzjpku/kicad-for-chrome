@@ -1,0 +1,15 @@
+ERC 报告 (2026-03-26T00:21:45+0800, UTF8 编码)
+
+***** 图纸 /
+[pin_to_pin]: 类型为 Power output 和 Power output 的引脚已连接
+    ; error
+    @(7.62 mm, 0.00 mm): Symbol U1 引脚 2 [VO, Power output, Line]
+    @(7.62 mm, 0.00 mm): Symbol U1 引脚 2 [VO, Power output, Line]
+[pin_not_connected]: 引脚未连接
+    ; error
+    @(20.32 mm, -20.32 mm): Symbol #U5 引脚 1 [Power input, Line]
+[power_pin_not_driven]: 输入电源引脚不受任何输出电源引脚驱动
+    ; error
+    @(20.32 mm, -20.32 mm): Symbol #U5 引脚 1 [Power input, Line]
+
+ ** ERC 信息: 3 个错误 3 个警告 0

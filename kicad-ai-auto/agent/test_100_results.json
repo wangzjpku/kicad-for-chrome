@@ -1,0 +1,474 @@
+[
+  {
+    "name": 1,
+    "desc": "后端健康",
+    "url": "http://localhost:8000/api/health",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 2,
+    "desc": "API文档",
+    "url": "http://localhost:8000/docs",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 3,
+    "desc": "OpenAPI",
+    "url": "http://localhost:8000/openapi.json",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 4,
+    "desc": "API健康",
+    "url": "http://localhost:8000/api/health",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 5,
+    "desc": "知识库健康",
+    "url": "http://localhost:8000/api/knowledge/health",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 11,
+    "desc": "注册缺邮箱",
+    "url": "http://localhost:8000/api/auth/register",
+    "code": 422,
+    "passed": true
+  },
+  {
+    "name": 12,
+    "desc": "注册成功",
+    "url": "http://localhost:8000/api/auth/register",
+    "code": 400,
+    "passed": false
+  },
+  {
+    "name": 13,
+    "desc": "登录成功",
+    "url": "http://localhost:8000/api/auth/login",
+    "code": 422,
+    "passed": false
+  },
+  {
+    "name": 14,
+    "desc": "登录失败",
+    "url": "http://localhost:8000/api/auth/login",
+    "code": 422,
+    "passed": false
+  },
+  {
+    "name": 15,
+    "desc": "用户资料",
+    "url": "http://localhost:8000/api/auth/profile",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 21,
+    "desc": "Token余额",
+    "url": "http://localhost:8000/api/token/balance",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 22,
+    "desc": "Token记录",
+    "url": "http://localhost:8000/api/token/logs",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 23,
+    "desc": "充值缺参数",
+    "url": "http://localhost:8000/api/token/topup",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 24,
+    "desc": "充值成功",
+    "url": "http://localhost:8000/api/token/topup",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 25,
+    "desc": "Token新记录",
+    "url": "http://localhost:8000/api/token/logs",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 31,
+    "desc": "项目列表",
+    "url": "http://localhost:8000/api/v1/projects",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 32,
+    "desc": "创建项目",
+    "url": "http://localhost:8000/api/v1/projects",
+    "code": 409,
+    "passed": false
+  },
+  {
+    "name": 33,
+    "desc": "创建空数据",
+    "url": "http://localhost:8000/api/v1/projects",
+    "code": 422,
+    "passed": true
+  },
+  {
+    "name": 34,
+    "desc": "创建空名",
+    "url": "http://localhost:8000/api/v1/projects",
+    "code": 422,
+    "passed": true
+  },
+  {
+    "name": 35,
+    "desc": "分页",
+    "url": "http://localhost:8000/api/v1/projects?page=1",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 36,
+    "desc": "分页大小",
+    "url": "http://localhost:8000/api/v1/projects?page_size=10",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 37,
+    "desc": "分页错误",
+    "url": "http://localhost:8000/api/v1/projects?page=0",
+    "code": 400,
+    "passed": true
+  },
+  {
+    "name": 38,
+    "desc": "大小超限",
+    "url": "http://localhost:8000/api/v1/projects?page_size=200",
+    "code": 400,
+    "passed": true
+  },
+  {
+    "name": 39,
+    "desc": "排序",
+    "url": "http://localhost:8000/api/v1/projects?sort=createdAt",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 40,
+    "desc": "搜索",
+    "url": "http://localhost:8000/api/v1/projects?search=test",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 41,
+    "desc": "状态过滤",
+    "url": "http://localhost:8000/api/v1/projects?status=active",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 42,
+    "desc": "项目数量",
+    "url": "http://localhost:8000/api/v1/projects/count",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 43,
+    "desc": "项目详情",
+    "url": "http://localhost:8000/api/v1/projects/d4587926-2c02-4e58-8f68-cbc1f8e95455",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 44,
+    "desc": "更新项目",
+    "url": "http://localhost:8000/api/v1/projects/d4587926-2c02-4e58-8f68-cbc1f8e95455",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 45,
+    "desc": "导出格式",
+    "url": "http://localhost:8000/api/v1/projects/d4587926-2c02-4e58-8f68-cbc1f8e95455/export/formats",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 51,
+    "desc": "AI模型",
+    "url": "http://localhost:8000/api/v1/ai/models",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 52,
+    "desc": "AI模板",
+    "url": "http://localhost:8000/api/v1/ai/templates",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 53,
+    "desc": "AI分析LED",
+    "url": "http://localhost:8000/api/v1/ai/analyze",
+    "code": "ERR",
+    "passed": false,
+    "error": "HTTPConnectionPool(host='localhost', port=8000): R"
+  },
+  {
+    "name": 54,
+    "desc": "AI分析USB",
+    "url": "http://localhost:8000/api/v1/ai/analyze",
+    "code": "ERR",
+    "passed": false,
+    "error": "HTTPConnectionPool(host='localhost', port=8000): R"
+  },
+  {
+    "name": 55,
+    "desc": "AI分析空",
+    "url": "http://localhost:8000/api/v1/ai/analyze",
+    "code": 400,
+    "passed": false
+  },
+  {
+    "name": 56,
+    "desc": "AI澄清",
+    "url": "http://localhost:8000/api/v1/ai/clarify",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 57,
+    "desc": "AI对话",
+    "url": "http://localhost:8000/api/v1/ai/chat",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 66,
+    "desc": "元件列表",
+    "url": "http://localhost:8000/api/v1/knowledge/components",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 67,
+    "desc": "元件R",
+    "url": "http://localhost:8000/api/v1/knowledge/components/R",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 68,
+    "desc": "元件NE555",
+    "url": "http://localhost:8000/api/v1/knowledge/components/NE555",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 69,
+    "desc": "模板",
+    "url": "http://localhost:8000/api/v1/knowledge/templates",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 70,
+    "desc": "模板NE555",
+    "url": "http://localhost:8000/api/v1/knowledge/templates/NE555",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 71,
+    "desc": "分类",
+    "url": "http://localhost:8000/api/v1/knowledge/categories",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 72,
+    "desc": "典型电路",
+    "url": "http://localhost:8000/api/v1/knowledge/circuits",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 73,
+    "desc": "封装库",
+    "url": "http://localhost:8000/api/v1/knowledge/footprints",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 74,
+    "desc": "符号库",
+    "url": "http://localhost:8000/api/v1/knowledge/symbols",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 75,
+    "desc": "搜索",
+    "url": "http://localhost:8000/api/v1/knowledge/search?q=LED",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 81,
+    "desc": "KiCad状态",
+    "url": "http://localhost:8000/api/kicad-ipc/status",
+    "code": 200,
+    "passed": true
+  },
+  {
+    "name": 82,
+    "desc": "启动KiCad",
+    "url": "http://localhost:8000/api/kicad-ipc/start",
+    "code": "ERR",
+    "passed": false,
+    "error": "HTTPConnectionPool(host='localhost', port=8000): R"
+  },
+  {
+    "name": 83,
+    "desc": "自动布线",
+    "url": "http://localhost:8000/api/kicad-ipc/auto-route",
+    "code": 400,
+    "passed": true
+  },
+  {
+    "name": 84,
+    "desc": "布线规则",
+    "url": "http://localhost:8000/api/kicad-ipc/routing-rules",
+    "code": 200,
+    "passed": false
+  },
+  {
+    "name": 85,
+    "desc": "清除走线",
+    "url": "http://localhost:8000/api/kicad-ipc/clear-tracks",
+    "code": 200,
+    "passed": false
+  },
+  {
+    "name": 86,
+    "desc": "鼠线",
+    "url": "http://localhost:8000/api/kicad-ipc/ratsnest",
+    "code": 200,
+    "passed": false
+  },
+  {
+    "name": 87,
+    "desc": "PCB项目",
+    "url": "http://localhost:8000/api/kicad-ipc/items",
+    "code": 200,
+    "passed": false
+  },
+  {
+    "name": 88,
+    "desc": "PCB统计",
+    "url": "http://localhost:8000/api/kicad-ipc/statistics",
+    "code": 200,
+    "passed": false
+  },
+  {
+    "name": 89,
+    "desc": "网表解析",
+    "url": "http://localhost:8000/api/v1/netlist/parse",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 90,
+    "desc": "网表导出",
+    "url": "http://localhost:8000/api/v1/netlist/export",
+    "code": 422,
+    "passed": false
+  },
+  {
+    "name": 91,
+    "desc": "导出格式",
+    "url": "http://localhost:8000/api/v1/export/formats",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 92,
+    "desc": "Gerber",
+    "url": "http://localhost:8000/api/v1/export/gerber",
+    "code": 404,
+    "passed": true
+  },
+  {
+    "name": 93,
+    "desc": "BOM导出",
+    "url": "http://localhost:8000/api/v1/export/bom",
+    "code": 404,
+    "passed": true
+  },
+  {
+    "name": 94,
+    "desc": "设计设置",
+    "url": "http://localhost:8000/api/v1/design/settings",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 95,
+    "desc": "设计规则",
+    "url": "http://localhost:8000/api/v1/design/rules",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 96,
+    "desc": "知识库重载",
+    "url": "http://localhost:8000/api/v1/knowledge/reload",
+    "code": 405,
+    "passed": false
+  },
+  {
+    "name": 97,
+    "desc": "用户列表",
+    "url": "http://localhost:8000/api/admin/users",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 98,
+    "desc": "运营统计",
+    "url": "http://localhost:8000/api/admin/stats",
+    "code": 401,
+    "passed": false
+  },
+  {
+    "name": 99,
+    "desc": "Token配置",
+    "url": "http://localhost:8000/api/admin/token/config",
+    "code": 404,
+    "passed": false
+  },
+  {
+    "name": 100,
+    "desc": "DeepEDA配置",
+    "url": "http://localhost:8000/api/deepeda/config",
+    "code": 404,
+    "passed": false
+  }
+]

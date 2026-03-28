@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-03-11T12:41:53.630858",
+  "iteration": 1,
+  "status": "issues_found",
+  "summary": {
+    "total_issues": 4,
+    "errors": 3,
+    "warnings": 1,
+    "pass_rate": 0
+  },
+  "layer_results": {
+    "data": {
+      "status": "FAIL",
+      "errors": 2,
+      "warnings": 0
+    },
+    "rule": {
+      "status": "PENDING",
+      "note": "Requires KiCad CLI"
+    },
+    "visual": {
+      "status": "PENDING",
+      "note": "Requires screenshot"
+    },
+    "semantic": {
+      "status": "FAIL",
+      "errors": 1,
+      "warnings": 1
+    }
+  },
+  "issues": [
+    {
+      "id": "E001",
+      "layer": "data",
+      "type": "connection",
+      "severity": "ERROR",
+      "message": "No wire connections found in schematic",
+      "file": "agent/test_output/ch340c_final.kicad_sch",
+      "details": "Schematic has 3 symbols but 0 wire connections",
+      "suggestion": "Implement wire routing in schematic generator",
+      "root_cause": "generators/schematic_v2.py - add_wire_between_pins not called or not working"
+    },
+    {
+      "id": "E002",
+      "layer": "semantic",
+      "type": "power",
+      "severity": "ERROR",
+      "message": "No power symbols (VCC/GND) found",
+      "file": "agent/test_output/ch340c_final.kicad_sch",
+      "details": "IC chips require power connections",
+      "suggestion": "Add VCC and GND power symbols with connections",
+      "root_cause": "generators/schematic_v2.py - _add_power_symbols not called or empty implementation"
+    },
+    {
+      "id": "E003",
+      "layer": "data",
+      "type": "label",
+      "severity": "ERROR",
+      "message": "No network labels found",
+      "file": "agent/test_output/ch340c_final.kicad_sch",
+      "details": "Networks cannot be identified without labels",
+      "suggestion": "Add network labels to important nets",
+      "root_cause": "generators/schematic_v2.py - _add_labels not generating labels"
+    },
+    {
+      "id": "W001",
+      "layer": "semantic",
+      "type": "bypass",
+      "severity": "WARNING",
+      "message": "No bypass capacitors found",
+      "file": "agent/test_output/ch340c_final.kicad_sch",
+      "details": "ICs require decoupling capacitors for stable operation",
+      "suggestion": "Add 100nF decoupling capacitors near IC power pins",
+      "root_cause": "AI generation logic not including bypass capacitors"
+    }
+  ],
+  "repair_plan": [
+    {
+      "priority": 1,
+      "issue_id": "E001",
+      "action": "Fix wire connection generation"
+    },
+    {
+      "priority": 2,
+      "issue_id": "E002",
+      "action": "Add power symbol generation"
+    },
+    {
+      "priority": 3,
+      "issue_id": "E003",
+      "action": "Add network label generation"
+    },
+    {
+      "priority": 4,
+      "issue_id": "W001",
+      "action": "Add bypass capacitor logic"
+    }
+  ],
+  "convergence": {
+    "target_errors": 0,
+    "target_warnings": 3,
+    "current_errors": 3,
+    "current_warnings": 1,
+    "progress": "0%"
+  }
+}

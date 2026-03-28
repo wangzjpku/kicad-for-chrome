@@ -1,0 +1,39 @@
+GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+Copyright (C) 2024-2026 KiCad AI Auto Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+Additional Terms
+
+This project incorporates or interfaces with KiCad, which is
+licensed under the GNU General Public License Version 3 (GPL-3.0).
+KiCad is available at: <https://www.kicad.org/>
+
+This project also uses the following third-party components
+with their respective licenses:
+
+- FastAPI: MIT License
+- React: MIT License
+- Konva.js: MIT License
+- Vite: MIT License
+- GLM-4 (Zhipu AI): Third-party API (subject to Zhipu AI Terms of Service)
+- Kimi (Moonshot AI): Third-party API (subject to Moonshot AI Terms of Service)
+- DeepSeek: Third-party API (subject to DeepSeek Terms of Service)
+
+For full license texts of third-party components, refer to their
+respective project repositories.

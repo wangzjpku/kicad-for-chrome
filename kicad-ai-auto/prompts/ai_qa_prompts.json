@@ -1,0 +1,18 @@
+{
+  "schematic_visual_validation": {
+    "name": "Schematic Visual Validation",
+    "description": "Visual AI analysis of schematic screenshots"
+  },
+  "pcb_layout_validation": {
+    "name": "PCB Layout Validation",
+    "description": "Visual AI analysis of PCB screenshots"
+  },
+  "netlist_consistency_check": {
+    "name": "Netlist Consistency Check",
+    "description": "Compare schematic and PCB netlists"
+  },
+  "auto_repair_instruction": {
+    "name": "Auto Repair Instructions",
+    "description": "Generate repair instructions from issues"
+  }
+}

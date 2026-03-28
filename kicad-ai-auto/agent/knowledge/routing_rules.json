@@ -1,0 +1,244 @@
+{
+  "version": "1.0",
+  "description": "PCB布线知识库 - 包含布线规则、阻抗控制、走线设计标准",
+  "last_updated": "2026-03-07",
+  "routing_rules": {
+    "general_pcb": {
+      "name": "通用PCB布线规则",
+      "description": "适用于常规PCB的布线标准",
+      "trace_width": {
+        "power": {
+          "description": "电源走线宽度(根据电流)",
+          "formula": "I = 0.048 * A * ΔT^0.44",
+          "units": "A = mils^2, I = amps, ΔT = temperature rise",
+          "examples": [
+            {"current": "0.5A", "width": "0.3mm (12mil)"},
+            {"current": "1A", "width": "0.5mm (20mil)"},
+            {"current": "2A", "width": "0.8mm (32mil)"},
+            {"current": "3A", "width": "1.3mm (50mil)"},
+            {"current": "5A", "width": "2.5mm (100mil)"}
+          ]
+        },
+        "signal": {
+          "description": "信号走线宽度",
+          "min_width": "0.15mm (6mil)",
+          "max_width": "0.5mm (20mil)",
+          "default": "0.25mm (10mil)"
+        },
+        "ground": {
+          "description": "地线走线",
+          "recommendation": "尽量宽, 使用铜箔区域"
+        }
+      },
+      "clearance": {
+        "description": "走线间距(根据电压)",
+        "low_voltage": {
+          "max_voltage": "15V",
+          "min_clearance": "0.15mm (6mil)",
+          "recommended": "0.25mm (10mil)"
+        },
+        "medium_voltage": {
+          "max_voltage": "50V",
+          "min_clearance": "0.25mm (10mil)",
+          "recommended": "0.4mm (16mil)"
+        },
+        "high_voltage": {
+          "max_voltage": "170V",
+          "min_clearance": "0.5mm (20mil)",
+          "recommended": "1.0mm (40mil)"
+        }
+      },
+      "via": {
+        "description": "过孔规格",
+        "standard_pads": [
+          {"drill": "0.3mm", "pad_diameter": "0.6mm", "current": "0.5A"},
+          {"drill": "0.4mm", "pad_diameter": "0.7mm", "current": "1A"},
+          {"drill": "0.5mm", "pad_diameter": "0.9mm", "current": "2A"},
+          {"drill": "0.6mm", "pad_diameter": "1.0mm", "current": "3A"},
+          {"drill": "0.8mm", "pad_diameter": "1.3mm", "current": "5A"}
+        ],
+        "aspect_ratio": "最大6:1(孔深:孔径)"
+      },
+      "impedance": {
+        "description": "阻抗控制走线",
+        "single_ended": [
+          {"impedance": "50Ω", "width_1oz": "2.5mm", "width_2oz": "1.3mm", "dielectric": "FR4"},
+          {"impedance": "75Ω", "width_1oz": "1.8mm", "width_2oz": "0.9mm", "dielectric": "FR4"}
+        ],
+        "differential": [
+          {"impedance": "90Ω", "width_1oz": "1.5mm", "gap_1oz": "0.3mm", "dielectric": "FR4"},
+          {"impedance": "100Ω", "width_1oz": "1.2mm", "gap_1oz": "0.25mm", "dielectric": "FR4"},
+          {"impedance": "120Ω", "width_1oz": "1.0mm", "gap_1oz": "0.2mm", "dielectric": "FR4"}
+        ]
+      }
+    },
+    "high_speed": {
+      "name": "高速PCB布线规则",
+      "description": "适用于高速数字电路的布线标准",
+      "rules": [
+        {
+          "category": "时钟线",
+          "description": "时钟信号布线要求",
+          "requirements": [
+            "使用阻抗控制走线",
+            "保持走线长度一致(对差分对)",
+            "避免使用过孔",
+            "远离干扰源"
+          ],
+          "trace_length_tolerance": "±25mil (0.635mm)"
+        },
+        {
+          "category": "差分对",
+          "description": "USB, Ethernet, HDMI等差分信号",
+          "requirements": [
+            "保持等长(长度匹配)",
+            "保持等距(间距一致)",
+            "对称布线",
+            "避免跨越分割平面"
+          ],
+          "length_matching": {
+            "usb_2": "±150mil (3.81mm)",
+            "usb_3": "±50mil (1.27mm)",
+            "ethernet": "±25mil (0.635mm)",
+            "hdmi": "±15mil (0.38mm)"
+          }
+        },
+        {
+          "category": "电源完整性",
+          "description": "电源平面和去耦布线",
+          "requirements": [
+            "使用完整的电源平面",
+            "去耦电容靠近芯片引脚",
+            "电源走线尽量短",
+            "使用多个过孔连接平面"
+          ]
+        }
+      ]
+    },
+    "rf_pcb": {
+      "name": "射频PCB布线规则",
+      "description": "适用于射频电路的布线标准",
+      "frequency_bands": [
+        {
+          "band": "L/S (1-4GHz)",
+          "trace_width_50ohm": "3.0mm (1oz)",
+          "ground_spacing": "3x trace width"
+        },
+        {
+          "band": "C/X (4-12GHz)",
+          "trace_width_50ohm": "1.8mm (1oz)",
+          "ground_spacing": "3x trace width"
+        },
+        {
+          "band": "Ku/K (12-40GHz)",
+          "trace_width_50ohm": "0.9mm (1oz)",
+          "ground_spacing": "2x trace width"
+        }
+      ],
+      "rules": [
+        "避免90度转弯,使用45度或弧形",
+        "保持一致的线宽",
+        "保持与地平面的恒定距离",
+        "避免跨分割平面",
+        "使用过孔 fence 减少辐射"
+      ]
+    },
+    "flexible_pcb": {
+      "name": "柔性PCB布线规则",
+      "description": "适用于柔性电路的布线标准",
+      "trace_width_reduction": "通常需要增加50%宽度以补偿柔性",
+      "min_bend_radius": "6倍导体厚度",
+      "recommended_layers": "单层或双层",
+      "stiffener_areas": ["连接器周围", "弯曲区域外"]
+    }
+  },
+  "design_guidelines": {
+    "layer_stackup": [
+      {
+        "name": "双面板",
+        "layers": ["Top Copper", "Dielectric", "Bottom Copper"],
+        "thickness": "1.6mm standard"
+      },
+      {
+        "name": "四面板",
+        "layers": ["Top Copper", "Prepreg", "Inner Plane 1", "Core", "Inner Plane 2", "Prepreg", "Bottom Copper"],
+        "thickness": "1.6mm standard"
+      }
+    ],
+    "routing_best_practices": [
+      "走线方向与相邻层垂直",
+      "保持完整的回流路径",
+      "避免孤岛铜",
+      "使用热释放连接器",
+      "保持敏感信号短而直"
+    ],
+    "drc_checklist": [
+      "最小走线宽度",
+      "最小间距",
+      "最小过孔尺寸",
+      "阻焊开窗",
+      "丝印与走线间距",
+      "测试点"
+    ]
+  },
+  "auto_route_presets": {
+    "quick_prototype": {
+      "description": "快速原型 - 优先速度",
+      "trace_width": "0.2mm",
+      "clearance": "0.15mm",
+      "via_diameter": "0.6mm",
+      "via_drill": "0.3mm"
+    },
+    "standard": {
+      "description": "标准产品",
+      "trace_width": "0.25mm",
+      "clearance": "0.2mm",
+      "via_diameter": "0.8mm",
+      "via_drill": "0.4mm"
+    },
+    "high_density": {
+      "description": "高密度设计",
+      "trace_width": "0.15mm",
+      "clearance": "0.12mm",
+      "via_diameter": "0.5mm",
+      "via_drill": "0.25mm"
+    },
+    "high_current": {
+      "description": "大电流应用",
+      "trace_width": "0.5mm",
+      "clearance": "0.3mm",
+      "via_diameter": "1.0mm",
+      "via_drill": "0.6mm"
+    },
+    "rf_mixed": {
+      "description": "射频/混和信号",
+      "trace_width": "0.3mm",
+      "clearance": "0.25mm",
+      "via_diameter": "0.7mm",
+      "via_drill": "0.35mm",
+      "impedance_controlled": true
+    }
+  },
+  "manufacturer_capabilities": {
+    "standard_pcb": {
+      "min_trace_width": "0.1mm (4mil)",
+      "min_clearance": "0.1mm (4mil)",
+      "min_via_drill": "0.2mm",
+      "min_via_pad": "0.4mm"
+    },
+    "advanced_pcb": {
+      "min_trace_width": "0.075mm (3mil)",
+      "min_clearance": "0.075mm (3mil)",
+      "min_via_drill": "0.15mm",
+      "min_via_pad": "0.3mm"
+    },
+    "hdi_pcb": {
+      "min_trace_width": "0.05mm (2mil)",
+      "min_clearance": "0.05mm (2mil)",
+      "min_via_drill": "0.1mm",
+      "min_via_pad": "0.25mm",
+      "laser_via": true,
+      "stacked_via": true
+    }
+  }
+}

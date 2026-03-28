@@ -1,0 +1,246 @@
+{
+  "timestamp": "2026-03-25T23:57:32.475673",
+  "summary": {
+    "pass": 5,
+    "fail": 3,
+    "warn": 4
+  },
+  "results": [
+    {
+      "level": "INFO",
+      "message": "\n╔==========================================================╗",
+      "time": "2026-03-25T23:56:42.556457"
+    },
+    {
+      "level": "INFO",
+      "message": "║            AI设计真实验证                              ║",
+      "time": "2026-03-25T23:56:42.556489"
+    },
+    {
+      "level": "INFO",
+      "message": "╚==========================================================╝",
+      "time": "2026-03-25T23:56:42.556495"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:56:42.556501"
+    },
+    {
+      "level": "INFO",
+      "message": "测试1: 电源电路真实文件生成",
+      "time": "2026-03-25T23:56:42.556505"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:56:42.556509"
+    },
+    {
+      "level": "INFO",
+      "message": "\n1. 测试连接建议生成...",
+      "time": "2026-03-25T23:56:42.556518"
+    },
+    {
+      "level": "INFO",
+      "message": "生成 5 个连接建议:",
+      "time": "2026-03-25T23:56:42.558874"
+    },
+    {
+      "level": "INFO",
+      "message": "  - U1.GND -> C1.- (网络: GND)",
+      "time": "2026-03-25T23:56:42.558886"
+    },
+    {
+      "level": "INFO",
+      "message": "  - U1.GND -> C2.- (网络: GND)",
+      "time": "2026-03-25T23:56:42.558892"
+    },
+    {
+      "level": "INFO",
+      "message": "  - U1.VOUT -> U1.VIN (网络: VOUT_U1)",
+      "time": "2026-03-25T23:56:42.558897"
+    },
+    {
+      "level": "INFO",
+      "message": "  - U1.VOUT -> C1.+ (网络: VOUT_AMS1117-3.3)",
+      "time": "2026-03-25T23:56:42.558902"
+    },
+    {
+      "level": "INFO",
+      "message": "  - U1.VOUT -> C2.+ (网络: VOUT_AMS1117-3.3)",
+      "time": "2026-03-25T23:56:42.558906"
+    },
+    {
+      "level": "INFO",
+      "message": "\n2. 生成KiCad原理图文件...",
+      "time": "2026-03-25T23:56:42.558912"
+    },
+    {
+      "level": "INFO",
+      "message": "添加元件到原理图...",
+      "time": "2026-03-25T23:56:42.564216"
+    },
+    {
+      "level": "WARN",
+      "message": "  添加元件失败 U1: Symbol 'Power_Management:AMS1117-3.3' not found in KiCAD libraries. Please verify the library name 'Power_Management' and symbol name are correct. Common libraries include: Device, Connector_Generic, Regulator_Linear, RF_Module",
+      "time": "2026-03-25T23:56:42.565102"
+    },
+    {
+      "level": "WARN",
+      "message": "  添加元件失败 C1: Symbol 'Device:C' not found in KiCAD libraries. Please verify the library name 'Device' and symbol name are correct. Common libraries include: Device, Connector_Generic, Regulator_Linear, RF_Module",
+      "time": "2026-03-25T23:56:42.565397"
+    },
+    {
+      "level": "WARN",
+      "message": "  添加元件失败 C2: Symbol 'Device:C' not found in KiCAD libraries. Please verify the library name 'Device' and symbol name are correct. Common libraries include: Device, Connector_Generic, Regulator_Linear, RF_Module",
+      "time": "2026-03-25T23:56:42.565656"
+    },
+    {
+      "level": "INFO",
+      "message": "添加电源符号...",
+      "time": "2026-03-25T23:56:42.565669"
+    },
+    {
+      "level": "WARN",
+      "message": "  添加电源符号失败: 'Schematic' object has no attribute 'power_symbols'",
+      "time": "2026-03-25T23:56:42.565680"
+    },
+    {
+      "level": "PASS",
+      "message": "原理图已保存: validation_output\\test_power_supply.kicad_sch",
+      "time": "2026-03-25T23:56:42.567111"
+    },
+    {
+      "level": "PASS",
+      "message": "文件大小: 299 bytes",
+      "time": "2026-03-25T23:56:42.567354"
+    },
+    {
+      "level": "INFO",
+      "message": "文件内容: 0 个元件, 0 条导线",
+      "time": "2026-03-25T23:56:42.567515"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:56:42.567557"
+    },
+    {
+      "level": "INFO",
+      "message": "测试2: KiCad CLI 检查",
+      "time": "2026-03-25T23:56:42.567563"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:56:42.567567"
+    },
+    {
+      "level": "INFO",
+      "message": "找到KiCad CLI: E:\\Program Files\\KiCad\\9.0\\bin\\kicad-cli.exe",
+      "time": "2026-03-25T23:56:42.567690"
+    },
+    {
+      "level": "PASS",
+      "message": "KiCad CLI 版本: 9.0.7",
+      "time": "2026-03-25T23:56:43.175135"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:56:43.175157"
+    },
+    {
+      "level": "INFO",
+      "message": "测试3: ERC电气规则检查",
+      "time": "2026-03-25T23:56:43.175165"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:56:43.175174"
+    },
+    {
+      "level": "PASS",
+      "message": "ERC检查通过，无错误",
+      "time": "2026-03-25T23:56:43.771297"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:56:43.771313"
+    },
+    {
+      "level": "INFO",
+      "message": "测试4: 网表导出",
+      "time": "2026-03-25T23:56:43.771318"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:56:43.771322"
+    },
+    {
+      "level": "PASS",
+      "message": "网表导出成功: validation_output\\test_power_supply.net (949 bytes)",
+      "time": "2026-03-25T23:56:44.177430"
+    },
+    {
+      "level": "INFO",
+      "message": "网表包含: 0 个元件, 0 个网络",
+      "time": "2026-03-25T23:56:44.177682"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:56:44.177734"
+    },
+    {
+      "level": "INFO",
+      "message": "测试5: 元件质量验证",
+      "time": "2026-03-25T23:56:44.177744"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:56:44.177751"
+    },
+    {
+      "level": "FAIL",
+      "message": "AMS1117-3.3: 验证失败 - 'ComponentValidationResult' object has no attribute 'severity'",
+      "time": "2026-03-25T23:57:32.458734"
+    },
+    {
+      "level": "FAIL",
+      "message": "CH340C: 验证失败 - 'ComponentValidationResult' object has no attribute 'severity'",
+      "time": "2026-03-25T23:57:32.466155"
+    },
+    {
+      "level": "FAIL",
+      "message": "STM32F103C8T6: 验证失败 - 'ComponentValidationResult' object has no attribute 'severity'",
+      "time": "2026-03-25T23:57:32.475106"
+    },
+    {
+      "level": "INFO",
+      "message": "\n============================================================",
+      "time": "2026-03-25T23:57:32.475122"
+    },
+    {
+      "level": "INFO",
+      "message": "真实验证报告",
+      "time": "2026-03-25T23:57:32.475129"
+    },
+    {
+      "level": "INFO",
+      "message": "============================================================",
+      "time": "2026-03-25T23:57:32.475133"
+    },
+    {
+      "level": "INFO",
+      "message": "\n通过: 5, 失败: 3, 警告: 4",
+      "time": "2026-03-25T23:57:32.475159"
+    }
+  ],
+  "errors": []
+}

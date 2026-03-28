@@ -1,0 +1,68 @@
+{
+  "design": {
+    "title": "Test",
+    "date": "2026-03-04 10:52:00",
+    "revision": "v1.0",
+    "company": "",
+    "comment1": "",
+    "comment2": "",
+    "comment3": "",
+    "comment4": ""
+  },
+  "components": [
+    {
+      "reference": "U1",
+      "value": "STM32F103",
+      "footprint": "LQFP-48",
+      "lib_id": "MCU_ST_STM32",
+      "datasheet": "",
+      "fields": {}
+    },
+    {
+      "reference": "R1",
+      "value": "10K",
+      "footprint": "0603",
+      "lib_id": "Device",
+      "datasheet": "",
+      "fields": {}
+    },
+    {
+      "reference": "C1",
+      "value": "10uF",
+      "footprint": "0603",
+      "lib_id": "Device",
+      "datasheet": "",
+      "fields": {}
+    }
+  ],
+  "nets": [
+    {
+      "name": "VCC",
+      "code": 1,
+      "nodes": [
+        {
+          "reference": "U1",
+          "pin": "VDD"
+        },
+        {
+          "reference": "R1",
+          "pin": "1"
+        }
+      ]
+    },
+    {
+      "name": "GND",
+      "code": 2,
+      "nodes": [
+        {
+          "reference": "U1",
+          "pin": "VSS"
+        },
+        {
+          "reference": "C1",
+          "pin": "2"
+        }
+      ]
+    }
+  ]
+}

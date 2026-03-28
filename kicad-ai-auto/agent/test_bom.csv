@@ -1,0 +1,4 @@
+Reference,Value,Footprint,Symbol,Datasheet
+"U1","STM32F103","LQFP-48","MCU_ST_STM32",""
+"R1","10K","0603","Device",""
+"C1","10uF","0603","Device",""

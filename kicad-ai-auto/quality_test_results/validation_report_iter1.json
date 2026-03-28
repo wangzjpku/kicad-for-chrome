@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-03-11T12:39:41.667339",
+  "iteration": 1,
+  "summary": {
+    "total": 2,
+    "errors": 0,
+    "warnings": 2
+  },
+  "issues": [
+    {
+      "id": "W001",
+      "layer": "data",
+      "type": "label",
+      "severity": "WARNING",
+      "message": "No network labels found in schematic",
+      "file": "agent\\test_output\\ch340c_final.kicad_sch",
+      "suggestion": "Add network labels to identify nets"
+    },
+    {
+      "id": "W002",
+      "layer": "data",
+      "type": "power",
+      "severity": "WARNING",
+      "message": "No power symbols (VCC/GND) found",
+      "file": "agent\\test_output\\ch340c_final.kicad_sch",
+      "suggestion": "Add power supply connections"
+    }
+  ]
+}

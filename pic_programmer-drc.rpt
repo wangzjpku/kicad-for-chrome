@@ -1,0 +1,13 @@
+** Drc report for pic_programmer.kicad_pcb **
+** Created on 2026-02-25T00:05:48+0800 **
+
+** Found 1 DRC violations **
+[lib_footprint_mismatch]: 封装 'SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm' 与来源库 'footprints' 中的封装存在差异。
+    局部重写; warning
+    @(148.0820 mm, 97.7900 mm): 封装 JP1
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

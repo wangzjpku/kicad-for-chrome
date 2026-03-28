@@ -1,0 +1,44 @@
+{
+  "Package_QFP": {
+    "LQFP-48_7x7mm_P0.5mm": {
+      "pads": 48,
+      "type": "smd"
+    },
+    "LQFP-64_10x10mm_P0.5mm": {
+      "pads": 64,
+      "type": "smd"
+    }
+  },
+  "Package_SO": {
+    "SOIC-8_3.9x4.9mm_P1.27mm": {
+      "pads": 8,
+      "type": "smd"
+    },
+    "SOIC-16_3.9x9.9mm_P1.27mm": {
+      "pads": 16,
+      "type": "smd"
+    }
+  },
+  "Package_TO_SOT_SMD": {
+    "SOT-23": {
+      "pads": 3,
+      "type": "smd"
+    },
+    "SOT-223": {
+      "pads": 4,
+      "type": "smd"
+    }
+  },
+  "LED_SMD": {
+    "LED_0603_1608Metric": {
+      "pads": 2,
+      "type": "smd"
+    }
+  },
+  "RF_Module": {
+    "ESP32-WROOM-32": {
+      "pads": 50,
+      "type": "smd"
+    }
+  }
+}

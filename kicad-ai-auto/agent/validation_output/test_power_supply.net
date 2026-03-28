@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>E:\0-007-MyAIOS\projects\1-kicad-for-chrome\kicad-ai-auto\agent\validation_output\test_power_supply.kicad_sch</source>
+    <date>2026-03-26T00:21:46+0800</date>
+    <tool>Eeschema 9.0.7</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Power Supply Circuit</title>
+        <company/>
+        <rev/>
+        <date/>
+        <source>test_power_supply.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="U1">
+      <value>AMS1117-3.3</value>
+      <fields>
+        <field name="ref">U1</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Regulator_Linear" part="AMS1117-3.3" description="1A Low Dropout regulator, positive, 3.3V fixed output, SOT-223"/>
+      <property name="ref" value="U1"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="validation_output/test_power_supply.kicad_sch"/>
+      <property name="ki_keywords" value="linear regulator ldo fixed positive"/>
+      <property name="ki_fp_filters" value="SOT?223*TabPin2*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>09b04ff5-5940-4f3e-b8c4-5604411d962a 09b04ff5-5940-4f3e-b8c4-5604411d9629</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>100uF</value>
+      <fields>
+        <field name="ref">C1</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="ref" value="C1"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="validation_output/test_power_supply.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>49c76a86-4304-45ea-aef9-6290227b39e5 49c76a86-4304-45ea-aef9-6290227b39e4</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>10uF</value>
+      <fields>
+        <field name="ref">C2</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="ref" value="C2"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="validation_output/test_power_supply.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>dc88c14c-4baa-4a19-a83a-8100d8032ff9 dc88c14c-4baa-4a19-a83a-8100d8032ff8</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Regulator_Linear" part="AMS1117-3.3">
+      <description>1A Low Dropout regulator, positive, 3.3V fixed output, SOT-223</description>
+      <docs>http://www.advanced-monolithic.com/pdf/ds1117.pdf</docs>
+      <footprints>
+        <fp>SOT?223*TabPin2*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">AMS1117-3.3</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-223-3_TabPin2</field>
+        <field name="Datasheet">http://www.advanced-monolithic.com/pdf/ds1117.pdf</field>
+        <field name="Description">1A Low Dropout regulator, positive, 3.3V fixed output, SOT-223</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="power_in"/>
+        <pin num="2" name="VO" type="power_out"/>
+        <pin num="3" name="VI" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Device">
+      <uri>E:\Program Files\KiCad\9.0\share\kicad\symbols\/Device.kicad_sym</uri>
+    </library>
+    <library logical="Regulator_Linear">
+      <uri>E:\Program Files\KiCad\9.0\share\kicad\symbols\/Regulator_Linear.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="2" name="Net-(U1-GND)" class="Default">
+      <node ref="U1" pin="1" pinfunction="GND" pintype="power_in"/>
+    </net>
+    <net code="3" name="Net-(U1-VI)" class="Default">
+      <node ref="U1" pin="3" pinfunction="VI" pintype="power_in"/>
+    </net>
+    <net code="4" name="Net-(U1-VO)" class="Default">
+      <node ref="U1" pin="2" pinfunction="VO" pintype="power_out"/>
+    </net>
+    <net code="5" name="Net-(U2-Pad1)" class="Default">
+      <node ref="U2" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="Net-(U2-Pad2)" class="Default">
+      <node ref="U2" pin="2" pintype="passive"/>
+    </net>
+    <net code="7" name="Net-(U3-Pad1)" class="Default">
+      <node ref="U3" pin="1" pintype="passive"/>
+    </net>
+    <net code="8" name="Net-(U3-Pad2)" class="Default">
+      <node ref="U3" pin="2" pintype="passive"/>
+    </net>
+  </nets>
+</export>
