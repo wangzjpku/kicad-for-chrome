@@ -1,0 +1,26 @@
+{
+  "44ea8177-b212-4a8e-b803-654ca9d6ec11": {
+    "id": "44ea8177-b212-4a8e-b803-654ca9d6ec11",
+    "name": "test_e2e_1774694849",
+    "description": "E2E Test Project",
+    "status": "active",
+    "projectFile": null,
+    "schematicFile": null,
+    "pcbFile": null,
+    "createdAt": "2026-03-28T18:47:31.143808",
+    "updatedAt": "2026-03-28T18:47:31.143808",
+    "ownerId": "5"
+  },
+  "9c7220d3-baf0-492b-8022-6094642fc7ec": {
+    "id": "9c7220d3-baf0-492b-8022-6094642fc7ec",
+    "name": "test_e2e_1774695228",
+    "description": "E2E Test Project",
+    "status": "active",
+    "projectFile": null,
+    "schematicFile": null,
+    "pcbFile": null,
+    "createdAt": "2026-03-28T18:53:50.688112",
+    "updatedAt": "2026-03-28T18:53:50.688112",
+    "ownerId": "7"
+  }
+}

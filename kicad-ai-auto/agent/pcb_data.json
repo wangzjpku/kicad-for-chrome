@@ -1,0 +1,146 @@
+{
+  "44ea8177-b212-4a8e-b803-654ca9d6ec11": {
+    "id": "pcb-44ea8177-b212-4a8e-b803-654ca9d6ec11",
+    "projectId": "44ea8177-b212-4a8e-b803-654ca9d6ec11",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "9c7220d3-baf0-492b-8022-6094642fc7ec": {
+    "id": "pcb-9c7220d3-baf0-492b-8022-6094642fc7ec",
+    "projectId": "9c7220d3-baf0-492b-8022-6094642fc7ec",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  }
+}
