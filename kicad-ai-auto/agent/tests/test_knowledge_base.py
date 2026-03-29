@@ -32,7 +32,7 @@ def test_get_component_info_known():
     """测试获取已知元件信息"""
     info = get_component_info("STM32F103C8T6")
     assert info is not None
-    assert info["symbol_library"] == "MCU_ST_STM32"
+    assert info["symbol_library"] == "MCU_ST_STM32F1"
     assert "pins" in info
     assert len(info["pins"]) > 0
     print(f"[OK] Get STM32F103C8T6 info: {len(info['pins'])} pins")

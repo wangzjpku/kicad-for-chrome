@@ -187,7 +187,7 @@ class TestSchematicWireRouting:
         }
 
         # 导出JSON网表
-        json_netlist = create_netlist_from_schematic(schematic_data, return_content=True)
+        json_netlist = create_netlist_from_schematic(schematic_data, output_path="test_netlist.json", return_content=True)
         netlist_data = json.loads(json_netlist)
 
         print("网表数据:")
@@ -265,7 +265,7 @@ class TestWireRoutingEdgeCases:
             "wires": []  # 没有连线
         }
 
-        json_netlist = create_netlist_from_schematic(schematic_data, return_content=True)
+        json_netlist = create_netlist_from_schematic(schematic_data, output_path="test_netlist.json", return_content=True)
         netlist_data = json.loads(json_netlist)
 
         # 没有网络是正常的
@@ -298,7 +298,7 @@ class TestWireRoutingEdgeCases:
             ]
         }
 
-        json_netlist = create_netlist_from_schematic(schematic_data, return_content=True)
+        json_netlist = create_netlist_from_schematic(schematic_data, output_path="test_netlist.json", return_content=True)
         netlist_data = json.loads(json_netlist)
 
         # 验证同一网络有4个连接

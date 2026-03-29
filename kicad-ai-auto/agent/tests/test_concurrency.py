@@ -13,6 +13,26 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
+from dependencies import get_current_user
+
+
+@pytest.fixture(scope="module", autouse=True)
+def clear_project_state():
+    """清除项目状态以避免测试间干扰"""
+    # 导入项目路由模块
+    from routes import project_routes
+
+    # 清除内存中的项目数据
+    project_routes._projects.clear()
+    project_routes._pcb_data.clear()
+    project_routes._schematic_data.clear()
+
+    yield
+
+    # 测试后也清除（清理）
+    project_routes._projects.clear()
+    project_routes._pcb_data.clear()
+    project_routes._schematic_data.clear()
 
 
 class TestConcurrency:
@@ -21,6 +41,12 @@ class TestConcurrency:
     @pytest.fixture
     def client(self):
         """创建测试客户端"""
+        # 创建一个模拟的用户用于认证
+        mock_user = {"user_id": 1, "email": "test@test.com"}
+
+        # 覆盖认证依赖
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+
         with (
             patch("main.KiCadController") as MockController,
             patch("main.StateMonitor"),
@@ -32,6 +58,9 @@ class TestConcurrency:
 
             with TestClient(app) as client:
                 yield client
+
+        # 清除依赖覆盖
+        app.dependency_overrides.clear()
 
     def test_concurrent_project_creation(self, client):
         """测试并发创建项目 - 验证锁保护"""
@@ -208,6 +237,12 @@ class TestRaceConditionPrevention:
     @pytest.fixture
     def client(self):
         """创建测试客户端"""
+        # 创建一个模拟的用户用于认证
+        mock_user = {"user_id": 1, "email": "test@test.com"}
+
+        # 覆盖认证依赖
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+
         with (
             patch("main.KiCadController") as MockController,
             patch("main.StateMonitor"),
@@ -219,6 +254,9 @@ class TestRaceConditionPrevention:
 
             with TestClient(app) as client:
                 yield client
+
+        # 清除依赖覆盖
+        app.dependency_overrides.clear()
 
     def test_no_duplicate_projects(self, client):
         """测试并发创建同名项目时不会重复 - 验证锁保护"""

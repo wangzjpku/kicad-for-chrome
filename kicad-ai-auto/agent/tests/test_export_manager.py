@@ -5,8 +5,12 @@ Tests for ExportManager module
 import pytest
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from export_manager import ExportManager
+from export_manager import ExportManager, ALLOWED_OUTPUT_BASE
+
+# Use the same OUTPUT_DIR that export_manager uses
+OUTPUT_DIR = str(ALLOWED_OUTPUT_BASE)
 
 
 class TestExportManager:
@@ -59,7 +63,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_gerber(self, export_manager, mock_controller):
         """Test Gerber export"""
-        result = await export_manager.export("gerber", "/output/gerber")
+        result = await export_manager.export("gerber", f"{OUTPUT_DIR}/gerber")
 
         assert result["success"] is True
         call_args = mock_controller.export_gerber.call_args[0][0]; assert "gerber" in call_args
@@ -68,7 +72,7 @@ class TestExportManager:
     async def test_export_gerber_with_layers(self, export_manager, mock_controller):
         """Test Gerber export with specific layers"""
         result = await export_manager.export(
-            "gerber", "/output/gerber", {"layers": ["F.Cu", "B.Cu"]}
+            "gerber", f"{OUTPUT_DIR}/gerber", {"layers": ["F.Cu", "B.Cu"]}
         )
 
         assert result["success"] is True
@@ -79,7 +83,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_drill(self, export_manager, mock_controller):
         """Test drill file export"""
-        result = await export_manager.export("drill", "/output/drill")
+        result = await export_manager.export("drill", f"{OUTPUT_DIR}/drill")
 
         assert result["success"] is True
         actual = mock_controller.export_drill.call_args[0][0]
@@ -88,7 +92,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_bom(self, export_manager, mock_controller):
         """Test BOM export"""
-        result = await export_manager.export("bom", "/output")
+        result = await export_manager.export("bom", OUTPUT_DIR)
 
         assert result["success"] is True
         # BOM should create file in output directory
@@ -99,7 +103,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_pickplace_not_implemented(self, export_manager):
         """Test Pick & Place export (not implemented)"""
-        result = await export_manager.export("pickplace", "/output")
+        result = await export_manager.export("pickplace", OUTPUT_DIR)
 
         assert result["success"] is False
         assert "not yet implemented" in result["error"].lower()
@@ -107,7 +111,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_pdf_not_implemented(self, export_manager):
         """Test PDF export (not implemented)"""
-        result = await export_manager.export("pdf", "/output")
+        result = await export_manager.export("pdf", OUTPUT_DIR)
 
         assert result["success"] is False
         assert "not yet implemented" in result["error"].lower()
@@ -115,7 +119,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_svg_not_implemented(self, export_manager):
         """Test SVG export (not implemented)"""
-        result = await export_manager.export("svg", "/output")
+        result = await export_manager.export("svg", OUTPUT_DIR)
 
         assert result["success"] is False
         assert "not yet implemented" in result["error"].lower()
@@ -123,7 +127,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_step_not_implemented(self, export_manager):
         """Test STEP export (not implemented)"""
-        result = await export_manager.export("step", "/output")
+        result = await export_manager.export("step", OUTPUT_DIR)
 
         assert result["success"] is False
         assert "not yet implemented" in result["error"].lower()
@@ -131,7 +135,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_unknown_format(self, export_manager):
         """Test unknown export format"""
-        result = await export_manager.export("unknown", "/output")
+        result = await export_manager.export("unknown", OUTPUT_DIR)
 
         assert result["success"] is False
         assert "unknown" in result["error"].lower()
@@ -147,7 +151,7 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_all(self, export_manager, mock_controller):
         """Test export all formats"""
-        result = await export_manager.export_all("/output")
+        result = await export_manager.export_all(OUTPUT_DIR)
 
         assert "results" in result
         assert "gerber" in result["results"]
@@ -168,7 +172,7 @@ class TestExportManager:
         # Make gerber export fail
         mock_controller.export_gerber.side_effect = Exception("Gerber export failed")
 
-        result = await export_manager.export_all("/output")
+        result = await export_manager.export_all(OUTPUT_DIR)
 
         assert result["success"] is False
         assert result["results"]["gerber"]["success"] is False
@@ -177,14 +181,14 @@ class TestExportManager:
     @pytest.mark.asyncio
     async def test_export_empty_options(self, export_manager, mock_controller):
         """Test export with empty options dict"""
-        result = await export_manager.export("gerber", "/output", {})
+        result = await export_manager.export("gerber", OUTPUT_DIR, {})
 
         assert result["success"] is True
 
     @pytest.mark.asyncio
     async def test_export_none_options(self, export_manager, mock_controller):
         """Test export with None options"""
-        result = await export_manager.export("gerber", "/output", None)
+        result = await export_manager.export("gerber", OUTPUT_DIR, None)
 
         assert result["success"] is True
 
@@ -208,7 +212,7 @@ class TestExportManagerEdgeCases:
     async def test_controller_exception_handling(self, export_manager):
         """Test that controller exceptions are propagated"""
         with pytest.raises(Exception) as exc_info:
-            await export_manager.export("gerber", "/output")
+            await export_manager.export("gerber", OUTPUT_DIR)
 
         assert "Export failed" in str(exc_info.value)
 
@@ -225,7 +229,7 @@ class TestExportManagerEdgeCases:
         export_manager = ExportManager(mock_controller)
 
         # Run multiple exports concurrently
-        tasks = [export_manager.export("gerber", f"/output/{i}") for i in range(5)]
+        tasks = [export_manager.export("gerber", f"{OUTPUT_DIR}/{i}") for i in range(5)]
 
         results = await asyncio.gather(*tasks)
 
