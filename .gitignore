@@ -84,3 +84,7 @@ versions/
 !test5.md
 !ToDo2.txt
 !Todo.txt
+
+# Runtime data files
+kicad-ai-auto/agent/data/
+*.png
