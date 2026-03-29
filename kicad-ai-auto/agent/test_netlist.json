@@ -1,8 +1,8 @@
 {
   "design": {
-    "title": "Test",
-    "date": "2026-03-04 10:52:00",
-    "revision": "v1.0",
+    "title": "Multi Wire Test",
+    "date": "2026-03-29 09:39:53",
+    "revision": "",
     "company": "",
     "comment1": "",
     "comment2": "",
@@ -12,24 +12,32 @@
   "components": [
     {
       "reference": "U1",
-      "value": "STM32F103",
-      "footprint": "LQFP-48",
-      "lib_id": "MCU_ST_STM32",
+      "value": "IC1",
+      "footprint": "SOIC-8",
+      "lib_id": "MCU",
       "datasheet": "",
       "fields": {}
     },
     {
-      "reference": "R1",
-      "value": "10K",
-      "footprint": "0603",
-      "lib_id": "Device",
+      "reference": "U2",
+      "value": "IC2",
+      "footprint": "SOIC-8",
+      "lib_id": "MCU",
       "datasheet": "",
       "fields": {}
     },
     {
       "reference": "C1",
-      "value": "10uF",
-      "footprint": "0603",
+      "value": "100nF",
+      "footprint": "0402",
+      "lib_id": "Device",
+      "datasheet": "",
+      "fields": {}
+    },
+    {
+      "reference": "C2",
+      "value": "100nF",
+      "footprint": "0402",
       "lib_id": "Device",
       "datasheet": "",
       "fields": {}
@@ -41,26 +49,20 @@
       "code": 1,
       "nodes": [
         {
-          "reference": "U1",
-          "pin": "VDD"
+          "ref": "U1",
+          "pin": "VCC"
         },
         {
-          "reference": "R1",
+          "ref": "U2",
+          "pin": "VCC"
+        },
+        {
+          "ref": "C1",
           "pin": "1"
-        }
-      ]
-    },
-    {
-      "name": "GND",
-      "code": 2,
-      "nodes": [
-        {
-          "reference": "U1",
-          "pin": "VSS"
         },
         {
-          "reference": "C1",
-          "pin": "2"
+          "ref": "C2",
+          "pin": "1"
         }
       ]
     }

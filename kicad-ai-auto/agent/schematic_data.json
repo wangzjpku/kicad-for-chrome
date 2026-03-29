@@ -1,0 +1,102 @@
+{
+  "81415b4c-5f7a-478c-94c7-aff85a60e1e9": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "862ec44c-b08a-4eab-94f0-6cedda0fd7c0": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "10970860-766a-4125-8132-beeb22d5775d": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "87b4b64e-f875-4a43-9e45-832adb005633": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "ee333401-694a-4d73-8ced-93d134d70a29": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "75411f92-df5d-464d-ba37-07c518240565": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "a2107a10-8ad3-4d84-92c1-33b2121624a7": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "e845bf3d-5e42-400e-ab56-1082ea893846": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "977cc80f-d4bb-44ff-af4a-9e1355db6540": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  },
+  "2abd6035-6499-4f1a-9374-faefb6c1d850": {
+    "components": [
+      {
+        "id": "R1",
+        "reference": "R1",
+        "model": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric"
+      }
+    ]
+  }
+}

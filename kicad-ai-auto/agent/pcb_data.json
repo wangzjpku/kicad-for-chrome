@@ -1,7 +1,1257 @@
 {
-  "44ea8177-b212-4a8e-b803-654ca9d6ec11": {
-    "id": "pcb-44ea8177-b212-4a8e-b803-654ca9d6ec11",
-    "projectId": "44ea8177-b212-4a8e-b803-654ca9d6ec11",
+  "81415b4c-5f7a-478c-94c7-aff85a60e1e9": {
+    "id": "pcb-81415b4c-5f7a-478c-94c7-aff85a60e1e9",
+    "projectId": "81415b4c-5f7a-478c-94c7-aff85a60e1e9",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "862ec44c-b08a-4eab-94f0-6cedda0fd7c0": {
+    "id": "pcb-862ec44c-b08a-4eab-94f0-6cedda0fd7c0",
+    "projectId": "862ec44c-b08a-4eab-94f0-6cedda0fd7c0",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "10970860-766a-4125-8132-beeb22d5775d": {
+    "id": "pcb-10970860-766a-4125-8132-beeb22d5775d",
+    "projectId": "10970860-766a-4125-8132-beeb22d5775d",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "87b4b64e-f875-4a43-9e45-832adb005633": {
+    "id": "pcb-87b4b64e-f875-4a43-9e45-832adb005633",
+    "projectId": "87b4b64e-f875-4a43-9e45-832adb005633",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "ee333401-694a-4d73-8ced-93d134d70a29": {
+    "id": "pcb-ee333401-694a-4d73-8ced-93d134d70a29",
+    "projectId": "ee333401-694a-4d73-8ced-93d134d70a29",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "75411f92-df5d-464d-ba37-07c518240565": {
+    "id": "pcb-75411f92-df5d-464d-ba37-07c518240565",
+    "projectId": "75411f92-df5d-464d-ba37-07c518240565",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "a2107a10-8ad3-4d84-92c1-33b2121624a7": {
+    "id": "pcb-a2107a10-8ad3-4d84-92c1-33b2121624a7",
+    "projectId": "a2107a10-8ad3-4d84-92c1-33b2121624a7",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "e845bf3d-5e42-400e-ab56-1082ea893846": {
+    "id": "pcb-e845bf3d-5e42-400e-ab56-1082ea893846",
+    "projectId": "e845bf3d-5e42-400e-ab56-1082ea893846",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "977cc80f-d4bb-44ff-af4a-9e1355db6540": {
+    "id": "pcb-977cc80f-d4bb-44ff-af4a-9e1355db6540",
+    "projectId": "977cc80f-d4bb-44ff-af4a-9e1355db6540",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "2abd6035-6499-4f1a-9374-faefb6c1d850": {
+    "id": "pcb-2abd6035-6499-4f1a-9374-faefb6c1d850",
+    "projectId": "2abd6035-6499-4f1a-9374-faefb6c1d850",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "eae0f8ea-2d98-424b-a5fd-e88b22142f44": {
+    "id": "pcb-eae0f8ea-2d98-424b-a5fd-e88b22142f44",
+    "projectId": "eae0f8ea-2d98-424b-a5fd-e88b22142f44",
     "boardOutline": [
       {
         "x": 3,
@@ -71,9 +1321,374 @@
       "netclassRules": []
     }
   },
-  "9c7220d3-baf0-492b-8022-6094642fc7ec": {
-    "id": "pcb-9c7220d3-baf0-492b-8022-6094642fc7ec",
-    "projectId": "9c7220d3-baf0-492b-8022-6094642fc7ec",
+  "818f24b9-ed9f-4fee-be4d-d042c1a32fdf": {
+    "id": "pcb-818f24b9-ed9f-4fee-be4d-d042c1a32fdf",
+    "projectId": "818f24b9-ed9f-4fee-be4d-d042c1a32fdf",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "reference": "R0",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "id": "fp-e43fbade-679c-49a8-8b2b-9977e7fc7b64"
+      },
+      {
+        "reference": "R1",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "id": "fp-b7210ac5-4beb-40cc-ad0e-4c2e12911cc6"
+      },
+      {
+        "reference": "R2",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 20,
+          "y": 20
+        },
+        "id": "fp-04d24af7-20d9-4da7-a8ca-a40683076546"
+      },
+      {
+        "reference": "R4",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "id": "fp-419f0b78-1004-448a-af85-98a136274072"
+      },
+      {
+        "reference": "R5",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 50,
+          "y": 50
+        },
+        "id": "fp-6b1078f9-4a09-4e38-a6c2-54f7ba0174a1"
+      },
+      {
+        "reference": "R3",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "id": "fp-a4722749-9124-499c-8622-654a01f251a6"
+      },
+      {
+        "reference": "R6",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 60,
+          "y": 60
+        },
+        "id": "fp-34c90016-a262-4570-9b74-ca367ad4821c"
+      },
+      {
+        "reference": "R7",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 70,
+          "y": 70
+        },
+        "id": "fp-5ffedecd-2402-44a3-a0b4-f7f8fe28e6e1"
+      },
+      {
+        "reference": "R8",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 80,
+          "y": 80
+        },
+        "id": "fp-15545383-90e9-4480-b73c-187d7b3a0014"
+      },
+      {
+        "reference": "R9",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 90,
+          "y": 90
+        },
+        "id": "fp-c8a01bac-a655-4129-8b2d-d23c527cdd7e"
+      },
+      {
+        "reference": "R10",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 100,
+          "y": 100
+        },
+        "id": "fp-67357057-559a-4c70-8147-dc664c751f1f"
+      },
+      {
+        "reference": "R11",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 110,
+          "y": 110
+        },
+        "id": "fp-c634dbf1-2ae6-436a-b81a-058b0a6c555e"
+      },
+      {
+        "reference": "R12",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 120,
+          "y": 120
+        },
+        "id": "fp-25267bc4-a334-43b0-805d-b17dbe2ba05d"
+      },
+      {
+        "reference": "R13",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 130,
+          "y": 130
+        },
+        "id": "fp-1ee379fa-d124-4f47-abf0-321023787dcb"
+      },
+      {
+        "reference": "R14",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 140,
+          "y": 140
+        },
+        "id": "fp-73935d18-e15b-4903-a603-8629fa9a681b"
+      },
+      {
+        "reference": "R15",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 150,
+          "y": 150
+        },
+        "id": "fp-d35e15c9-cff3-44fe-83ff-070a0d7d57d5"
+      },
+      {
+        "reference": "R17",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 170,
+          "y": 170
+        },
+        "id": "fp-931e04f5-122b-4282-b534-4ac781dcbf2f"
+      },
+      {
+        "reference": "R16",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 160,
+          "y": 160
+        },
+        "id": "fp-92a6f477-a3e1-41f9-b1c9-acbe6853a1f0"
+      },
+      {
+        "reference": "R18",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 180,
+          "y": 180
+        },
+        "id": "fp-dfc501aa-df2d-4d64-a4aa-255c6999db8d"
+      },
+      {
+        "reference": "R19",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 190,
+          "y": 190
+        },
+        "id": "fp-76a7d3c9-59fb-488d-8bde-8a756765c735"
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "3da9fef0-e910-4eee-96b7-1dcfa7317263": {
+    "id": "pcb-3da9fef0-e910-4eee-96b7-1dcfa7317263",
+    "projectId": "3da9fef0-e910-4eee-96b7-1dcfa7317263",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "dab63ec0-9173-4a60-925a-f5f924142137": {
+    "id": "pcb-dab63ec0-9173-4a60-925a-f5f924142137",
+    "projectId": "dab63ec0-9173-4a60-925a-f5f924142137",
     "boardOutline": [
       {
         "x": 3,

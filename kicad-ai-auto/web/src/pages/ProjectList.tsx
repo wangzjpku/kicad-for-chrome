@@ -66,8 +66,18 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
       );
 
       setProjects(uniqueProjects);
-    } catch (err) {
-      setError('Failed to load projects');
+    } catch (err: any) {
+      // 检查是否是认证错误
+      const isAuthError = err?.response?.status === 401 ||
+                          err?.message?.includes('无效的认证') ||
+                          err?.message?.includes('Unauthorized') ||
+                          err?.message?.includes('认证');
+
+      if (isAuthError) {
+        setError('请先登录后查看项目');
+      } else {
+        setError('Failed to load projects');
+      }
       console.error(err);
     } finally {
       setLoading(false);
