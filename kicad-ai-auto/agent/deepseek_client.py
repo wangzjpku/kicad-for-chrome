@@ -229,15 +229,46 @@ Output strictly in this JSON format:
 
         result = result.strip()
 
+        def _normalize_component(comp):
+            """归一化单个组件的键名（支持中英文）"""
+            if not isinstance(comp, dict):
+                return comp
+            return {
+                "name": comp.get("name") or comp.get("名称", ""),
+                "model": comp.get("model") or comp.get("型号", ""),
+                "package": comp.get("package") or comp.get("封装", ""),
+                "quantity": comp.get("quantity") or comp.get("数量", 1),
+                "footprint": comp.get("footprint") or comp.get("封装", ""),
+                "备注": comp.get("备注", ""),  # 保留备注信息
+            }
+
+        def _normalize_components(components):
+            """归一化组件列表"""
+            if not isinstance(components, list):
+                return []
+            return [_normalize_component(c) for c in components]
+
         def _normalize_response(project_spec, usage):
-            """归一化 DeepSeek 的各种响应格式"""
+            """归一化 DeepSeek 的各种响应格式（支持中英文键名）"""
+            # 处理中文格式 "项目方案"
+            if "项目方案" in project_spec:
+                scheme = project_spec["项目方案"]
+                components = scheme.get("元器件清单", scheme.get("components", []))
+                return {
+                    "name": scheme.get("项目名称") or scheme.get("name", ""),
+                    "description": scheme.get("项目描述") or scheme.get("description", ""),
+                    "components": _normalize_components(components),
+                    "parameters": scheme.get("技术参数", scheme.get("parameters", {})),
+                    "schematic": scheme.get("原理图布局", scheme.get("schematic", {})),
+                    "usage": usage,
+                }
             # 处理 project_scheme 包装
             if "project_scheme" in project_spec:
                 scheme = project_spec["project_scheme"]
                 return {
                     "name": scheme.get("name", ""),
                     "description": scheme.get("description", ""),
-                    "components": scheme.get("components_list", scheme.get("components", [])),
+                    "components": _normalize_components(scheme.get("components_list", scheme.get("components", []))),
                     "parameters": scheme.get("technical_parameters", scheme.get("parameters", [])),
                     "schematic": scheme.get("schematic_layout", scheme.get("schematic", {})),
                     "usage": usage,
@@ -245,16 +276,20 @@ Output strictly in this JSON format:
             # 处理 project 包装
             if "project" in project_spec:
                 proj = project_spec["project"]
+                components = project_spec.get("bill_of_materials", proj.get("bill_of_materials", []))
                 return {
                     "name": proj.get("name", ""),
                     "description": proj.get("description", ""),
-                    "components": project_spec.get("bill_of_materials", proj.get("bill_of_materials", [])),
+                    "components": _normalize_components(components),
                     "parameters": project_spec.get("technical_parameters", proj.get("technical_parameters", [])),
                     "schematic": project_spec.get("schematic_layout", proj.get("schematic_layout", {})),
                     "usage": usage,
                 }
-            # 直接返回，不做归一化
-            return {**project_spec, "usage": usage}
+            # 直接返回，但确保组件格式正确
+            result = {**project_spec, "usage": usage}
+            if "components" in result:
+                result["components"] = _normalize_components(result["components"])
+            return result
 
         # 尝试直接解析
         try:

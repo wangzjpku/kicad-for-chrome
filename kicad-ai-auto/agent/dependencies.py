@@ -91,12 +91,11 @@ def require_admin(user_info: dict = None) -> dict:
     if not user_id:
         raise HTTPException(status_code=401, detail="无效的认证")
 
-    # 从数据库查询用户的 is_admin 状态
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    # 从数据库查询用户的 is_admin 状态（使用上下文管理器确保连接关闭）
+    with sqlite3.connect(str(DB_PATH), check_same_thread=False) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
 
     if not row or not row[0]:
         raise HTTPException(status_code=403, detail="需要管理员权限")

@@ -7,6 +7,7 @@ import os
 import sys
 import logging
 import subprocess
+import threading
 import time
 from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
@@ -986,7 +987,6 @@ class KiCadIPCManager:
 
 
 # 单例模式 - 用于 FastAPI（线程安全版本）
-import threading
 
 _kicad_manager: Optional[KiCadIPCManager] = None
 _manager_lock = threading.Lock()

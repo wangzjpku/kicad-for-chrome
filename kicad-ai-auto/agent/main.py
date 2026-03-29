@@ -190,7 +190,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="KiCad AI Control API",
     description="基于 KiCad 9.0+ IPC API 的 AI 驱动 PCB 设计自动化后端",
-    version="0.9.12",
+    version="0.9.13",
     lifespan=lifespan,
 )
 

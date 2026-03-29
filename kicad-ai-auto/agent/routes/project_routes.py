@@ -1592,21 +1592,24 @@ async def export_gerber(project_id: str):
     """导出 Gerber 文件 - 直接生成Gerber文件"""
     import os
 
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     logger.info(f"Starting Gerber export for project: {project_id}")
 
     output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
     os.makedirs(output_dir, exist_ok=True)
 
-    pcb_info = _pcb_data.get(project_id, {})
-    footprints = pcb_info.get("footprints", [])
-    board_width = pcb_info.get("boardWidth", 80)
-    board_height = pcb_info.get("boardHeight", 60)
+    async with _pcb_data_lock:
+        pcb_info = _pcb_data.get(project_id, {})
+        footprints = pcb_info.get("footprints", [])
+        board_width = pcb_info.get("boardWidth", 80)
+        board_height = pcb_info.get("boardHeight", 60)
 
     if not footprints:
-        schematic = _schematic_data.get(project_id, {})
+        async with _schematic_data_lock:
+            schematic = _schematic_data.get(project_id, {})
         components = schematic.get("components", [])
         if components:
             for i, comp in enumerate(components):
@@ -1719,11 +1722,13 @@ async def export_bom(project_id: str):
     import os
     from datetime import datetime
 
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     # 获取PCB数据中的元件信息
-    pcb_info = _pcb_data.get(project_id, {})
+    async with _pcb_data_lock:
+        pcb_info = _pcb_data.get(project_id, {})
     footprints = pcb_info.get("footprints", [])
 
     # 初始化components变量
@@ -1732,7 +1737,8 @@ async def export_bom(project_id: str):
     # 如果没有PCB数据，尝试从原理图数据中获取
     if not footprints:
         # 从_schematic_data获取原理图数据
-        schematic = _schematic_data.get(project_id, {})
+        async with _schematic_data_lock:
+            schematic = _schematic_data.get(project_id, {})
         components = schematic.get("components", [])
         # 从原理图组件生成BOM数据
         footprints = [
@@ -1747,7 +1753,6 @@ async def export_bom(project_id: str):
 
     # 调试：打印获取到的数据
     logger.debug(f"BOM export called for {project_id}")
-    logger.debug(f"_schematic_data keys: {list(_schematic_data.keys())}")
 
     # 安全获取components长度
     components_count = len(components) if components else 0
@@ -1809,13 +1814,14 @@ async def export_pdf(project_id: str):
     import os
     from datetime import datetime
 
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+        project = _projects.get(project_id, {})
+
+    project_name = project.get("name", project_id)
 
     logger.info(f"Starting PDF export for project: {project_id}")
-
-    project = _projects.get(project_id, {})
-    project_name = project.get("name", project_id)
 
     output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
     os.makedirs(output_dir, exist_ok=True)
@@ -1888,14 +1894,14 @@ async def export_step(project_id: str):
     import os
     import subprocess
 
-    if project_id not in _projects:
-        raise HTTPException(status_code=404, detail="Project not found")
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+        project = _projects.get(project_id, {})
+
+    project_name = project.get("name", project_id)
 
     logger.info(f"Starting STEP export for project: {project_id}")
-
-    # 获取项目信息
-    project = _projects.get(project_id, {})
-    project_name = project.get("name", project_id)
 
     output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
     os.makedirs(output_dir, exist_ok=True)
@@ -1968,7 +1974,8 @@ async def export_step(project_id: str):
         )
 
         # 检查PCB数据是否存在
-        pcb_info = _pcb_data.get(project_id, {})
+        async with _pcb_data_lock:
+            pcb_info = _pcb_data.get(project_id, {})
         footprints = pcb_info.get("footprints", [])
 
         if footprints:
