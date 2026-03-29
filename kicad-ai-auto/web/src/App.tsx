@@ -417,8 +417,8 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
         window.open('https://docs.kicad.org/', '_blank');
         break;
       case 'about':
-        addMessage('关于 KiCad Web Editor');
-        alert('KiCad Web Editor v0.9.0\n基于 KiCad 的在线 PCB 设计工具');
+        addMessage('关于 智板工具');
+        alert('智板工具 v0.9.13\n北京懿建达出品\nAI驱动的PCB设计自动化工具');
         break;
     }
   }, [currentProject, savePCBData, undo, redo, editorType, clipboard, zoom, sidebarCollapsed, rightPanelCollapsed]);
@@ -529,16 +529,24 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
               fontSize: 14,
               color: '#fff',
             }}>
-              K
+              智
             </div>
-            <span style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: THEME.text.primary,
-              letterSpacing: '-0.3px',
-            }}>
-              KiCad Web Editor
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: THEME.text.primary,
+                letterSpacing: '-0.3px',
+              }}>
+                智板工具
+              </span>
+              <span style={{
+                fontSize: 10,
+                color: THEME.text.muted,
+              }}>
+                北京懿建达出品
+              </span>
+            </div>
           </div>
 
           {/* 右侧状态 */}

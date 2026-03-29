@@ -84,9 +84,9 @@ describe('StatusBar', () => {
 
   it('should display version information', () => {
     render(<StatusBar />)
-    
+
     const version = screen.getByTestId('status-version')
-    expect(version).toHaveTextContent('KiCad AI Auto v0.9.12')
+    expect(version).toHaveTextContent('智板工具 v0.9.13')
   })
 
   it('should format coordinates with 3 decimal places', () => {

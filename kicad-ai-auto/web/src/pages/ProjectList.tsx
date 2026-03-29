@@ -95,7 +95,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
     try {
       const response = await projectApi.createProject({
         name: newProjectName,
-        description: 'Created from KiCad Web Editor',
+        description: 'Created from 智板工具',
       });
 
       console.log('Create response:', response);

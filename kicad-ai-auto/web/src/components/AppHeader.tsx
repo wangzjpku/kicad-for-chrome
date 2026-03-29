@@ -28,10 +28,28 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     >
       {/* 左侧：Logo 和标题 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 24 }}>🔌</span>
-        <h1 style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: 0 }}>
-          KiCad AI Auto
-        </h1>
+        <div style={{
+          width: 28,
+          height: 28,
+          background: 'linear-gradient(135deg, #4a9eff 0%, #2563eb 100%)',
+          borderRadius: 6,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 'bold',
+          fontSize: 14,
+          color: '#fff',
+        }}>
+          智
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <h1 style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: 0 }}>
+            智板工具
+          </h1>
+          <span style={{ fontSize: 10, color: '#888' }}>
+            北京懿建达出品
+          </span>
+        </div>
       </div>
 
       {/* 右侧：状态指示 */}
