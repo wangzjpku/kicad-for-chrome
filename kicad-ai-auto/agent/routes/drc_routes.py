@@ -2,16 +2,32 @@
 DRC (Design Rule Check) 路由
 
 提供 PCB 设计规则检查功能
+Phase 3: 扩展至30+条规则，支持网络类和制造约束
 """
 
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/drc", tags=["DRC"])
+
+# 导入高级DRC引擎
+try:
+    from drc.advanced_drc import (
+        AdvancedDRCEngine,
+        create_jlcpcb_drc,
+        create_pcbway_drc,
+        RuleType,
+        RuleSeverity,
+    )
+    ADVANCED_DRC_AVAILABLE = True
+except ImportError:
+    ADVANCED_DRC_AVAILABLE = False
+    logger.warning("Advanced DRC engine not available")
+
 
 
 class DRCError(BaseModel):
@@ -241,3 +257,211 @@ async def get_drc_rules():
             }
         ]
     }
+
+
+# ========== Phase 3: 高级DRC API ==========
+
+class AdvancedDRCRequest(BaseModel):
+    """高级DRC检查请求"""
+    project_id: str
+    pcb_data: Dict[str, Any] = Field(default_factory=dict)
+    manufacturer: str = "jlcpcb"  # jlcpcb, pcbway
+    level: str = "standard"       # standard, advanced
+    check_types: List[str] = Field(default_factory=lambda: [
+        "clearance", "track_width", "via_size", "manufacturing"
+    ])
+
+
+class AdvancedDRCResponse(BaseModel):
+    """高级DRC检查响应"""
+    success: bool
+    passed: bool
+    error_count: int
+    warning_count: int
+    info_count: int
+    violations: List[Dict[str, Any]]
+    statistics: Dict[str, Any]
+    duration_ms: float
+
+
+@router.post("/advanced-check", response_model=AdvancedDRCResponse)
+async def run_advanced_drc(request: AdvancedDRCRequest):
+    """
+    运行高级DRC检查 (Phase 3)
+
+    支持30+条规则，包括：
+    - 间距规则 (track-to-track, via-to-pad, etc.)
+    - 尺寸规则 (min width, via size, annular ring)
+    - 网络类规则 (Power, Signal, HighSpeed)
+    - 差分对规则
+    - 制造约束 (JLCPCB/PCBWay标准)
+    - 高速信号规则
+
+    Args:
+        request: DRC检查请求
+
+    Returns:
+        详细检查结果
+    """
+    if not ADVANCED_DRC_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Advanced DRC engine not available"
+        )
+
+    try:
+        # 创建DRC引擎
+        if request.manufacturer == "jlcpcb":
+            engine = create_jlcpcb_drc(level=request.level)
+        elif request.manufacturer == "pcbway":
+            engine = create_pcbway_drc(level=request.level)
+        else:
+            engine = AdvancedDRCEngine(
+                manufacturer=request.manufacturer,
+                level=request.level
+            )
+
+        # 准备PCB数据
+        pcb_data = request.pcb_data
+        if not pcb_data:
+            # 从项目加载PCB数据
+            pcb_data = await _load_pcb_data(request.project_id)
+
+        # 运行检查
+        result = engine.check(pcb_data)
+
+        # 转换违规项为字典
+        violations = []
+        for v in result.violations:
+            violations.append({
+                "rule_name": v.rule_name,
+                "rule_type": v.rule_type.value if v.rule_type else None,
+                "severity": v.severity.value if v.severity else "error",
+                "message": v.message,
+                "net1": v.net1,
+                "net2": v.net2,
+                "component1": v.component1,
+                "component2": v.component2,
+                "x": v.x,
+                "y": v.y,
+                "expected": v.expected,
+                "actual": v.actual,
+                "layer": v.layer,
+            })
+
+        return AdvancedDRCResponse(
+            success=True,
+            passed=result.passed,
+            error_count=result.error_count,
+            warning_count=result.warning_count,
+            info_count=result.info_count,
+            violations=violations,
+            statistics=result.statistics,
+            duration_ms=result.duration_ms
+        )
+
+    except Exception as e:
+        logger.error(f"Advanced DRC check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/capabilities/{manufacturer}")
+async def get_manufacturer_capabilities(
+    manufacturer: str,
+    level: str = Query("standard", description="工艺等级")
+):
+    """
+    获取制造商制造能力参数
+
+    Args:
+        manufacturer: 制造商 (jlcpcb, pcbway)
+        level: 工艺等级 (standard, advanced)
+
+    Returns:
+        制造能力参数
+    """
+    if not ADVANCED_DRC_AVAILABLE:
+        # 返回默认参数
+        return {
+            "manufacturer": manufacturer,
+            "level": level,
+            "capabilities": {
+                "min_trace_width": 0.15,
+                "min_trace_spacing": 0.15,
+                "min_via_diameter": 0.60,
+                "min_via_drill": 0.30,
+            }
+        }
+
+    if manufacturer == "jlcpcb":
+        engine = create_jlcpcb_drc(level=level)
+    else:
+        engine = AdvancedDRCEngine(manufacturer=manufacturer, level=level)
+
+    return {
+        "manufacturer": manufacturer,
+        "level": level,
+        "capabilities": engine.capabilities,
+        "net_classes": {
+            name: {
+                "track_width": nc.track_width,
+                "clearance": nc.clearance,
+                "via_diameter": nc.via_diameter,
+                "via_drill": nc.via_drill,
+            }
+            for name, nc in engine.net_classes.items()
+        },
+        "rules_summary": engine.get_rules_summary()
+    }
+
+
+@router.get("/rules-detailed")
+async def get_detailed_rules(
+    rule_type: Optional[str] = Query(None, description="规则类型过滤"),
+    severity: Optional[str] = Query(None, description="严重程度过滤")
+):
+    """
+    获取详细的DRC规则列表
+
+    Args:
+        rule_type: 规则类型 (clearance, track_width, etc.)
+        severity: 严重程度 (error, warning, info)
+
+    Returns:
+        规则列表
+    """
+    if not ADVANCED_DRC_AVAILABLE:
+        return {"rules": [], "count": 0}
+
+    engine = create_jlcpcb_drc()
+
+    rules = []
+    for rule in engine.rules:
+        # 应用过滤
+        if rule_type and rule.rule_type.value != rule_type:
+            continue
+        if severity and rule.severity.value != severity:
+            continue
+
+        rules.append({
+            "name": rule.name,
+            "type": rule.rule_type.value,
+            "value": rule.value,
+            "tolerance": rule.tolerance,
+            "severity": rule.severity.value,
+            "description": rule.description,
+            "category": rule.category,
+        })
+
+    return {
+        "rules": rules,
+        "count": len(rules),
+        "by_type": engine.get_rules_summary()["by_type"]
+    }
+
+
+async def _load_pcb_data(project_id: str) -> Dict[str, Any]:
+    """从项目加载PCB数据"""
+    # 实际实现应该从文件或数据库加载
+    # 这里返回空字典，由调用者处理
+    return {}

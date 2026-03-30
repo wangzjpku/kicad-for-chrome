@@ -1,27 +1,16 @@
-"""
-PCB Component Placement Engine
+# PCB Placement Engine
+# 智能PCB布局引擎模块
 
-Provides AI-powered component placement for PCB designs with support for:
-- Grid-based placement with collision avoidance
-- Thermal-aware placement
-- Signal integrity optimization
-- Multi-board support
-"""
-
-from .placement_engine import (
-    PlacementEngine,
-    Placement,
+from .smart_placement_engine import (
+    SmartPlacementEngine,
     Component,
-    BoardConstraints,
     PlacementResult,
-    PlacementStrategy
+    PlacementConstraint,
 )
 
 __all__ = [
-    "PlacementEngine",
-    "Placement",
+    "SmartPlacementEngine",
     "Component",
-    "BoardConstraints",
     "PlacementResult",
-    "PlacementStrategy"
+    "PlacementConstraint",
 ]

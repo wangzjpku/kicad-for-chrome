@@ -51,6 +51,20 @@ from circuit_enhancer import enhance_with_required_circuits
 from chip_quality_validator import validate_design
 from kb_quality import validate_component as kb_validate_component
 
+# 导入智能布局引擎
+from placement.smart_placement_engine import (
+    SmartPlacementEngine,
+    Component as PlacementComponent,
+    create_components_from_schematic,
+)
+
+# 导入智能布线引擎
+from routing.routing_engine import (
+    RoutingEngine,
+    Net as RoutingNet,
+    Pad as RoutingPad,
+)
+
 logger = logging.getLogger(__name__)
 
 # ========== 加载本地知识库 ==========
@@ -1754,6 +1768,8 @@ def generate_pcb_layout(
     """
     根据原理图数据和 PCB 参数生成 PCB 布局
 
+    使用智能布局引擎进行约束驱动布局
+
     Args:
         schematic_data: 原理图数据
         pcb_params: PCB 参数 (width, height, layers, thickness, silkscreen, soldermask)
@@ -1782,120 +1798,80 @@ def generate_pcb_layout(
     }
     soldermask_color = soldermask_colors.get(soldermask, "#1a5a1a")
 
-    # 生成元件位置 - 简单的网格布局算法
-    components = []
     schematic_components = schematic_data.get("components", [])
 
-    if not schematic_components:
-        # 如果没有原理图数据，创建一些示例元件
-        components = [
-            PCBComponent(
-                id="U1",
-                reference="U1",
-                footprint="SOIC-8_3.9x4.9mm_P1.27mm",
-                position={"x": width / 2, "y": height / 2},
-                rotation=0,
-            ),
-            PCBComponent(
-                id="C1",
-                reference="C1",
-                footprint="Capacitor_SMD:C_0603_1608Metric",
-                position={"x": width / 2 - 15, "y": height / 2 + 15},
-                rotation=0,
-            ),
-            PCBComponent(
-                id="C2",
-                reference="C2",
-                footprint="Capacitor_SMD:C_0603_1608Metric",
-                position={"x": width / 2 + 15, "y": height / 2 + 15},
-                rotation=0,
-            ),
-            PCBComponent(
-                id="R1",
-                reference="R1",
-                footprint="Resistor_SMD:R_0603_1608Metric",
-                position={"x": width / 2 - 20, "y": height / 2 - 15},
-                rotation=90,
-            ),
-            PCBComponent(
-                id="J1",
-                reference="J1",
-                footprint="Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
-                position={"x": width - 10, "y": height / 2},
-                rotation=0,
-            ),
-        ]
-    else:
-        # 根据原理图元件生成 PCB 元件
-        n = len(schematic_components)
-        cols = max(1, int(width / 25))  # 每行最多元件数
-        margin_x = 10
-        margin_y = 10
-        spacing_x = (width - 2 * margin_x) / cols if cols > 0 else 20
-        spacing_y = (height - 2 * margin_y) / ((n + cols - 1) // cols) if n > 0 else 20
+    # 使用智能布局引擎
+    try:
+        # 创建布局引擎
+        placement_engine = SmartPlacementEngine(
+            board_width=width,
+            board_height=height,
+            margin=4.0,
+            spacing=2.0
+        )
 
-        for i, comp in enumerate(schematic_components):
-            row = i // cols
-            col = i % cols
-
-            # 添加一些随机偏移使布局更自然
-            import random
-
-            offset_x = random.uniform(-3, 3)
-            offset_y = random.uniform(-3, 3)
-
-            x = margin_x + col * spacing_x + spacing_x / 2 + offset_x
-            y = margin_y + row * spacing_y + spacing_y / 2 + offset_y
-
-            # 限制在 PCB 范围内
-            x = max(5, min(width - 5, x))
-            y = max(5, min(height - 5, y))
-
-            # 确定封装
+        # 转换为布局引擎组件格式
+        placement_components = []
+        for i, comp in enumerate(schematic_components if schematic_components else []):
+            # 推断组件尺寸
             footprint = comp.get("footprint", "")
-            if not footprint:
-                # 根据元件名称推断封装
-                name_lower = comp.get("name", "").lower()
-                if "电容" in name_lower or "cap" in name_lower:
-                    footprint = "Capacitor_SMD:C_0603_1608Metric"
-                elif "电阻" in name_lower or "res" in name_lower:
-                    footprint = "Resistor_SMD:R_0603_1608Metric"
-                elif (
-                    "ic" in name_lower
-                    or "芯片" in name_lower
-                    or "u" in comp.get("reference", "").lower()
-                ):
-                    footprint = "SOIC-8_3.9x4.9mm_P1.27mm"
-                elif "晶振" in name_lower or "xtal" in name_lower:
-                    footprint = "Crystal:Crystal_SMD_3225"
-                elif "led" in name_lower or "二极管" in name_lower:
-                    footprint = "LED_SMD:LED_0603_1608Metric"
-                else:
-                    footprint = "Resistor_SMD:R_0603_1608Metric"
+            comp_width, comp_height = _infer_component_size(footprint, comp.get("reference", ""))
 
+            placement_components.append(PlacementComponent(
+                reference=comp.get("reference", f"U{i+1}"),
+                footprint=footprint,
+                value=comp.get("value", comp.get("name", "")),
+                width=comp_width,
+                height=comp_height,
+                nets=comp.get("nets", []),
+            ))
+
+        # 如果没有组件，创建示例组件
+        if not placement_components:
+            placement_components = [
+                PlacementComponent(reference="U1", footprint="SOIC-8", width=8.0, height=5.0),
+                PlacementComponent(reference="C1", footprint="C_0603", width=2.0, height=1.2),
+                PlacementComponent(reference="C2", footprint="C_0603", width=2.0, height=1.2),
+                PlacementComponent(reference="R1", footprint="R_0603", width=2.0, height=1.2),
+                PlacementComponent(reference="J_USB", footprint="USB_C", width=10.0, height=8.0),
+            ]
+
+        # 执行智能布局
+        placement_result = placement_engine.place(placement_components)
+
+        logger.info(f"智能布局完成: 评分={placement_result.score:.1f}, 重叠={len(placement_result.violations)}")
+
+        # 转换结果为 PCB 组件
+        components = []
+        for comp in placement_components:
+            pos = placement_result.positions.get(comp.reference, {"x": width/2, "y": height/2, "rotation": 0})
             components.append(
                 PCBComponent(
-                    id=comp.get("id", f"comp-{i + 1}"),
-                    reference=comp.get("reference", comp.get("name", f"U{i + 1}")),
-                    footprint=footprint,
-                    position={"x": x, "y": y},
-                    rotation=random.choice([0, 90, 180, 270]),
+                    id=comp.reference,
+                    reference=comp.reference,
+                    footprint=comp.footprint,
+                    position={"x": pos["x"], "y": pos["y"]},
+                    rotation=pos.get("rotation", 0),
                 )
             )
+
+    except Exception as e:
+        logger.warning(f"智能布局失败，使用备用布局: {e}")
+        # 备用布局：简单网格
+        components = _fallback_layout(schematic_components, width, height)
 
     # 生成网络列表
     nets = []
     schematic_nets = schematic_data.get("nets", [])
 
     if schematic_nets:
-        for i, net in enumerate(schematic_nets[:20]):  # 限制网络数量
+        for i, net in enumerate(schematic_nets[:20]):
             nets.append(
                 PCBNet(
                     id=net.get("id", f"net-{i + 1}"), name=net.get("name", f"N{i + 1}")
                 )
             )
     else:
-        # 默认网络
         nets = [
             PCBNet(id="net-vcc", name="VCC"),
             PCBNet(id="net-gnd", name="GND"),
@@ -1903,36 +1879,70 @@ def generate_pcb_layout(
             PCBNet(id="net-out", name="OUTPUT"),
         ]
 
-    # 生成走线 - 基于网格的简单走线
+    # 生成走线 - 使用智能布线引擎
     traces = []
-    for net in nets[:10]:  # 限制走线数量
-        # 为每个网络生成简单的走线
-        net_components = [
-            c for c in components if c.reference.startswith(("U", "C", "R"))
-        ]
+    try:
+        # 创建 RoutingEngine 实例
+        router = RoutingEngine(
+            board_width=width,
+            board_height=height,
+            trace_width=0.25  # 默认走线宽度
+        )
 
-        if len(net_components) >= 2:
-            # 选择前两个元件作为走线端点
-            start = net_components[0].position
-            end = net_components[1].position
+        # 转换网络数据为 RoutingNet 格式
+        routing_nets = []
+        for net in nets:
+            # 找到该网络连接的所有组件焊盘
+            net_components_for_routing = [
+                c for c in components
+                if c.nets and net.name in c.nets
+            ]
 
-            # 生成折线路径
-            mid_x = (start["x"] + end["x"]) / 2
+            if len(net_components_for_routing) >= 2:
+                # 创建焊盘
+                pads = []
+                for comp in net_components_for_routing:
+                    pads.append(RoutingPad(
+                        x=comp.position["x"],
+                        y=comp.position["y"],
+                        net=net.name,
+                        layer="top"
+                    ))
 
-            traces.append(
-                PCBTrace(
-                    id=f"track-{len(traces) + 1}",
-                    net=net.name,
-                    layer="F.Cu",
-                    width=0.254,  # 0.254mm = 10mil
-                    points=[
-                        start,
-                        {"x": mid_x, "y": start["y"]},
-                        {"x": mid_x, "y": end["y"]},
-                        end,
-                    ],
-                )
-            )
+                # 创建网络
+                routing_nets.append(RoutingNet(
+                    name=net.name,
+                    pads=pads,
+                    trace_width=0.25
+                ))
+
+        # 执行布线
+        if routing_nets:
+            routing_result = router.route_nets(routing_nets, strategy="manhattan")
+
+            # 转换 RoutingEngine 结果回 PCBTrace
+            for route in routing_result.routes:
+                for segment in route.segments:
+                    traces.append(
+                        PCBTrace(
+                            id=f"track-{len(traces) + 1}",
+                            net=route.net,
+                            layer=segment.layer,
+                            width=segment.width,
+                            points=[
+                                {"x": segment.x1, "y": segment.y1},
+                                {"x": segment.x2, "y": segment.y2},
+                            ],
+                        )
+                    )
+
+            logger.info(f"布线完成: {len(routing_result.routes)} 个网络, "
+                       f"{len(traces)} 条走线, {routing_result.via_count} 个过孔")
+
+    except Exception as e:
+        logger.warning(f"智能布线失败，使用备用走线: {e}")
+        # 备用走线：简单曼哈顿走线
+        traces = _generate_fallback_traces(nets, components)
 
     return PCBData(
         width=width,
@@ -1945,6 +1955,125 @@ def generate_pcb_layout(
         nets=nets,
         tracks=traces,
     )
+
+
+def _infer_component_size(footprint: str, reference: str) -> tuple:
+    """根据封装推断组件尺寸"""
+    fp_lower = footprint.lower() if footprint else ""
+    ref_upper = reference.upper() if reference else ""
+
+    # 连接器
+    if "usb" in fp_lower or "usb" in ref_upper:
+        return (10.0, 8.0)
+    if "header" in fp_lower or ref_upper.startswith("J"):
+        return (5.0, 5.0)
+    if "jack" in fp_lower or "barrel" in fp_lower:
+        return (8.0, 10.0)
+
+    # IC
+    if "qfn" in fp_lower or "qfp" in fp_lower:
+        return (8.0, 8.0)
+    if "soic" in fp_lower or "sop" in fp_lower:
+        return (6.0, 5.0)
+    if "bga" in fp_lower:
+        return (12.0, 12.0)
+    if ref_upper.startswith("U"):
+        return (8.0, 8.0)
+
+    # 被动元件
+    if "0603" in fp_lower:
+        return (2.0, 1.2)
+    if "0805" in fp_lower:
+        return (2.5, 1.5)
+    if "1206" in fp_lower:
+        return (3.5, 2.0)
+    if ref_upper.startswith(("R", "C", "L", "D")):
+        return (2.0, 1.2)
+
+    # 默认尺寸
+    return (5.0, 5.0)
+
+
+def _fallback_layout(schematic_components: List, width: float, height: float) -> List:
+    """备用简单网格布局"""
+    import random
+
+    components = []
+    n = len(schematic_components) if schematic_components else 0
+
+    if n == 0:
+        return [
+            PCBComponent(id="U1", reference="U1", footprint="SOIC-8",
+                        position={"x": width/2, "y": height/2}, rotation=0),
+            PCBComponent(id="C1", reference="C1", footprint="C_0603",
+                        position={"x": width/2 - 15, "y": height/2 + 15}, rotation=0),
+        ]
+
+    cols = max(1, int(width / 25))
+    margin_x, margin_y = 10, 10
+    spacing_x = (width - 2 * margin_x) / cols if cols > 0 else 20
+    spacing_y = (height - 2 * margin_y) / ((n + cols - 1) // cols) if n > 0 else 20
+
+    for i, comp in enumerate(schematic_components):
+        row, col = i // cols, i % cols
+        x = margin_x + col * spacing_x + spacing_x / 2 + random.uniform(-2, 2)
+        y = margin_y + row * spacing_y + spacing_y / 2 + random.uniform(-2, 2)
+        x = max(5, min(width - 5, x))
+        y = max(5, min(height - 5, y))
+
+        footprint = comp.get("footprint", "")
+        if not footprint:
+            name_lower = comp.get("name", "").lower()
+            if "电容" in name_lower or "cap" in name_lower:
+                footprint = "Capacitor_SMD:C_0603_1608Metric"
+            elif "电阻" in name_lower or "res" in name_lower:
+                footprint = "Resistor_SMD:R_0603_1608Metric"
+            else:
+                footprint = "Resistor_SMD:R_0603_1608Metric"
+
+        components.append(
+            PCBComponent(
+                id=comp.get("id", f"comp-{i + 1}"),
+                reference=comp.get("reference", comp.get("name", f"U{i + 1}")),
+                footprint=footprint,
+                position={"x": x, "y": y},
+                rotation=random.choice([0, 90]),
+            )
+        )
+
+    return components
+
+
+def _generate_fallback_traces(nets, components) -> list:
+    """生成备用走线（简单曼哈顿走线）"""
+    traces = []
+
+    for net in nets[:10]:
+        net_components = [
+            c for c in components if c.reference.startswith(("U", "C", "R"))
+        ]
+
+        if len(net_components) >= 2:
+            start = net_components[0].position
+            end = net_components[1].position
+            mid_x = (start["x"] + end["x"]) / 2
+
+            traces.append(
+                PCBTrace(
+                    id=f"track-{len(traces) + 1}",
+                    net=net.name,
+                    layer="F.Cu",
+                    width=0.254,
+                    points=[
+                        start,
+                        {"x": mid_x, "y": start["y"]},
+                        {"x": mid_x, "y": end["y"]},
+                        end,
+                    ],
+                )
+            )
+
+    return traces
 
 
 def generate_clarification_questions(

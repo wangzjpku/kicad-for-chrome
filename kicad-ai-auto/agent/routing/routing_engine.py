@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Dict, Set
 from enum import Enum
 import math
+import random
 
 
 class RouteLayer(Enum):
@@ -358,12 +359,17 @@ class RoutingEngine:
         self,
         pad1: Pad,
         pad2: Pad,
-        trace_width: float
+        trace_width: float,
+        use_45_degree: bool = True
     ) -> List[RouteSegment]:
         """
-        Create L-shaped Manhattan route between two pads
+        Create route between two pads
 
-        Routes horizontal first, then vertical (or vice versa randomly)
+        Args:
+            pad1: Starting pad
+            pad2: Ending pad
+            trace_width: Width of the trace
+            use_45_degree: If True, use 45-degree angles instead of 90-degree
         """
         segments = []
 
@@ -372,33 +378,65 @@ class RoutingEngine:
 
         layer = RouteLayer.TOP.value if pad1.layer == "top" else RouteLayer.BOTTOM.value
 
-        # Randomly choose direction (horizontal-first or vertical-first)
-        if random.choice([True, False]):
-            # Horizontal first
-            mid_x = x2
-            segments.append(RouteSegment(
-                x1=x1, y1=y1,
-                x2=mid_x, y2=y1,
-                layer=layer, width=trace_width
-            ))
-            segments.append(RouteSegment(
-                x1=mid_x, y1=y1,
-                x2=mid_x, y2=y2,
-                layer=layer, width=trace_width
-            ))
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if use_45_degree and abs(dx) > 0.1 and abs(dy) > 0.1:
+            # 45-degree routing: create diagonal segment then straight
+            if abs(dx) > abs(dy):
+                # More horizontal: diagonal first, then horizontal
+                diag_len = abs(dy)
+                diag_x = x1 + (diag_len if dx > 0 else -diag_len)
+                segments.append(RouteSegment(
+                    x1=x1, y1=y1,
+                    x2=diag_x, y2=y2,
+                    layer=layer, width=trace_width
+                ))
+                segments.append(RouteSegment(
+                    x1=diag_x, y1=y2,
+                    x2=x2, y2=y2,
+                    layer=layer, width=trace_width
+                ))
+            else:
+                # More vertical: diagonal first, then vertical
+                diag_len = abs(dx)
+                diag_y = y1 + (diag_len if dy > 0 else -diag_len)
+                segments.append(RouteSegment(
+                    x1=x1, y1=y1,
+                    x2=x2, y2=diag_y,
+                    layer=layer, width=trace_width
+                ))
+                segments.append(RouteSegment(
+                    x1=x2, y1=diag_y,
+                    x2=x2, y2=y2,
+                    layer=layer, width=trace_width
+                ))
         else:
-            # Vertical first
-            mid_y = y2
-            segments.append(RouteSegment(
-                x1=x1, y1=y1,
-                x2=x1, y2=mid_y,
-                layer=layer, width=trace_width
-            ))
-            segments.append(RouteSegment(
-                x1=x1, y1=mid_y,
-                x2=x2, y2=mid_y,
-                layer=layer, width=trace_width
-            ))
+            # Standard Manhattan (L-shaped) routing
+            if random.choice([True, False]):
+                mid_x = x2
+                segments.append(RouteSegment(
+                    x1=x1, y1=y1,
+                    x2=mid_x, y2=y1,
+                    layer=layer, width=trace_width
+                ))
+                segments.append(RouteSegment(
+                    x1=mid_x, y1=y1,
+                    x2=mid_x, y2=y2,
+                    layer=layer, width=trace_width
+                ))
+            else:
+                mid_y = y2
+                segments.append(RouteSegment(
+                    x1=x1, y1=y1,
+                    x2=x1, y2=mid_y,
+                    layer=layer, width=trace_width
+                ))
+                segments.append(RouteSegment(
+                    x1=x1, y1=mid_y,
+                    x2=x2, y2=mid_y,
+                    layer=layer, width=trace_width
+                ))
 
         return segments
 
@@ -540,7 +578,3 @@ class RoutingEngine:
             gx = int(x / self.grid_size)
             gy = int(y / self.grid_size)
             self._occupied_cells.add((gx, gy, segment.layer))
-
-
-# Import random at the end to avoid circular imports
-import random

@@ -1,0 +1,243 @@
+/**
+ * Layer Stackup Selector Styles
+ */
+
+.layer-stackup-selector {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 16px;
+  color: #e0e0e0;
+}
+
+.stackup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.stackup-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.thickness-badge {
+  background: #2d2d2d;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #4fc3f7;
+}
+
+/* Template Grid */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.template-card {
+  background: #2d2d2d;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-card:hover {
+  border-color: #555;
+  background: #333;
+}
+
+.template-card.selected {
+  border-color: #4fc3f7;
+  background: #1a3a4a;
+}
+
+.template-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.layer-count {
+  background: #4fc3f7;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.template-name {
+  font-size: 13px;
+  color: #e0e0e0;
+}
+
+.template-preview {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.preview-layer {
+  width: 24px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.more-layers {
+  font-size: 10px;
+  color: #888;
+  margin-left: 4px;
+}
+
+/* Stackup Detail */
+.stackup-detail {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.detail-header h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.expand-btn {
+  background: transparent;
+  border: 1px solid #555;
+  color: #888;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.expand-btn:hover {
+  border-color: #4fc3f7;
+  color: #4fc3f7;
+}
+
+/* Layer Diagram */
+.stackup-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.diagram-layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.layer-bar {
+  width: 80px;
+  height: 20px;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.layer-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-name {
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.layer-type {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Best For Section */
+.best-for-section {
+  margin-bottom: 16px;
+}
+
+.best-for-section .label {
+  font-size: 12px;
+  color: #888;
+  margin-right: 8px;
+}
+
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: #3d3d3d;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ccc;
+}
+
+/* Impedance Options */
+.impedance-options {
+  border-top: 1px solid #444;
+  padding-top: 12px;
+}
+
+.impedance-options h5 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.impedance-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.preset-item {
+  background: #1e1e1e;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preset-name {
+  font-size: 11px;
+  color: #888;
+}
+
+.preset-value {
+  font-size: 13px;
+  color: #4fc3f7;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .template-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .impedance-presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
