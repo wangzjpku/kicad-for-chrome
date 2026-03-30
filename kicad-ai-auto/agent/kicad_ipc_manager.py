@@ -25,7 +25,7 @@ from footprint_library import (
 try:
     import kipy
     from kipy.board import Board
-    from kipy.client import Client
+    from kipy.client import KiCadClient as Client
 
     HAS_KIPY = True
 except ImportError:
