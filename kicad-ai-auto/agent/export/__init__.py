@@ -11,9 +11,11 @@ Phase: 5
 from .gerber_generator import EnhancedGerberGenerator
 from .bom_generator import BOMGenerator
 from .manufacturing_checker import ManufacturingChecker
+from .odbxx_generator import ODBXXGenerator
 
 __all__ = [
     "EnhancedGerberGenerator",
     "BOMGenerator",
     "ManufacturingChecker",
+    "ODBXXGenerator",
 ]

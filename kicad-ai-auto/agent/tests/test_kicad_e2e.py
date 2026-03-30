@@ -412,3 +412,109 @@ class TestSIAnalysis:
         assert report is not None
         assert isinstance(report.passed, bool)
         assert isinstance(report.violations, list)
+
+
+class TestODBXXExport:
+    """ODB++ 导出测试"""
+
+    def test_odbxx_generator_import(self):
+        """测试 ODB++ 生成器可以导入"""
+        from export.odbxx_generator import ODBXXGenerator
+        assert ODBXXGenerator is not None
+
+    def test_odbxx_2layer(self, tmp_path):
+        """测试 2 层板 ODB++ 生成"""
+        from export.odbxx_generator import ODBXXGenerator
+
+        pcb_data = {
+            "width": 100,
+            "height": 80,
+            "layers": 2,
+            "components": [
+                {"reference": "U1", "value": "CH340C", "footprint": "SOP-16",
+                 "position": {"x": 10, "y": 10}, "rotation": 0},
+            ],
+            "tracks": [
+                {"id": "t1", "net": "VCC", "layer": "F.Cu", "width": 0.5,
+                 "points": [{"x": 0, "y": 0}, {"x": 10, "y": 0}]},
+            ],
+            "vias": [
+                {"id": "v1", "x": 5, "y": 5, "drill_diameter": 0.4,
+                 "outer_diameter": 0.8, "net": "VCC"},
+            ],
+            "nets": [
+                {"id": "n1", "name": "VCC", "pins": []},
+            ],
+            "zones": [],
+        }
+
+        generator = ODBXXGenerator(pcb_data)
+        result = generator.generate_directory(str(tmp_path))
+
+        assert result.success
+        assert len(result.files) > 0
+        # 验证关键文件存在
+        assert any("matrix" in f for f in result.files)
+        assert any("profile" in f for f in result.files)
+        assert any("signals/TOP/lines" in f for f in result.files)
+
+    def test_odbxx_4layer(self, tmp_path):
+        """测试 4 层板 ODB++ 生成"""
+        from export.odbxx_generator import ODBXXGenerator
+
+        pcb_data = {
+            "width": 100,
+            "height": 80,
+            "layers": 4,
+            "components": [],
+            "tracks": [],
+            "vias": [],
+            "nets": [],
+            "zones": [],
+        }
+
+        generator = ODBXXGenerator(pcb_data)
+        result = generator.generate_directory(str(tmp_path))
+
+        assert result.success
+        # 验证内层文件
+        assert any("signals/INNER1" in f for f in result.files)
+        assert any("signals/INNER2" in f for f in result.files)
+
+    def test_odbxx_zip_export(self, tmp_path):
+        """测试 ODB++ ZIP 压缩导出"""
+        from export.odbxx_generator import ODBXXGenerator
+
+        pcb_data = {
+            "width": 50,
+            "height": 40,
+            "layers": 2,
+            "components": [],
+            "tracks": [
+                {"id": "t1", "net": "GND", "layer": "B.Cu", "width": 0.3,
+                 "points": [{"x": 0, "y": 0}, {"x": 20, "y": 20}]},
+            ],
+            "vias": [],
+            "nets": [{"id": "n1", "name": "GND", "pins": []}],
+            "zones": [],
+        }
+
+        generator = ODBXXGenerator(pcb_data, {"board_name": "test_board"})
+        result = generator.generate(str(tmp_path))
+
+        assert result.success
+        assert result.output_file.endswith(".zip")
+        assert os.path.exists(result.output_file)
+
+    def test_odbxx_layer_names(self):
+        """测试层名生成"""
+        from export.odbxx_generator import ODBXXGenerator
+
+        gen_2 = ODBXXGenerator({"layers": 2})
+        assert gen_2._get_layer_names() == ["TOP", "BOTTOM"]
+
+        gen_4 = ODBXXGenerator({"layers": 4})
+        assert gen_4._get_layer_names() == ["TOP", "INNER1", "INNER2", "BOTTOM"]
+
+        gen_6 = ODBXXGenerator({"layers": 6})
+        assert gen_6._get_layer_names() == ["TOP", "INNER1", "INNER2", "INNER3", "INNER4", "BOTTOM"]
