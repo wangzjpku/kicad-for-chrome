@@ -403,6 +403,12 @@ class CopperPourEngine:
         else:
             result = self.create_power_pour(net=net_name, layer="F.Cu", boundary=boundary)
 
+        # Phase 4+: 生成 Via Stitching（过孔阵列）
+        stitching_vias = self._create_via_stitching(
+            net_name=net_name,
+            boundary_points=result.polygon_points,
+        )
+
         # 转换为 ZoneResult
         zone_result = ZoneResult(
             net=result.net,
@@ -411,9 +417,70 @@ class CopperPourEngine:
             thermal_spokes=result.thermal_relief_segments,
             area=result.area,
             kicad_s_expression=self.to_kicad_zone(result),
+            stitching_vias=stitching_vias,
         )
 
         return zone_result
+
+    def _create_via_stitching(
+        self,
+        net_name: str,
+        boundary_points: List[Tuple[float, float]],
+        spacing: float = 5.0,  # 过孔间距 mm
+        outer_diameter: float = 0.8,
+        drill_diameter: float = 0.4,
+    ) -> List[ViaStitch]:
+        """
+        创建 Via Stitching 过孔阵列
+
+        在铺铜区域内按网格排列生成过孔，增强载流和散热
+
+        Args:
+            net_name: 网络名称
+            boundary_points: 铺铜区域边界点
+            spacing: 过孔间距 (mm)
+            outer_diameter: 过孔外径 (mm)
+            drill_diameter: 过孔钻径 (mm)
+
+        Returns:
+            List[ViaStitch]: 过孔列表
+        """
+        if not boundary_points or len(boundary_points) < 3:
+            return []
+
+        # 获取边界框
+        xs = [p[0] for p in boundary_points]
+        ys = [p[1] for p in boundary_points]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+
+        # 只对 GND 类网络进行 Via Stitching
+        if net_name.upper() not in ["GND", "AGND", "DGND"]:
+            # 对电源网络也做，但间距更大
+            spacing = spacing * 1.5
+
+        vias = []
+        margin = spacing / 2  # 边缘留白
+
+        x = min_x + margin
+        while x < max_x - margin:
+            y = min_y + margin
+            while y < max_y - margin:
+                via = ViaStitch(
+                    x=x,
+                    y=y,
+                    net=net_name,
+                    outer_diameter=outer_diameter,
+                    drill_diameter=drill_diameter,
+                    from_layer="F.Cu",
+                    to_layer="B.Cu",
+                )
+                vias.append(via)
+                y += spacing
+            x += spacing
+
+        logger.debug(f"Via Stitching: {len(vias)} vias for {net_name}")
+        return vias
 
     def to_kicad_zone(self, pour_result: PourResult) -> str:
         """转换为 KiCad zone S-expression"""
@@ -584,6 +651,38 @@ def create_copper_pour_engine(
 
 
 @dataclass
+class ViaStitch:
+    """Via Stitching 过孔阵列"""
+    x: float
+    y: float
+    net: str
+    outer_diameter: float = 0.8  # 外径 mm
+    drill_diameter: float = 0.4  # 钻孔 mm
+    from_layer: str = "F.Cu"
+    to_layer: str = "B.Cu"
+
+    def to_dict(self) -> Dict:
+        return {
+            "x": self.x,
+            "y": self.y,
+            "net": self.net,
+            "outer_diameter": self.outer_diameter,
+            "drill_diameter": self.drill_diameter,
+            "from_layer": self.from_layer,
+            "to_layer": self.to_layer,
+        }
+
+    def to_kicad_via(self) -> str:
+        """转换为 KiCad via S-expression"""
+        return f'(via (at {self.x:.4f} {self.y:.4f}) (size {self.outer_diameter}) (drill {self.drill_diameter}) (layers {self.from_layer} {self.to_layer}) (net {self._get_net_code(self.net)}))'
+
+    def _get_net_code(self, net_name: str) -> int:
+        if net_name.upper() in ["GND", "AGND", "DGND"]:
+            return 0
+        return hash(net_name) % 100 + 1
+
+
+@dataclass
 class ZoneResult:
     """铺铜区域结果（用于返回给调用方）"""
     net: str                          # 网络名称
@@ -592,6 +691,7 @@ class ZoneResult:
     thermal_spokes: List[Dict]       # 热焊盘辐条
     area: float                       # 铺铜面积
     kicad_s_expression: str          # KiCad S-expression 格式
+    stitching_vias: List[ViaStitch] = field(default_factory=list)  # Via Stitching
 
     def to_dict(self) -> Dict:
         return {
@@ -601,6 +701,7 @@ class ZoneResult:
             "thermal_spokes": self.thermal_spokes,
             "area": self.area,
             "kicad_s_expression": self.kicad_s_expression,
+            "stitching_vias": [v.to_dict() for v in self.stitching_vias],
         }
 
 
@@ -610,6 +711,7 @@ def create_zones_for_pcb(
     pour_nets: List[str],
     traces: List[Dict],
     thermal_pads: List[Dict] = None,
+    layers: int = 2,
 ) -> Dict[str, ZoneResult]:
     """
     便捷函数：为 PCB 创建多个铺铜区域
@@ -620,6 +722,7 @@ def create_zones_for_pcb(
         pour_nets: 需要铺铜的网络列表
         traces: 所有走线列表
         thermal_pads: 热焊盘列表
+        layers: 板子层数 (2/4/6)
 
     Returns:
         Dict[str, ZoneResult]: 网络名 -> 铺铜结果
@@ -629,10 +732,53 @@ def create_zones_for_pcb(
         board_height=board_height,
         clearance=0.2,
     )
-    return engine.create_zones_from_pcb(
-        board_width=board_width,
-        board_height=board_height,
-        nets=pour_nets,
-        traces=traces,
-        thermal_pads=thermal_pads,
-    )
+
+    # 根据层数选择铺铜层和策略
+    # 2层板: F.Cu(信号) + B.Cu(GND平面)
+    # 4层板: F.Cu(信号) + In1.Cu(GND平面) + In2.Cu(PWR平面) + B.Cu(信号)
+    if layers == 2:
+        # 2层板: GND 铺 B.Cu，电源可选择铺 F.Cu
+        ground_layers = ["B.Cu"]
+        power_layers = ["F.Cu"]
+    elif layers == 4:
+        # 4层板: GND 铺 In1.Cu，电源铺 In2.Cu
+        ground_layers = ["In1.Cu"]
+        power_layers = ["In2.Cu"]
+    else:
+        # 默认2层
+        ground_layers = ["B.Cu"]
+        power_layers = ["F.Cu"]
+
+    all_zones = {}
+
+    for net_name in pour_nets:
+        is_gnd = net_name.upper() in ["GND", "AGND", "DGND"]
+        is_power = not is_gnd  # 简化：非 GND 当作电源
+
+        # 选择铺铜层
+        target_layers = []
+        if is_gnd:
+            target_layers = ground_layers
+        elif is_power:
+            target_layers = power_layers
+
+        for layer in target_layers:
+            zone_result = engine.create_zone_for_net(
+                net_name=net_name,
+                board_width=board_width,
+                board_height=board_height,
+                traces=traces,
+                thermal_pads=thermal_pads,
+            )
+            # 修改 layer 为当前层
+            zone_result.layer = layer
+
+            # 调整 Via Stitching 的层
+            for via in zone_result.stitching_vias:
+                via.from_layer = layer
+                via.to_layer = "F.Cu" if layer == "B.Cu" or layer.startswith("In") else "B.Cu"
+
+            key = f"{net_name}_{layer}"
+            all_zones[key] = zone_result
+
+    return all_zones
