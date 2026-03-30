@@ -21,12 +21,20 @@ KiCad AI Automation 是一个完整的 AI 驱动的 KiCad PCB 设计自动化解
 
 ### 📤 导出支持
 - Gerber (RS-274X)
+- ODB++ (制造数据包)
 - Drill (Excellon)
-- BOM (CSV)
+- BOM (CSV, 支持 LCSC 料号)
 - Pick & Place (CSV)
 - PDF
 - SVG
 - STEP (3D)
+
+### 🔍 质量验证 (Phase 5)
+- **高级 DRC**: 30+ 设计规则检查
+- **SI 分析**: 阻抗控制、差分对、传输损耗、串扰
+- **EMI 热点**: 时钟线、分割平面、串扰可视化
+- **制造检查**: JLCPCB/PCBWay 规则验证
+- **IPC-2221 进阶**: 多铜厚/温升/内层外层选项
 
 ## 快速开始
 
@@ -98,10 +106,23 @@ kicad-ai-auto/
 │   ├── routes/             # API 路由
 │   │   ├── ai_routes.py   # AI 分析和生成
 │   │   ├── project_routes.py  # 项目管理
+│   │   ├── drc_routes.py  # DRC/SI/EMI 分析
 │   │   └── kicad_ipc_routes.py  # KiCad IPC
-│   ├── schematic_generator.py  # 原理图生成器
-│   ├── pcb_generator.py    # PCB 生成器
-│   └── component_knowledge/  # 元件知识库
+│   ├── drc/                # 设计规则检查
+│   │   ├── advanced_drc.py
+│   │   └── si_analyzer.py  # 信号完整性分析
+│   ├── design_rules/       # 设计规则
+│   │   └── emi_hotspot_analyzer.py  # EMI 热点分析
+│   ├── export/              # 制造导出
+│   │   ├── gerber_generator.py
+│   │   ├── bom_generator.py
+│   │   ├── odbxx_generator.py  # ODB++ 导出
+│   │   └── manufacturing_checker.py
+│   ├── pcb/                # PCB 生成
+│   │   ├── net_classifier.py
+│   │   ├── current_calculator.py  # IPC-2221 进阶
+│   │   └── layer_stackup.py
+│   └── tests/              # 测试
 ├── web/                    # React 前端
 │   ├── src/
 │   │   ├── components/    # UI 组件
@@ -111,7 +132,7 @@ kicad-ai-auto/
 │   └── package.json
 ├── docker/                # Docker 配置
 ├── playwright-tests/       # 自动化测试
-└── VERSION.md             # 版本信息
+└── docs/plans/           # 开发计划文档
 ```
 
 ## API 文档
@@ -119,6 +140,7 @@ kicad-ai-auto/
 ### AI 分析接口
 
 - `POST /api/v1/ai/analyze` - 分析需求，生成方案和原理图
+- `POST /api/v1/ai/enhance` - 电路增强
 
 ### 项目管理接口
 
@@ -127,6 +149,27 @@ kicad-ai-auto/
 - `GET /api/v1/projects/{id}` - 获取项目详情
 - `GET /api/v1/projects/{id}/schematic` - 获取原理图数据
 - `GET /api/v1/projects/{id}/pcb/design` - 获取 PCB 数据
+
+### DRC / SI / EMI 接口
+
+- `POST /drc/check` - 设计规则检查
+- `POST /drc/si/analyze` - 信号完整性分析
+- `POST /drc/emi/analyze` - EMI 热点分析
+- `POST /drc/emi/visualization` - EMI 可视化数据
+
+### 制造导出接口
+
+- `POST /export/gerber` - 导出 Gerber 文件
+- `POST /export/bom` - 导出 BOM
+- `POST /export/odb` - 导出 ODB++ 制造包
+- `POST /export/manufacturing-check` - 制造可行性检查
+- `POST /export/cost-estimate` - 费用估算
+
+### 设置管理接口
+
+- `POST /api/admin/settings/pcb` - PCB 参数设置
+- `POST /api/admin/settings/ai` - AI 模型配置
+- `POST /api/admin/settings/manufacturing` - 制造选项
 
 ### KiCad IPC 接口
 

@@ -125,6 +125,9 @@ pytest tests/ -v
 # Run with coverage
 pytest tests/ --cov=. --cov-report=html
 
+# Run Phase 5 E2E tests (39 tests)
+pytest tests/test_kicad_e2e.py -v
+
 # Run a single test
 pytest tests/test_api.py::TestProjectAPI::test_start_kicad -v
 ```
@@ -234,6 +237,24 @@ The agent (`kicad-ai-auto/agent/main.py`) provides multiple API sets depending o
 - `/api/state/screenshot`, `/api/state/full` - State queries
 - WebSocket: `/ws/control` (port 8001) - Mouse/keyboard events, screenshot commands
 
+**DRC/SI/EMI Analysis Routes** (Phase 5):
+- `/drc/check` - Advanced DRC with 30+ rules
+- `/drc/si/analyze` - Signal integrity analysis (impedance, crosstalk, loss)
+- `/drc/emi/analyze` - EMI hotspot detection
+- `/drc/emi/visualization` - EMI hotspot visualization data
+
+**Manufacturing Export Routes** (Phase 5):
+- `/export/gerber` - Multi-layer Gerber generation
+- `/export/bom` - BOM with LCSC parts
+- `/export/odb` - ODB++ manufacturing package
+- `/export/manufacturing-check` - JLCPCB/PCBWay feasibility
+- `/export/cost-estimate` - Manufacturing cost estimation
+
+**Admin Settings Routes** (Phase 5):
+- `/api/admin/settings/pcb` - PCB parameters (layers, thickness, trace width)
+- `/api/admin/settings/ai` - AI model configuration
+- `/api/admin/settings/manufacturing` - Manufacturing options
+
 **Common Routes**:
 - `/api/health` - Health check endpoint
 - `/docs` - Swagger UI documentation (Auto-generated)
@@ -301,6 +322,12 @@ Key environment variables for the agent:
 - `kicad-ai-auto/agent/kicad_controller.py` - Core PyAutoGUI automation logic
 - `kicad-ai-auto/agent/kicad_ipc_manager.py` - IPC API manager for KiCad 9.0+
 - `kicad-ai-auto/agent/routes/kicad_ipc_routes.py` - IPC API route definitions
+- `kicad-ai-auto/agent/routes/drc_routes.py` - DRC/SI/EMI analysis routes
+- `kicad-ai-auto/agent/drc/si_analyzer.py` - Signal integrity analyzer
+- `kicad-ai-auto/agent/drc/advanced_drc.py` - Advanced DRC engine
+- `kicad-ai-auto/agent/design_rules/emi_hotspot_analyzer.py` - EMI hotspot detection
+- `kicad-ai-auto/agent/export/odbxx_generator.py` - ODB++ generator
+- `kicad-ai-auto/agent/export/manufacturing_checker.py` - Manufacturing checker
 - `kicad-ai-auto/agent/auto_starter.py` - Automatic startup script for Windows
 - `kicad-ai-auto/agent/middleware.py` - Error handling, logging, custom exceptions
 - `kicad-ai-auto/web/package.json` - Frontend dependencies
