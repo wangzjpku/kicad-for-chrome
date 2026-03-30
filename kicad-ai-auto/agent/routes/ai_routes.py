@@ -65,6 +65,14 @@ from routing.routing_engine import (
     Pad as RoutingPad,
 )
 
+# Phase 4: 导入网络分类和电流计算
+from pcb.net_classifier import (
+    NetClassifier,
+    classify_nets,
+    NetClass,
+)
+from pcb.current_calculator import CurrentCalculator
+
 logger = logging.getLogger(__name__)
 
 # ========== 加载本地知识库 ==========
@@ -1724,6 +1732,7 @@ class PCBComponent(BaseModel):
     footprint: str
     position: Dict[str, float]
     rotation: float = 0
+    nets: List[str] = []  # Phase 4: 连接的网络列表
 
 
 class PCBTrace(BaseModel):
@@ -1732,11 +1741,6 @@ class PCBTrace(BaseModel):
     id: str
     net: str
     layer: str = "F.Cu"
-    width: float
-    points: List[Dict[str, float]]
-    """PCB 走线"""
-
-    net: str
     width: float
     points: List[Dict[str, float]]
 
@@ -1763,16 +1767,22 @@ class PCBData(BaseModel):
 
 
 def generate_pcb_layout(
-    schematic_data: Dict[str, Any], pcb_params: Dict[str, Any]
+    schematic_data: Dict[str, Any],
+    pcb_params: Dict[str, Any],
+    net_current_annotations: Optional[Dict[str, float]] = None,
+    net_pour_annotations: Optional[Dict[str, bool]] = None,
 ) -> PCBData:
     """
     根据原理图数据和 PCB 参数生成 PCB 布局
 
     使用智能布局引擎进行约束驱动布局
+    Phase 4: 集成网络分类、电流计算、铜箔浇注
 
     Args:
         schematic_data: 原理图数据
         pcb_params: PCB 参数 (width, height, layers, thickness, silkscreen, soldermask)
+        net_current_annotations: 用户标注的电流 {"VCC": 2000} (mA)
+        net_pour_annotations: 用户标注的铺铜 {"GND": True, "VCC": True}
 
     Returns:
         PCBData: PCB 布局数据
@@ -1786,6 +1796,18 @@ def generate_pcb_layout(
     thickness = pcb_params.get("thickness", 1.6)
     silkscreen = pcb_params.get("silkscreen", True)
     soldermask = pcb_params.get("soldermask", "green")
+
+    # Phase 4: 网络分类和电流计算
+    classified_nets = classify_nets(schematic_data)
+    current_calculator = CurrentCalculator(classified_nets)
+    net_widths = current_calculator.calculate_all_widths(net_current_annotations or {})
+
+    # 收集需要铺铜的网络（用户标注 + 默认 GND）
+    pour_nets = set(net_pour_annotations.keys()) if net_pour_annotations else set()
+    pour_nets.add("GND")  # 默认铺铜 GND
+
+    logger.info(f"Phase 4: {len(classified_nets)} 个网络已分类, "
+                f"{len(pour_nets)} 个网络需要铺铜")
 
     # 转换阻焊颜色
     soldermask_colors = {
@@ -1852,6 +1874,7 @@ def generate_pcb_layout(
                     footprint=comp.footprint,
                     position={"x": pos["x"], "y": pos["y"]},
                     rotation=pos.get("rotation", 0),
+                    nets=comp.nets,  # Phase 4: 保留网络连接信息
                 )
             )
 
@@ -1881,22 +1904,29 @@ def generate_pcb_layout(
 
     # 生成走线 - 使用智能布线引擎
     traces = []
+    vias = []  # Phase 4: 收集过孔用于 Via Stitching
     try:
         # 创建 RoutingEngine 实例
         router = RoutingEngine(
             board_width=width,
             board_height=height,
-            trace_width=0.25  # 默认走线宽度
+            trace_width=0.25  # 默认走线宽度（会被覆盖）
         )
 
         # 转换网络数据为 RoutingNet 格式
         routing_nets = []
         for net in nets:
             # 找到该网络连接的所有组件焊盘
-            net_components_for_routing = [
-                c for c in components
-                if c.nets and net.name in c.nets
-            ]
+            # Phase 4: 使用已计算的走线宽度
+            trace_width = net_widths.get(net.name, 0.25)
+
+            # 找到该网络连接的所有组件
+            net_components_for_routing = []
+            for comp in components:
+                # 检查组件是否连接到这个网络
+                comp_nets = getattr(comp, 'nets', []) or []
+                if net.name in comp_nets:
+                    net_components_for_routing.append(comp)
 
             if len(net_components_for_routing) >= 2:
                 # 创建焊盘
@@ -1909,11 +1939,11 @@ def generate_pcb_layout(
                         layer="top"
                     ))
 
-                # 创建网络
+                # 创建网络 - Phase 4: 使用计算出的宽度
                 routing_nets.append(RoutingNet(
                     name=net.name,
                     pads=pads,
-                    trace_width=0.25
+                    trace_width=trace_width
                 ))
 
         # 执行布线
