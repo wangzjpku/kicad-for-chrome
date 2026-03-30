@@ -465,3 +465,97 @@ async def _load_pcb_data(project_id: str) -> Dict[str, Any]:
     # 实际实现应该从文件或数据库加载
     # 这里返回空字典，由调用者处理
     return {}
+
+
+# ========== Phase 5: SI 分析端点 ==========
+
+class SIAnalyzeRequest(BaseModel):
+    """SI 分析请求"""
+    pcb_data: Dict[str, Any]  # PCB 数据
+    include_impedance: bool = True
+    include_crosstalk: bool = True
+    include_loss: bool = True
+
+
+class SIViolationModel(BaseModel):
+    """SI 违规模型"""
+    net_name: str
+    severity: str
+    violation_type: str
+    message: str
+    location: str = ""
+    measured_value: float = 0
+    target_value: str = ""
+
+
+class SIResult(BaseModel):
+    """SI 分析结果"""
+    success: bool
+    passed: bool
+    impedance_violations: List[SIViolationModel] = []
+    crosstalk_warnings: List[SIViolationModel] = []
+    loss_warnings: List[SIViolationModel] = []
+    summary: Dict[str, Any] = {}
+
+
+@router.post("/si/analyze", response_model=SIResult)
+async def analyze_si(request: SIAnalyzeRequest):
+    """
+    运行信号完整性 (SI) 分析
+
+    Phase 5: 阻抗控制、串扰、传输线损耗分析
+
+    分析内容:
+    - 阻抗控制: 检查走线阻抗是否在目标范围内
+    - 串扰: 估算相邻走线间的串扰系数
+    - 传输损耗: 计算导体损耗和介质损耗
+    """
+    from drc.si_analyzer import SIAnalyzer, SIViolationSeverity
+
+    try:
+        analyzer = SIAnalyzer(request.pcb_data)
+        report = analyzer.analyze_all()
+
+        # 转换违规格式
+        impedance_violations = []
+        crosstalk_warnings = []
+        loss_warnings = []
+
+        for v in report.violations:
+            violation = SIViolationModel(
+                net_name=v.net_name,
+                severity=v.severity.value,
+                violation_type=v.violation_type,
+                message=v.message,
+                location=v.location,
+                measured_value=v.measured_value,
+                target_value=v.target_value,
+            )
+
+            if v.violation_type == "impedance":
+                impedance_violations.append(violation)
+            elif v.violation_type == "crosstalk":
+                crosstalk_warnings.append(violation)
+            elif v.violation_type == "loss":
+                loss_warnings.append(violation)
+
+        return SIResult(
+            success=True,
+            passed=report.passed,
+            impedance_violations=impedance_violations,
+            crosstalk_warnings=crosstalk_warnings,
+            loss_warnings=loss_warnings,
+            summary={
+                "total_nets": report.summary.get("total_nets", 0),
+                "critical_violations": report.summary.get("critical_violations", 0),
+                "warnings": report.summary.get("warnings", 0),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"SI analysis failed: {e}")
+        return SIResult(
+            success=False,
+            passed=False,
+            summary={"error": str(e)}
+        )
