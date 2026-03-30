@@ -278,20 +278,172 @@ class CopperPourEngine:
         """
         生成铺铜多边形
 
-        简化实现：从边界减去避让区域
+        简化实现：返回边界框，多边形避让由 KiCad zone 自动处理
+        实际生产中应使用复杂多边形布尔运算
         """
-        # 简化版本：返回边界减去障碍物后的多边形
-        # 实际实现需要使用多边形布尔运算
+        # 方案：返回板框边界，KiCad zone 会自动避让走线和焊盘
+        # 这需要一个近似板框的边界
 
-        points = list(boundary.points)
+        # 如果边界点有效，直接返回
+        if boundary.points and len(boundary.points) >= 3:
+            return list(boundary.points)
 
-        # 对于每个障碍物，创建一个内凹的多边形
-        # 这是简化版本，实际需要复杂的几何计算
-        for area in clearance_map:
-            # 检查是否影响多边形
-            pass
+        # 否则返回默认矩形边界
+        return [
+            (0.0, 0.0),
+            (self.board_width, 0.0),
+            (self.board_width, self.board_height),
+            (0.0, self.board_height),
+        ]
 
-        return points
+    def create_zones_from_pcb(
+        self,
+        board_width: float,
+        board_height: float,
+        nets: List[str],
+        traces: List[Dict],
+        thermal_pads: List[Dict] = None,
+    ) -> Dict[str, "ZoneResult"]:
+        """
+        从 PCB 数据创建铺铜区域
+
+        Args:
+            board_width: 板子宽度 (mm)
+            board_height: 板子高度 (mm)
+            nets: 需要铺铜的网络列表 (如 ["GND", "VCC"])
+            traces: 已有走线列表 [{"net": str, "points": [...], "width": float}]
+            thermal_pads: 需要热焊盘的焊盘列表 [{"net": str, "x": float, "y": float, "width": float, "height": float}]
+
+        Returns:
+            Dict[str, ZoneResult]: 网络名 -> 铺铜结果
+        """
+        zones = {}
+
+        for net_name in nets:
+            zone_result = self.create_zone_for_net(
+                net_name=net_name,
+                board_width=board_width,
+                board_height=board_height,
+                traces=traces,
+                thermal_pads=thermal_pads or [],
+            )
+            zones[net_name] = zone_result
+
+        return zones
+
+    def create_zone_for_net(
+        self,
+        net_name: str,
+        board_width: float,
+        board_height: float,
+        traces: List[Dict] = None,
+        thermal_pads: List[Dict] = None,
+    ) -> "ZoneResult":
+        """
+        为指定网络创建铺铜区域
+
+        Args:
+            net_name: 网络名称
+            board_width: 板子宽度
+            board_height: 板子高度
+            traces: 该网络的所有走线
+            thermal_pads: 该网络的焊盘列表
+
+        Returns:
+            ZoneResult: 铺铜结果
+        """
+        # 更新板子尺寸
+        self.board_width = board_width
+        self.board_height = board_height
+
+        # 创建边界
+        boundary = PourBoundary(points=[
+            (0.0, 0.0),
+            (board_width, 0.0),
+            (board_width, board_height),
+            (0.0, board_height),
+        ])
+
+        # 添加障碍物（走线）
+        if traces:
+            for trace in traces:
+                if trace.get("net") == net_name:
+                    continue  # 同网络不走避让
+
+                points = trace.get("points", [])
+                if len(points) >= 2:
+                    # 使用走线的边界框作为障碍物
+                    xs = [p.get("x", 0) for p in points]
+                    ys = [p.get("y", 0) for p in points]
+                    if xs and ys:
+                        self.add_obstacle(
+                            x=min(xs),
+                            y=min(ys),
+                            width=max(xs) - min(xs),
+                            height=max(ys) - min(ys),
+                            net=trace.get("net"),
+                        )
+
+        # 添加热焊盘
+        if thermal_pads:
+            for pad in thermal_pads:
+                if pad.get("net") == net_name:
+                    self.add_obstacle(
+                        x=pad.get("x", 0),
+                        y=pad.get("y", 0),
+                        width=pad.get("width", 1.0),
+                        height=pad.get("height", 1.0),
+                        net=net_name,
+                        is_thermal=True,
+                    )
+
+        # 创建铺铜
+        if net_name.upper() in ["GND", "AGND", "DGND"]:
+            result = self.create_ground_pour(layer="F.Cu", boundary=boundary)
+        else:
+            result = self.create_power_pour(net=net_name, layer="F.Cu", boundary=boundary)
+
+        # 转换为 ZoneResult
+        zone_result = ZoneResult(
+            net=result.net,
+            layer=result.layer,
+            boundary=result.polygon_points,
+            thermal_spokes=result.thermal_relief_segments,
+            area=result.area,
+            kicad_s_expression=self.to_kicad_zone(result),
+        )
+
+        return zone_result
+
+    def to_kicad_zone(self, pour_result: PourResult) -> str:
+        """转换为 KiCad zone S-expression"""
+        lines = []
+
+        # Zone 定义
+        lines.append(f'(zone (net {self._get_net_code(pour_result.net)}) (net_name "{pour_result.net}") (layer {pour_result.layer})')
+
+        # 边界多边形
+        points_str = " ".join([f"(xy {p[0]:.4f} {p[1]:.4f})" for p in pour_result.polygon_points])
+        lines.append(f"  (polygon (pts {points_str}))")
+
+        # 填充设置
+        lines.append("  (fill (yes))")
+        lines.append("  (connect_pads (yes) (clearance 0.2))")
+
+        # 热焊盘设置
+        lines.append("  (thermal_gap 0.2)")
+        lines.append("  (thermal_bridge_width 0.3)")
+
+        lines.append(")")
+
+        return "\n".join(lines)
+
+    def _get_net_code(self, net_name: str) -> int:
+        """获取网络代码（KiCad 内部使用）"""
+        # 简化：GND=0, 其他按名称hash
+        if net_name.upper() in ["GND", "AGND", "DGND"]:
+            return 0
+        return hash(net_name) % 100 + 1
 
     def _generate_thermal_reliefs(
         self,
@@ -428,4 +580,59 @@ def create_copper_pour_engine(
     return CopperPourEngine(
         board_width=board_width,
         board_height=board_height
+    )
+
+
+@dataclass
+class ZoneResult:
+    """铺铜区域结果（用于返回给调用方）"""
+    net: str                          # 网络名称
+    layer: str                        # 所在层
+    boundary: List[Tuple[float, float]]  # 边界点
+    thermal_spokes: List[Dict]       # 热焊盘辐条
+    area: float                       # 铺铜面积
+    kicad_s_expression: str          # KiCad S-expression 格式
+
+    def to_dict(self) -> Dict:
+        return {
+            "net": self.net,
+            "layer": self.layer,
+            "boundary": self.boundary,
+            "thermal_spokes": self.thermal_spokes,
+            "area": self.area,
+            "kicad_s_expression": self.kicad_s_expression,
+        }
+
+
+def create_zones_for_pcb(
+    board_width: float,
+    board_height: float,
+    pour_nets: List[str],
+    traces: List[Dict],
+    thermal_pads: List[Dict] = None,
+) -> Dict[str, ZoneResult]:
+    """
+    便捷函数：为 PCB 创建多个铺铜区域
+
+    Args:
+        board_width: 板子宽度
+        board_height: 板子高度
+        pour_nets: 需要铺铜的网络列表
+        traces: 所有走线列表
+        thermal_pads: 热焊盘列表
+
+    Returns:
+        Dict[str, ZoneResult]: 网络名 -> 铺铜结果
+    """
+    engine = CopperPourEngine(
+        board_width=board_width,
+        board_height=board_height,
+        clearance=0.2,
+    )
+    return engine.create_zones_from_pcb(
+        board_width=board_width,
+        board_height=board_height,
+        nets=pour_nets,
+        traces=traces,
+        thermal_pads=thermal_pads,
     )

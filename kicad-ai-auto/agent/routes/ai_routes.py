@@ -73,6 +73,9 @@ from pcb.net_classifier import (
 )
 from pcb.current_calculator import CurrentCalculator
 
+# Phase 4+: 导入铜箔浇注
+from routing.copper_pour import create_zones_for_pcb, ZoneResult
+
 logger = logging.getLogger(__name__)
 
 # ========== 加载本地知识库 ==========
@@ -1764,6 +1767,7 @@ class PCBData(BaseModel):
     components: List[PCBComponent]
     nets: List[PCBNet]
     tracks: List[PCBTrace]
+    zones: List[Dict] = []  # Phase 4+: 铺铜区域列表
 
 
 def generate_pcb_layout(
@@ -1974,6 +1978,37 @@ def generate_pcb_layout(
         # 备用走线：简单曼哈顿走线
         traces = _generate_fallback_traces(nets, components)
 
+    # Phase 4+: 铜箔浇注
+    zones = []
+    if pour_nets:
+        try:
+            # 转换 traces 格式
+            trace_dicts = []
+            for t in traces:
+                trace_dicts.append({
+                    "net": t.net,
+                    "layer": t.layer,
+                    "points": t.points,
+                    "width": t.width,
+                })
+
+            # 创建铺铜区域
+            zone_results = create_zones_for_pcb(
+                board_width=width,
+                board_height=height,
+                pour_nets=list(pour_nets),
+                traces=trace_dicts,
+            )
+
+            # 转换为 dict 格式
+            for net_name, zone in zone_results.items():
+                zones.append(zone.to_dict())
+
+            logger.info(f"铺铜完成: {len(zones)} 个区域")
+
+        except Exception as e:
+            logger.warning(f"铺铜失败: {e}")
+
     return PCBData(
         width=width,
         height=height,
@@ -1984,6 +2019,7 @@ def generate_pcb_layout(
         components=components,
         nets=nets,
         tracks=traces,
+        zones=zones,  # Phase 4+: 铺铜区域
     )
 
 
