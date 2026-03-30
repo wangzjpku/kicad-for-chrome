@@ -40,6 +40,37 @@ class UserUpdateRequest(BaseModel):
     is_admin: Optional[bool] = None
 
 
+class PCBSettingsRequest(BaseModel):
+    layerCount: int = 2
+    boardThickness: float = 1.6
+    copperThickness: float = 1.0
+    defaultTraceWidth: float = 0.5
+    minTraceWidth: float = 0.15
+    defaultClearance: float = 0.2
+    impedanceTarget: float = 50.0
+    viaDrill: float = 0.3
+    viaOuter: float = 0.6
+
+
+class AISettingsRequest(BaseModel):
+    apiProvider: str = "deepseek"
+    apiKey: str = ""
+    modelName: str = "deepseek-chat"
+    temperature: float = 0.7
+    maxTokens: int = 2000
+    enableCache: bool = True
+
+
+class ManufacturingSettingsRequest(BaseModel):
+    manufacturer: str = "jlcpcb"
+    surfaceFinish: str = "HASL"
+    baseCopper: float = 1.0
+    silkscreenColor: str = "white"
+    soldermaskColor: str = "green"
+    impedanceControl: bool = False
+    count: int = 5
+
+
 @router.get("/users", response_model=List[UserResponse])
 async def get_all_users(user_info: dict = Depends(require_admin)):
     """获取所有用户列表"""
@@ -170,4 +201,136 @@ async def get_stats(user_info: dict = Depends(require_admin)):
         "users": {"total": user_row[0] or 0, "total_tokens": user_row[1] or 0},
         "tokens": {"total_consumed": consumed_row[0] or 0, "today_consumed": today_row[0] or 0},
         "projects": {"total": project_count}
+    }
+
+
+# ========== 设置管理 ==========
+
+SETTINGS_FILE = Path(__file__).parent.parent / "settings.json"
+
+
+def load_settings() -> dict:
+    """加载设置"""
+    if SETTINGS_FILE.exists():
+        try:
+            with open(SETTINGS_FILE, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_settings(data: dict):
+    """保存设置"""
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+@router.post("/settings/pcb")
+async def save_pcb_settings(request: PCBSettingsRequest, user_info: dict = Depends(require_admin)):
+    """保存 PCB 参数设置"""
+    settings = load_settings()
+    settings['pcb'] = request.model_dump()
+    save_settings(settings)
+    return {"success": True, "message": "PCB 设置已保存"}
+
+
+@router.get("/settings/pcb")
+async def get_pcb_settings(user_info: dict = Depends(require_admin)):
+    """获取 PCB 参数设置"""
+    settings = load_settings()
+    return settings.get('pcb', {
+        "layerCount": 2,
+        "boardThickness": 1.6,
+        "copperThickness": 1.0,
+        "defaultTraceWidth": 0.5,
+        "minTraceWidth": 0.15,
+        "defaultClearance": 0.2,
+        "impedanceTarget": 50.0,
+        "viaDrill": 0.3,
+        "viaOuter": 0.6
+    })
+
+
+@router.post("/settings/ai")
+async def save_ai_settings(request: AISettingsRequest, user_info: dict = Depends(require_admin)):
+    """保存 AI 模型配置"""
+    settings = load_settings()
+    settings['ai'] = request.model_dump()
+    save_settings(settings)
+    return {"success": True, "message": "AI 设置已保存"}
+
+
+@router.get("/settings/ai")
+async def get_ai_settings(user_info: dict = Depends(require_admin)):
+    """获取 AI 模型配置"""
+    settings = load_settings()
+    return settings.get('ai', {
+        "apiProvider": "deepseek",
+        "apiKey": "",
+        "modelName": "deepseek-chat",
+        "temperature": 0.7,
+        "maxTokens": 2000,
+        "enableCache": True
+    })
+
+
+@router.post("/settings/manufacturing")
+async def save_manufacturing_settings(request: ManufacturingSettingsRequest, user_info: dict = Depends(require_admin)):
+    """保存制造选项"""
+    settings = load_settings()
+    settings['manufacturing'] = request.model_dump()
+    save_settings(settings)
+    return {"success": True, "message": "制造选项已保存"}
+
+
+@router.get("/settings/manufacturing")
+async def get_manufacturing_settings(user_info: dict = Depends(require_admin)):
+    """获取制造选项"""
+    settings = load_settings()
+    return settings.get('manufacturing', {
+        "manufacturer": "jlcpcb",
+        "surfaceFinish": "HASL",
+        "baseCopper": 1.0,
+        "silkscreenColor": "white",
+        "soldermaskColor": "green",
+        "impedanceControl": False,
+        "count": 5
+    })
+
+
+@router.post("/settings/manufacturing/estimate")
+async def get_manufacturing_estimate(request: ManufacturingSettingsRequest, user_info: dict = Depends(require_admin)):
+    """获取制造成本估算"""
+    # 简单的成本估算逻辑
+    base_price = 2.0  # JLCPCB 基础价格
+    if request.manufacturer == "pcbway":
+        base_price = 5.0
+    elif request.manufacturer == "seeed":
+        base_price = 3.0
+
+    # 表面处理附加费
+    finish_multiplier = 1.0
+    if request.surfaceFinish == "ENIG":
+        finish_multiplier = 1.5
+    elif request.surfaceFinish == "HASL":
+        finish_multiplier = 1.0
+
+    # 阻抗控制附加费
+    impedance_fee = 10.0 if request.impedanceControl else 0.0
+
+    unit_price = (base_price * finish_multiplier) + (impedance_fee / request.count)
+    total_price = unit_price * request.count
+
+    return {
+        "manufacturer": request.manufacturer,
+        "unit_price_usd": round(unit_price, 2),
+        "total_price_usd": round(total_price, 2),
+        "currency": "USD",
+        "lead_time_days": "7-10",
+        "features": {
+            "surface_finish": request.surfaceFinish,
+            "base_copper": request.baseCopper,
+            "impedance_control": request.impedanceControl
+        }
     }

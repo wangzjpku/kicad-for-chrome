@@ -60,7 +60,7 @@ interface ApiEndpoint {
 }
 
 export default function AdminPanel({ onClose }: { onClose?: () => void }) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tokens' | 'projects' | 'system' | 'cache'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tokens' | 'projects' | 'system' | 'cache' | 'pcb' | 'ai' | 'manufacturing'>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
   const [logs, setLogs] = useState<TokenLog[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -237,6 +237,9 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
     { id: 'projects', label: '📁 项目管理' },
     { id: 'system', label: '🖥️ 系统状态' },
     { id: 'cache', label: '🧹 运维工具' },
+    { id: 'pcb', label: '🔧 PCB参数' },
+    { id: 'ai', label: '🤖 AI模型' },
+    { id: 'manufacturing', label: '🏭 制造选项' },
   ];
 
   return (
@@ -356,6 +359,18 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
         {!loading && activeTab === 'cache' && (
           <CacheView onClearCache={handleClearCache} onRestart={handleRestartBackend} />
+        )}
+
+        {!loading && activeTab === 'pcb' && (
+          <PCBSettingsView />
+        )}
+
+        {!loading && activeTab === 'ai' && (
+          <AISettingsView />
+        )}
+
+        {!loading && activeTab === 'manufacturing' && (
+          <ManufacturingSettingsView />
         )}
       </div>
     </div>
@@ -669,3 +684,382 @@ function CacheView({ onClearCache, onRestart }: { onClearCache: () => void; onRe
   );
 }
 
+// ========== PCB 参数设置 ==========
+
+function PCBSettingsView() {
+  const [settings, setSettings] = useState({
+    layerCount: 2,
+    boardThickness: 1.6,
+    copperThickness: 1.0,
+    defaultTraceWidth: 0.25,
+    minTraceWidth: 0.15,
+    defaultClearance: 0.2,
+    impedanceTarget: 50,
+    viaDrill: 0.3,
+    viaOuter: 0.6,
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/settings/pcb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    backgroundColor: THEME.bg.primary,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 6,
+    color: THEME.text.primary,
+    fontSize: 14,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 6,
+    color: THEME.text.secondary,
+    fontSize: 13,
+  };
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 20px' }}>🔧 PCB 参数设置</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>层叠设置</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>板子层数</label>
+            <select style={inputStyle} value={settings.layerCount} onChange={e => setSettings({...settings, layerCount: Number(e.target.value)})}>
+              <option value={2}>2层板</option>
+              <option value={4}>4层板</option>
+              <option value={6}>6层板</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>板厚 (mm)</label>
+            <input style={inputStyle} type="number" step="0.1" value={settings.boardThickness} onChange={e => setSettings({...settings, boardThickness: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>铜厚 (oz)</label>
+            <select style={inputStyle} value={settings.copperThickness} onChange={e => setSettings({...settings, copperThickness: Number(e.target.value)})}>
+              <option value={0.5}>0.5 oz</option>
+              <option value={1.0}>1 oz</option>
+              <option value={2.0}>2 oz</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>走线设置</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>默认走线宽度 (mm)</label>
+            <input style={inputStyle} type="number" step="0.05" value={settings.defaultTraceWidth} onChange={e => setSettings({...settings, defaultTraceWidth: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>最小走线宽度 (mm)</label>
+            <input style={inputStyle} type="number" step="0.05" value={settings.minTraceWidth} onChange={e => setSettings({...settings, minTraceWidth: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>默认间距 (mm)</label>
+            <input style={inputStyle} type="number" step="0.05" value={settings.defaultClearance} onChange={e => setSettings({...settings, defaultClearance: Number(e.target.value)})} />
+          </div>
+        </div>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>阻抗控制</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>目标阻抗 (Ω)</label>
+            <input style={inputStyle} type="number" value={settings.impedanceTarget} onChange={e => setSettings({...settings, impedanceTarget: Number(e.target.value)})} />
+          </div>
+        </div>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>过孔设置</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>过孔钻孔直径 (mm)</label>
+            <input style={inputStyle} type="number" step="0.1" value={settings.viaDrill} onChange={e => setSettings({...settings, viaDrill: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>过孔外径 (mm)</label>
+            <input style={inputStyle} type="number" step="0.1" value={settings.viaOuter} onChange={e => setSettings({...settings, viaOuter: Number(e.target.value)})} />
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <button onClick={handleSave} style={{ backgroundColor: saved ? THEME.accent.success : THEME.accent.primary, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+          {saved ? '✓ 已保存' : '保存设置'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ========== AI 模型配置 ==========
+
+function AISettingsView() {
+  const [settings, setSettings] = useState({
+    apiProvider: 'deepseek',
+    apiKey: '',
+    modelName: 'deepseek-chat',
+    temperature: 0.7,
+    maxTokens: 2000,
+    enableCache: true,
+  });
+  const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/settings/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/ai/health');
+      const data = await res.json();
+      setTestResult(data.status === 'ok' ? '✓ API 连接正常' : '✗ 连接失败');
+    } catch (e) {
+      setTestResult('✗ 连接失败');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    backgroundColor: THEME.bg.primary,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 6,
+    color: THEME.text.primary,
+    fontSize: 14,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 6,
+    color: THEME.text.secondary,
+    fontSize: 13,
+  };
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 20px' }}>🤖 AI 模型配置</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>API 配置</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>API 提供商</label>
+            <select style={inputStyle} value={settings.apiProvider} onChange={e => setSettings({...settings, apiProvider: e.target.value})}>
+              <option value="deepseek">DeepSeek</option>
+              <option value="kimi">Kimi</option>
+              <option value="glm">GLM-4</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>API Key</label>
+            <input style={inputStyle} type="password" value={settings.apiKey} onChange={e => setSettings({...settings, apiKey: e.target.value})} placeholder="sk-..." />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>模型名称</label>
+            <input style={inputStyle} value={settings.modelName} onChange={e => setSettings({...settings, modelName: e.target.value})} />
+          </div>
+          <button onClick={handleTest} disabled={testing} style={{ backgroundColor: THEME.accent.success, border: 'none', color: '#fff', padding: '8px 16px', borderRadius: 6, cursor: 'pointer' }}>
+            {testing ? '测试中...' : '测试连接'}
+          </button>
+          {testResult && <span style={{ marginLeft: 12, color: testResult.includes('正常') ? THEME.accent.success : THEME.accent.error }}>{testResult}</span>}
+        </div>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>生成参数</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Temperature</label>
+            <input style={inputStyle} type="number" step="0.1" min="0" max="2" value={settings.temperature} onChange={e => setSettings({...settings, temperature: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Max Tokens</label>
+            <input style={inputStyle} type="number" value={settings.maxTokens} onChange={e => setSettings({...settings, maxTokens: Number(e.target.value)})} />
+          </div>
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={settings.enableCache} onChange={e => setSettings({...settings, enableCache: e.target.checked})} />
+            <label>启用响应缓存</label>
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <button onClick={handleSave} style={{ backgroundColor: saved ? THEME.accent.success : THEME.accent.primary, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+          {saved ? '✓ 已保存' : '保存设置'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ========== 制造选项 ==========
+
+function ManufacturingSettingsView() {
+  const [settings, setSettings] = useState({
+    manufacturer: 'jlcpcb',
+    surfaceFinish: 'HASL',
+    baseCopper: 1.0,
+    silkscreenColor: 'white',
+    soldermaskColor: 'green',
+    impedanceControl: false,
+    count: 5,
+  });
+  const [saved, setSaved] = useState(false);
+  const [estimate, setEstimate] = useState<any>(null);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/settings/manufacturing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  };
+
+  const handleEstimate = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/settings/manufacturing/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json();
+      setEstimate(data);
+    } catch (e) {
+      console.error('Estimate failed:', e);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    backgroundColor: THEME.bg.primary,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 6,
+    color: THEME.text.primary,
+    fontSize: 14,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 6,
+    color: THEME.text.secondary,
+    fontSize: 13,
+  };
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 20px' }}>🏭 制造选项</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>制造商配置</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>首选制造商</label>
+            <select style={inputStyle} value={settings.manufacturer} onChange={e => setSettings({...settings, manufacturer: e.target.value})}>
+              <option value="jlcpcb">JLCPCB</option>
+              <option value="pcbway">PCBWay</option>
+              <option value="seeed">Seeed Studio</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>表面处理</label>
+            <select style={inputStyle} value={settings.surfaceFinish} onChange={e => setSettings({...settings, surfaceFinish: e.target.value})}>
+              <option value="HASL">HASL 无铅</option>
+              <option value="ENIG">ENIG 金手指</option>
+              <option value="OSP">OSP</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>基铜厚度 (oz)</label>
+            <select style={inputStyle} value={settings.baseCopper} onChange={e => setSettings({...settings, baseCopper: Number(e.target.value)})}>
+              <option value={1}>1 oz</option>
+              <option value={2}>2 oz</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 16px', color: THEME.accent.primary }}>外观选项</h4>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>丝印颜色</label>
+            <select style={inputStyle} value={settings.silkscreenColor} onChange={e => setSettings({...settings, silkscreenColor: e.target.value})}>
+              <option value="white">白色</option>
+              <option value="black">黑色</option>
+              <option value="yellow">黄色</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>阻焊颜色</label>
+            <select style={inputStyle} value={settings.soldermaskColor} onChange={e => setSettings({...settings, soldermaskColor: e.target.value})}>
+              <option value="green">绿色</option>
+              <option value="red">红色</option>
+              <option value="blue">蓝色</option>
+              <option value="black">黑色</option>
+              <option value="white">白色</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>数量</label>
+            <select style={inputStyle} value={settings.count} onChange={e => setSettings({...settings, count: Number(e.target.value)})}>
+              <option value={5}>5 片</option>
+              <option value={10}>10 片</option>
+              <option value={20}>20 片</option>
+              <option value={50}>50 片</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={settings.impedanceControl} onChange={e => setSettings({...settings, impedanceControl: e.target.checked})} />
+            <label>启用阻抗控制</label>
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <button onClick={handleEstimate} style={{ backgroundColor: THEME.accent.warning, border: 'none', color: '#fff', padding: '12px 24px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+          费用估算
+        </button>
+        <button onClick={handleSave} style={{ backgroundColor: saved ? THEME.accent.success : THEME.accent.primary, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+          {saved ? '✓ 已保存' : '保存设置'}
+        </button>
+      </div>
+      {estimate && (
+        <div style={{ marginTop: 24, backgroundColor: THEME.bg.card, padding: 20, borderRadius: 8 }}>
+          <h4 style={{ margin: '0 0 12px' }}>💰 费用估算</h4>
+          <p>制造商: {estimate.manufacturer}</p>
+          <p>单价: ${estimate.unit_price}</p>
+          <p>总价: ${estimate.total_price}</p>
+        </div>
+      )}
+    </div>
+  );
+}

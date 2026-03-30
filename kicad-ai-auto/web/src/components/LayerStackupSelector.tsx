@@ -236,4 +236,5 @@ const LayerStackupSelector: React.FC<LayerStackupSelectorProps> = ({
 };
 
 export default LayerStackupSelector;
-export { STACKUP_TEMPLATES, StackupTemplate, Layer };
+export { STACKUP_TEMPLATES };
+export type { StackupTemplate, Layer };
