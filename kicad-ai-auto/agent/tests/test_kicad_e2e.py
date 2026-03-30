@@ -518,3 +518,245 @@ class TestODBXXExport:
 
         gen_6 = ODBXXGenerator({"layers": 6})
         assert gen_6._get_layer_names() == ["TOP", "INNER1", "INNER2", "INNER3", "INNER4", "BOTTOM"]
+
+
+class TestIPC2221Advanced:
+    """IPC-2221 进阶功能测试"""
+
+    def test_advanced_calculator_import(self):
+        """测试高级计算器可以导入"""
+        from pcb.current_calculator import AdvancedCurrentCalculator, IPC2221Params
+        assert AdvancedCurrentCalculator is not None
+        assert IPC2221Params is not None
+
+    def test_copper_weight_options(self):
+        """测试铜厚选项"""
+        from pcb.current_calculator import AdvancedCurrentCalculator
+
+        weights = AdvancedCurrentCalculator.get_available_copper_weights()
+        assert 0.5 in weights
+        assert 1.0 in weights
+        assert 2.0 in weights
+        assert 3.0 in weights
+        assert 4.0 in weights
+
+    def test_temperature_rise_options(self):
+        """测试温升选项"""
+        from pcb.current_calculator import AdvancedCurrentCalculator
+
+        rises = AdvancedCurrentCalculator.get_available_temperature_rises()
+        assert 10 in rises
+        assert 20 in rises
+        assert 30 in rises
+        assert 40 in rises
+
+    def test_ipc2221_params(self):
+        """测试 IPC-2221 参数"""
+        from pcb.current_calculator import IPC2221Params
+
+        params = IPC2221Params(copper_oz=2.0, temperature_rise=20, layer_location="external")
+        assert params.copper_oz == 2.0
+        assert params.temperature_rise == 20
+        assert params.layer_location == "external"
+
+    def test_calculate_width_with_copper_options(self):
+        """测试不同铜厚的宽度计算"""
+        from pcb.current_calculator import calculate_trace_width
+
+        # 2A 电流，不同铜厚应该有不同结果
+        width_1oz = calculate_trace_width(2000, copper_oz=1.0)
+        width_2oz = calculate_trace_width(2000, copper_oz=2.0)
+
+        # 厚铜可以更窄
+        assert width_2oz < width_1oz
+
+    def test_calculate_width_with_temperature(self):
+        """测试不同温升的宽度计算"""
+        from pcb.current_calculator import calculate_trace_width
+
+        # 2A 电流，不同温升应该有不同结果
+        width_10c = calculate_trace_width(2000, temperature_rise=10)
+        width_20c = calculate_trace_width(2000, temperature_rise=20)
+
+        # 更高温升允许更窄的走线
+        assert width_20c < width_10c
+
+    def test_calculate_width_internal_vs_external(self):
+        """测试内层 vs 外层的宽度计算"""
+        from pcb.current_calculator import calculate_trace_width
+
+        # 2A 电流
+        width_external = calculate_trace_width(2000, is_external=True)
+        width_internal = calculate_trace_width(2000, is_external=False)
+
+        # 外层散热好，可以用更窄的走线
+        assert width_external < width_internal
+
+    def test_calculate_width_power_net(self):
+        """测试电源网络的宽度计算"""
+        from pcb.current_calculator import calculate_trace_width
+
+        # 电源网络，2A 电流
+        width = calculate_trace_width(2000, net_class="power", copper_oz=1.0)
+
+        # 应该至少大于基础宽度
+        assert width >= 0.5
+
+    def test_advanced_calculator_class(self):
+        """测试高级计算器类"""
+        from pcb.current_calculator import AdvancedCurrentCalculator, NetInfo, NetClass
+        from pcb.net_classifier import NetInfo as NI
+
+        # 创建测试网络
+        nets = {
+            "VCC": NetInfo(name="VCC", net_class=NetClass.POWER, current_ma=2000),
+        }
+
+        calc = AdvancedCurrentCalculator(nets)
+        widths = calc.calculate_all_widths()
+
+        assert "VCC" in widths
+        assert widths["VCC"] > 0
+
+
+class TestEMIHotspotAnalyzer:
+    """EMI 热点分析器测试"""
+
+    def test_emi_analyzer_import(self):
+        """测试 EMI 分析器可以导入"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer, analyze_pcb_emi
+        assert EMIHotspotAnalyzer is not None
+        assert analyze_pcb_emi is not None
+
+    def test_emi_analyze_empty_pcb(self):
+        """测试空 PCB 分析"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        pcb_data = {"tracks": [], "components": [], "zones": [], "vias": []}
+        analyzer = EMIHotspotAnalyzer(pcb_data)
+        report = analyzer.analyze()
+
+        assert report is not None
+        assert isinstance(report.passed, bool)
+        assert len(report.hotspots) >= 0
+
+    def test_emi_clock_line_detection(self):
+        """测试时钟线检测"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        # 创建有时钟线的 PCB
+        pcb_data = {
+            "tracks": [
+                {"id": "t1", "net": "CLK", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 0}, {"x": 30, "y": 0}]},
+            ],
+            "components": [],
+            "zones": [],
+            "vias": [],
+        }
+
+        analyzer = EMIHotspotAnalyzer(pcb_data)
+        report = analyzer.analyze()
+
+        # 应该检测到时钟线过长
+        assert len(report.hotspots) > 0
+        assert any("clock" in h.message.lower() or "clk" in h.message.lower()
+                   for h in report.hotspots)
+
+    def test_emi_sensitive_trace(self):
+        """测试敏感信号检测"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        # 创建有长 USB 走线的 PCB
+        pcb_data = {
+            "tracks": [
+                {"id": "t1", "net": "USB_DP", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 0}, {"x": 60, "y": 0}]},
+            ],
+            "components": [],
+            "zones": [],
+            "vias": [],
+        }
+
+        analyzer = EMIHotspotAnalyzer(pcb_data, {"sensitivity": "high"})
+        report = analyzer.analyze()
+
+        # 应该检测到敏感信号过长
+        hotspot_types = [h.hotspot_type.value for h in report.hotspots]
+        assert "long_sensitive" in hotspot_types or "signal_integrity" in hotspot_types
+
+    def test_emi_diff_pair_mismatch(self):
+        """测试差分对长度不匹配检测"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        # 创建差分对长度差异过大的 PCB
+        # 使用 ETH_P/ETH_N 格式以确保被检测为差分对
+        pcb_data = {
+            "tracks": [
+                {"id": "t1", "net": "ETH_P", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 0}, {"x": 50, "y": 0}]},
+                {"id": "t2", "net": "ETH_N", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 1}, {"x": 30, "y": 1}]},
+            ],
+            "components": [],
+            "zones": [],
+            "vias": [],
+        }
+
+        analyzer = EMIHotspotAnalyzer(pcb_data)
+        report = analyzer.analyze()
+
+        # 应该检测到差分对不匹配
+        hotspot_types = [h.hotspot_type.value for h in report.hotspots]
+        assert "diff_mismatch" in hotspot_types
+
+    def test_emi_visualization_data(self):
+        """测试可视化数据输出"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        pcb_data = {
+            "tracks": [
+                {"id": "t1", "net": "CLK", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 0}, {"x": 60, "y": 0}]},
+            ],
+            "components": [],
+            "zones": [],
+            "vias": [],
+        }
+
+        analyzer = EMIHotspotAnalyzer(pcb_data)
+        viz_data = analyzer.get_hotspots_for_visualization()
+
+        assert isinstance(viz_data, list)
+        for hotspot in viz_data:
+            assert "id" in hotspot
+            assert "type" in hotspot
+            assert "severity" in hotspot
+            assert "x" in hotspot
+            assert "y" in hotspot
+            assert "color" in hotspot
+
+    def test_emi_sensitivity_levels(self):
+        """测试不同灵敏度设置"""
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        pcb_data = {
+            "tracks": [
+                {"id": "t1", "net": "USB_DP", "layer": "F.Cu", "width": 0.2,
+                 "points": [{"x": 0, "y": 0}, {"x": 40, "y": 0}]},
+            ],
+            "components": [],
+            "zones": [],
+            "vias": [],
+        }
+
+        # 高灵敏度
+        analyzer_high = EMIHotspotAnalyzer(pcb_data, {"sensitivity": "high"})
+        report_high = analyzer_high.analyze()
+
+        # 低灵敏度
+        analyzer_low = EMIHotspotAnalyzer(pcb_data, {"sensitivity": "low"})
+        report_low = analyzer_low.analyze()
+
+        # 高灵敏度应该检测到更多问题
+        assert report_high.summary["total_hotspots"] >= report_low.summary["total_hotspots"]

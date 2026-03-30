@@ -559,3 +559,134 @@ async def analyze_si(request: SIAnalyzeRequest):
             passed=False,
             summary={"error": str(e)}
         )
+
+
+# ========== EMI 热点可视化 ==========
+
+class EMIHotspotModel(BaseModel):
+    """EMI 热点模型"""
+    id: str
+    type: str
+    severity: str
+    message: str
+    suggestion: str
+    x: float
+    y: float
+    layer: str
+    color: str
+    affected_nets: List[str]
+    auto_fixable: bool
+
+
+class EMIResult(BaseModel):
+    """EMI 分析结果"""
+    success: bool
+    passed: bool
+    hotspots: List[EMIHotspotModel] = []
+    summary: Dict[str, Any] = {}
+
+
+class EMIAnalyzeRequest(BaseModel):
+    """EMI 分析请求"""
+    pcb_data: Dict[str, Any]
+    sensitivity: str = "medium"  # high, medium, low
+
+
+@router.post("/emi/analyze", response_model=EMIResult)
+async def analyze_emi(request: EMIAnalyzeRequest):
+    """
+    运行 EMI 热点分析
+
+    Phase 5: 识别 PCB 上的 EMI 问题区域
+
+    分析内容:
+    - 时钟线未屏蔽检测
+    - 跨越分割平面检测
+    - 敏感信号走线过长
+    - 差分对耦合问题
+    - 串扰风险
+    """
+    try:
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        options = {
+            "sensitivity": request.sensitivity,
+            "include_clock": True,
+            "include_plane_splits": True,
+        }
+
+        analyzer = EMIHotspotAnalyzer(request.pcb_data, options)
+        report = analyzer.analyze()
+        visualization = analyzer.get_hotspots_for_visualization()
+
+        hotspots = [
+            EMIHotspotModel(
+                id=h["id"],
+                type=h["type"],
+                severity=h["severity"],
+                message=h["message"],
+                suggestion=h["suggestion"],
+                x=h["x"],
+                y=h["y"],
+                layer=h["layer"],
+                color=h["color"],
+                affected_nets=h["affectedNets"],
+                auto_fixable=h["autoFixable"],
+            )
+            for h in visualization
+        ]
+
+        return EMIResult(
+            success=True,
+            passed=report.passed,
+            hotspots=hotspots,
+            summary={
+                "total_hotspots": report.summary.get("total_hotspots", 0),
+                "critical": report.summary.get("critical", 0),
+                "warning": report.summary.get("warning", 0),
+                "info": report.summary.get("info", 0),
+                "affected_nets": report.summary.get("affected_nets", []),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"EMI analysis failed: {e}")
+        return EMIResult(
+            success=False,
+            passed=False,
+            summary={"error": str(e)}
+        )
+
+
+@router.post("/emi/visualization", response_model=Dict[str, Any])
+async def get_emi_visualization(request: EMIAnalyzeRequest):
+    """
+    获取 EMI 热点可视化数据
+
+    返回前端渲染所需的热点位置和样式
+    """
+    try:
+        from design_rules.emi_hotspot_analyzer import EMIHotspotAnalyzer
+
+        options = {
+            "sensitivity": request.sensitivity,
+            "include_clock": True,
+            "include_plane_splits": True,
+        }
+
+        analyzer = EMIHotspotAnalyzer(request.pcb_data, options)
+        hotspots = analyzer.get_hotspots_for_visualization()
+
+        return {
+            "success": True,
+            "hotspots": hotspots,
+            "legend": {
+                "critical": {"label": "严重", "color": "#ff0000"},
+                "warning": {"label": "警告", "color": "#ff9900"},
+                "info": {"label": "提示", "color": "#ffcc00"},
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"EMI visualization failed: {e}")
+        return {"success": False, "error": str(e)}
