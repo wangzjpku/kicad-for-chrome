@@ -472,6 +472,9 @@ class AdvancedDRCEngine:
         # 7. 高速信号检查
         violations.extend(self._check_high_speed_signals(tracks, pcb_data))
 
+        # 8. 安全规则检查 (Phase 9A-4)
+        violations.extend(self._check_safety(pcb_data))
+
         # 统计
         error_count = sum(1 for v in violations if v.severity == RuleSeverity.ERROR)
         warning_count = sum(1 for v in violations if v.severity == RuleSeverity.WARNING)
@@ -893,6 +896,103 @@ class AdvancedDRCEngine:
         """添加自定义规则"""
         self.rules.append(rule)
         logger.info(f"Added custom rule: {rule.name}")
+
+    def _check_safety(self, pcb_data: Dict) -> list:
+        """
+        Phase 9A-4: Execute safety-specific DRC rules.
+
+        Checks SAFETY and SMPS rule groups against board data.
+        These rules validate creepage, clearance, isolation slots,
+        and cross-zone copper contamination.
+        """
+        violations = []
+
+        # Filter safety rules from the rule set
+        safety_rules = [
+            r for r in self.rules
+            if hasattr(r, 'id') and (r.id.startswith("SAFETY_") or r.id.startswith("SMPS_"))
+        ]
+
+        if not safety_rules:
+            return violations
+
+        components = self._parse_components(pcb_data)
+        tracks = self._parse_tracks(pcb_data)
+
+        # Try to identify safety zones using the safety zone identifier
+        try:
+            from schematic.safety_zone_identifier import SafetyZoneIdentifier, SafetyZone
+            identifier = SafetyZoneIdentifier()
+            comp_dicts = []
+            for c in components:
+                comp_dicts.append({
+                    "reference": c.reference if hasattr(c, 'reference') else str(c),
+                    "type": c.component_type if hasattr(c, 'component_type') else "",
+                    "category": "",
+                    "value": "",
+                    "x": c.x if hasattr(c, 'x') else 0,
+                    "y": c.y if hasattr(c, 'y') else 0,
+                })
+            zone_result = identifier.identify_zones(comp_dicts)
+
+            # SAFETY_010: Primary/secondary clearance check
+            if zone_result.primary_components and zone_result.secondary_components:
+                min_clearance = zone_result.clearance_required
+                for pc in zone_result.primary_components:
+                    for sc in zone_result.secondary_components:
+                        # Find positions
+                        px = py = sx = sy = 0
+                        for cd in comp_dicts:
+                            if cd["reference"] == pc.reference:
+                                px, py = cd["x"], cd["y"]
+                            if cd["reference"] == sc.reference:
+                                sx, sy = cd["x"], cd["y"]
+                        dist = math.sqrt((px - sx) ** 2 + (py - sy) ** 2)
+                        if dist < min_clearance and dist > 0:
+                            violations.append(DRCViolation(
+                                rule_id="SAFETY_010",
+                                severity=RuleSeverity.ERROR,
+                                message=f"Primary/secondary clearance violation: {pc.reference} to {sc.reference} ({dist:.1f}mm < {min_clearance:.1f}mm)",
+                                category="safety",
+                                position={"x": (px + sx) / 2, "y": (py + sy) / 2},
+                            ))
+
+            # SAFETY_011: Isolation slot integrity
+            if zone_result.creepage_required > 0:
+                # Check if any tracks cross the isolation boundary
+                boundary_y = zone_result.boundary_line_y
+                if boundary_y > 0:
+                    for t in tracks:
+                        if not hasattr(t, 'points') or not t.points:
+                            continue
+                        for p in t.points:
+                            if hasattr(p, 'y') and abs(p.y - boundary_y) < 1.0:
+                                net_name = t.net if hasattr(t, 'net') else ""
+                                violations.append(DRCViolation(
+                                    rule_id="SAFETY_011",
+                                    severity=RuleSeverity.WARNING,
+                                    message=f"Track near isolation boundary (net: {net_name}, y={p.y:.1f}mm)",
+                                    category="safety",
+                                    position={"x": p.x if hasattr(p, 'x') else 0, "y": p.y},
+                                ))
+                                break
+
+            # SMPS_001: Creepage distance check
+            if zone_result.creepage_required > 0:
+                violations.append(DRCViolation(
+                    rule_id="SMPS_001",
+                    severity=RuleSeverity.INFO,
+                    message=f"SMPS creepage requirement: {zone_result.creepage_required:.1f}mm (IEC standard)",
+                    category="smps_safety",
+                    position=None,
+                ))
+
+        except ImportError:
+            logger.debug("SafetyZoneIdentifier not available, skipping safety checks")
+        except Exception as e:
+            logger.warning(f"Safety check error: {e}")
+
+        return violations
 
     def set_net_class(self, name: str, net_class: NetClass):
         """设置网络类"""

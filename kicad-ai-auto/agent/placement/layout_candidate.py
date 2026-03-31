@@ -295,3 +295,180 @@ class LayoutCandidateGenerator:
             return 60.0
         else:
             return max(20, 100 - avg_len)
+
+
+class StandardLayoutScorer:
+    """
+    Phase 9C-2: Standard 4-dimension layout scorer.
+
+    Dimensions:
+    - Area utilization (25%): How efficiently board space is used
+    - Wire length (30%): Estimated total Manhattan wire length
+    - Thermal distribution (25%): Heat dissipation quality
+    - Manufacturability (20%): DFM score (spacing, edge clearance, etc.)
+    """
+
+    def __init__(
+        self,
+        board_width: float = 100.0,
+        board_height: float = 80.0,
+        min_clearance: float = 0.5,
+    ):
+        self.board_width = board_width
+        self.board_height = board_height
+        self.min_clearance = min_clearance
+
+    def score(
+        self,
+        components: List[Component],
+        positions: Dict[str, Dict[str, float]],
+        net_connections: Optional[List[Tuple[str, str, str]]] = None,
+    ) -> Dict[str, float]:
+        """
+        Score a layout on 4 dimensions.
+
+        Returns dict with area_score, wire_score, thermal_score, mfg_score, total.
+        """
+        area_score = self._score_area(components, positions)
+        wire_score = self._score_wire_length(positions, net_connections)
+        thermal_score = self._score_thermal(components, positions)
+        mfg_score = self._score_manufacturability(components, positions)
+
+        total = (
+            area_score * 0.25
+            + wire_score * 0.30
+            + thermal_score * 0.25
+            + mfg_score * 0.20
+        )
+
+        return {
+            "area_score": round(area_score, 1),
+            "wire_length_score": round(wire_score, 1),
+            "thermal_score": round(thermal_score, 1),
+            "manufacturability_score": round(mfg_score, 1),
+            "total_score": round(total, 1),
+            "weights": {"area": 0.25, "wire_length": 0.30, "thermal": 0.25, "manufacturability": 0.20},
+        }
+
+    def _score_area(self, components: List[Component], positions: Dict) -> float:
+        """Score area utilization (25% weight)."""
+        if not positions:
+            return 0.0
+
+        board_area = self.board_width * self.board_height
+        # Calculate bounding box of placed components
+        xs = [p.get("x", 0) for p in positions.values()]
+        ys = [p.get("y", 0) for p in positions.values()]
+
+        if not xs:
+            return 0.0
+
+        used_width = max(xs) - min(xs) + 10  # +10mm margin
+        used_height = max(ys) - min(ys) + 10
+        used_area = used_width * used_height
+
+        utilization = used_area / board_area if board_area > 0 else 0
+
+        # Optimal: 60-80% utilization
+        if 0.6 <= utilization <= 0.8:
+            return 95.0
+        elif 0.4 <= utilization <= 0.9:
+            return 75.0
+        elif utilization > 0:
+            return 50.0
+        return 0.0
+
+    def _score_wire_length(self, positions: Dict, net_connections) -> float:
+        """Score estimated wire length (30% weight)."""
+        if not net_connections or not positions:
+            return 70.0  # Neutral score when no data
+
+        total_manhattan = 0.0
+        count = 0
+        for net_name, ref1, ref2 in net_connections:
+            p1 = positions.get(ref1)
+            p2 = positions.get(ref2)
+            if p1 and p2:
+                dx = abs(p1.get("x", 0) - p2.get("x", 0))
+                dy = abs(p1.get("y", 0) - p2.get("y", 0))
+                total_manhattan += dx + dy
+                count += 1
+
+        if count == 0:
+            return 70.0
+
+        avg_len = total_manhattan / count
+        if avg_len <= 15:
+            return 95.0
+        elif avg_len <= 30:
+            return 80.0
+        elif avg_len <= 50:
+            return 60.0
+        else:
+            return max(20, 100 - avg_len * 0.8)
+
+    def _score_thermal(self, components: List[Component], positions: Dict) -> float:
+        """Score thermal distribution (25% weight)."""
+        if not positions or len(positions) < 2:
+            return 70.0
+
+        # Hot component patterns
+        hot_prefixes = ("U", "Q", "D", "IC")
+        hot_positions = []
+        for ref, pos in positions.items():
+            if any(ref.upper().startswith(p) for p in hot_prefixes):
+                hot_positions.append((pos.get("x", 0), pos.get("y", 0)))
+
+        if len(hot_positions) < 2:
+            return 80.0
+
+        # Check spacing between hot components
+        min_dist = float("inf")
+        for i in range(len(hot_positions)):
+            for j in range(i + 1, len(hot_positions)):
+                dx = hot_positions[i][0] - hot_positions[j][0]
+                dy = hot_positions[i][1] - hot_positions[j][1]
+                dist = math.sqrt(dx * dx + dy * dy)
+                min_dist = min(min_dist, dist)
+
+        # Hot components should be spread out (>20mm apart)
+        if min_dist >= 20:
+            return 95.0
+        elif min_dist >= 10:
+            return 75.0
+        elif min_dist >= 5:
+            return 50.0
+        else:
+            return 25.0
+
+    def _score_manufacturability(self, components: List[Component], positions: Dict) -> float:
+        """Score DFM (20% weight): edge clearance, component spacing."""
+        if not positions:
+            return 0.0
+
+        score = 100.0
+
+        # Check edge clearance (components should be >3mm from board edge)
+        for ref, pos in positions.items():
+            x, y = pos.get("x", 0), pos.get("y", 0)
+            if x < 3 or y < 3:
+                score -= 5
+            if x > self.board_width - 3 or y > self.board_height - 3:
+                score -= 5
+
+        # Check minimum component spacing
+        pos_list = list(positions.values())
+        min_spacing = float("inf")
+        for i in range(len(pos_list)):
+            for j in range(i + 1, min(len(pos_list), i + 10)):  # Limit pairs checked
+                dx = pos_list[i].get("x", 0) - pos_list[j].get("x", 0)
+                dy = pos_list[i].get("y", 0) - pos_list[j].get("y", 0)
+                dist = math.sqrt(dx * dx + dy * dy)
+                min_spacing = min(min_spacing, dist)
+
+        if min_spacing < self.min_clearance:
+            score -= 20
+        elif min_spacing < 2.0:
+            score -= 10
+
+        return max(0, score)

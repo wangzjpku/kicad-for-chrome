@@ -25,6 +25,7 @@ import AIChatAssistant from '../components/AIChatAssistant';
 import FanoutDialog from '../components/FanoutDialog';
 import CopperPourDialog from '../components/CopperPourDialog';
 import DiffPairDialog from '../components/DiffPairDialog';
+import RoutingQualityPanel from '../components/RoutingQualityPanel';
 import { phase6Api } from '../services/api';
 
 import BoardOutlineRenderer from '../canvas/BoardOutlineRenderer';
@@ -48,7 +49,7 @@ const PCBEditor: React.FC = () => {
   const lastValidSizeRef = useRef({ width: 800, height: 600 });
 
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
-  const [activeTab, setActiveTab] = useState<'properties' | 'layers' | 'drc' | 'export'>('properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'layers' | 'drc' | 'export' | 'quality'>('properties');
   // activeLayer now comes from store
   const [drcReport, setDrcReport] = useState<DRCReport | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
@@ -551,10 +552,11 @@ const PCBEditor: React.FC = () => {
             projectSpec={{ name: projectId || '未命名项目' }}
             onModifySchematic={(modifications) => {
               console.log('AI modifications received:', modifications);
-              // 注意：AIChatAssistant 内部会在执行完修改后自动保存 PCB 数据
-              // 这里不需要额外调用 savePCBData，避免时序问题
             }}
             defaultExpanded={true}
+            projectId={projectId || undefined}
+            selectedElementIds={selectedIds}
+            highlightedNet={highlightedNet}
           />
         </div>
       )}
@@ -864,20 +866,49 @@ const PCBEditor: React.FC = () => {
           </Stage>
           )}
 
-          {/* 3D 视图 */}
-          {viewMode === '3d' && (
-            <PCBViewer3D
-              width={containerSize.width}
-              height={containerSize.height}
-            />
-          )}
+          {/* 3D 视图 - Phase 10B-5: Pass real PCB data */}
+          {viewMode === '3d' && (() => {
+            // Convert pcbStore data to PCBViewer3D format
+            const real3DData = {
+              boardOutline: pcbData.boardOutline ? [[
+                [0, 0, 0], [pcbData.boardOutline.width || 100, 0, 0],
+                [pcbData.boardOutline.width || 100, pcbData.boardOutline.height || 80, 0],
+                [0, pcbData.boardOutline.height || 80, 0],
+              ]] : undefined,
+              footprints: (pcbData.footprints || []).map((fp: any) => ({
+                id: fp.id,
+                position: [
+                  (fp.position?.x || 0) * 10,
+                  (fp.position?.y || 0) * 10,
+                  fp.position?.z || 0,
+                ] as [number, number, number],
+                rotation: [0, 0, ((fp.rotation || 0) * Math.PI) / 180] as [number, number, number],
+                size: [5, 5, 2] as [number, number, number],
+                type: (() => {
+                  const ref = (fp.reference || '').toUpperCase();
+                  if (/^[RCLDQ]/.test(ref)) return 'passive' as const;
+                  if (/^U|^IC/.test(ref)) return 'ic' as const;
+                  if (/^J|^CN/.test(ref)) return 'connector' as const;
+                  return 'other' as const;
+                })(),
+                color: '#4a9eff',
+              })),
+            };
+            return (
+              <PCBViewer3D
+                width={containerSize.width}
+                height={containerSize.height}
+                data={real3DData as any}
+              />
+            );
+          })()}
         </div>
 
         {/* 右侧面板 */}
         <div style={{ width: 250, backgroundColor: '#2d2d2d', borderLeft: '1px solid #3d3d3d', display: 'flex', flexDirection: 'column' }}>
           {/* 标签页 */}
           <div style={{ display: 'flex', borderBottom: '1px solid #3d3d3d' }}>
-            {(['properties', 'layers', 'drc', 'export'] as const).map(tab => (
+            {(['properties', 'layers', 'drc', 'quality', 'export'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -907,6 +938,7 @@ const PCBEditor: React.FC = () => {
               />
             )}
             {activeTab === 'drc' && <DRCPanel onDRCComplete={setDrcReport} />}
+            {activeTab === 'quality' && <RoutingQualityPanel projectId={projectId || undefined} />}
             {activeTab === 'export' && <ExportPanel />}
           </div>
         </div>

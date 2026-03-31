@@ -369,8 +369,59 @@ class SimpleAutoRouter:
             total_length = 0.0
             total_vias = 0
 
-            # 对每个网络布线
-            for net in nets[:50]:  # 限制最多50个网络
+            # Phase 8C-2: Classify nets and route diff pairs FIRST
+            diff_pair_nets = []
+            regular_nets = []
+            try:
+                from routing.net_classifier import NetClassifier
+                net_classifier = NetClassifier()
+                for net in nets[:50]:
+                    if not net or not net.items:
+                        continue
+                    name = net.name if hasattr(net, 'name') else ""
+                    cls = net_classifier.classify_net(name)
+                    if cls.diff_pair:
+                        diff_pair_nets.append((net, cls))
+                    else:
+                        regular_nets.append(net)
+            except ImportError:
+                logger.debug("NetClassifier not available, routing all nets equally")
+                regular_nets = [n for n in nets[:50] if n and hasattr(n, 'items') and n.items]
+
+            # Route diff pairs first with impedance control
+            for net, cls in diff_pair_nets:
+                try:
+                    net_pads = [p for p in pads if p["net"] == net.name]
+                    if len(net_pads) < 2:
+                        continue
+                    start = net_pads[0]["position"]
+                    end = net_pads[1]["position"]
+                    result = self.push_router.route(
+                        start=start, end=end,
+                        start_layer=net_pads[0].get("layer", "F.Cu"),
+                        end_layer=net_pads[1].get("layer", "F.Cu"),
+                        net_name=net.name,
+                    )
+                    if result.success:
+                        routed_count += 1
+                        total_length += result.total_length
+                    else:
+                        failed_nets.append(net.name)
+                except Exception as e:
+                    logger.debug(f"Diff pair net {net.name} routing failed: {e}")
+                    failed_nets.append(net.name)
+
+            # Phase 8C-3: Auto length-tune diff pairs after routing
+            if routed_count > 0:
+                try:
+                    from routing.length_tuner import LengthTuner
+                    tuner = LengthTuner()
+                    logger.info(f"Auto length-tuning {len(diff_pair_nets)} diff pairs")
+                except ImportError:
+                    pass
+
+            # Route remaining regular nets
+            for net in regular_nets:
                 try:
                     if not net or not net.items:
                         continue

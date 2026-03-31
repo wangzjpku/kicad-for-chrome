@@ -63,6 +63,10 @@ interface AIChatAssistantProps {
   defaultExpanded?: boolean;
   // 当前对话ID
   conversationId?: string;
+  // Phase 10C-2: Currently selected element IDs
+  selectedElementIds?: string[];
+  // Phase 10C-2: Currently highlighted net name
+  highlightedNet?: string;
 }
 
 // 构建欢迎消息，包含项目规格（元件列表）
@@ -98,7 +102,10 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   projectId,
   onModifySchematic,
   defaultExpanded = true,
-  conversationId
+  conversationId,
+  // Phase 10C-2: Selection context
+  selectedElementIds = [],
+  highlightedNet,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -924,7 +931,13 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       projectName: projectSpec?.name || '未知项目',
       components: componentsInfo,
       wires: wiresCount,
-      nets: netsInfo
+      nets: netsInfo,
+      // Phase 10C-2: Selection context
+      selectedElements: selectedElementIds.length > 0 ? selectedElementIds : undefined,
+      highlightedNet: highlightedNet || undefined,
+      selectionHint: selectedElementIds.length > 0
+        ? `用户当前选中了 ${selectedElementIds.length} 个元件: ${selectedElementIds.slice(0, 5).join(', ')}${selectedElementIds.length > 5 ? '...' : ''}`
+        : undefined,
     };
   };
 
