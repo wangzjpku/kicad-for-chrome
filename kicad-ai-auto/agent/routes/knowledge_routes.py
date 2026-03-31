@@ -366,6 +366,12 @@ async def list_typical_circuits():
     return {"success": True, "count": len(circuits), "circuits": sorted(list(circuits))}
 
 
+@router.get("/circuits")
+async def list_circuits_alias():
+    """列出所有典型电路(别名)"""
+    return await list_typical_circuits()
+
+
 @router.post("/reload")
 async def reload_knowledge():
     """重新加载知识库"""
@@ -379,6 +385,114 @@ async def reload_knowledge():
         }
     except Exception as e:
         logger.error(f"重新加载知识库失败: {e}")
+
+
+@router.get("/reload")
+async def reload_knowledge_get():
+    """重新加载知识库 (GET 别名)"""
+    return await reload_knowledge()
+
+
+@router.get("/footprints")
+async def list_knowledge_footprints():
+    """列出知识库中的封装库信息"""
+    try:
+        from routes.footprint_routes import list_footprint_libraries
+
+        libraries = list_footprint_libraries()
+        return {
+            "success": True,
+            "count": len(libraries),
+            "footprints": libraries,
+        }
+    except Exception as e:
+        logger.error(f"获取封装库失败: {e}")
+        return JSONResponse(
+            status_code=500, content={"success": False, "error": str(e)}
+        )
+
+
+@router.get("/symbols")
+async def list_knowledge_symbols():
+    """列出知识库中的符号库信息"""
+    try:
+        from routes.symbol_routes import get_symbol_search_engine
+
+        engine = get_symbol_search_engine()
+        categories = engine.get_categories()
+
+        # 获取所有符号
+        symbols = []
+        for cat in categories:
+            cat_symbols = engine.search_by_category(cat, limit=100)
+            for sym in cat_symbols:
+                symbols.append({
+                    "name": sym.get("name"),
+                    "library": sym.get("library"),
+                    "category": cat.value if hasattr(cat, 'value') else str(cat),
+                })
+
+        return {
+            "success": True,
+            "count": len(symbols),
+            "categories": [c.value if hasattr(c, 'value') else str(c) for c in categories],
+            "symbols": symbols[:500],  # 限制返回数量
+        }
+    except Exception as e:
+        logger.error(f"获取符号库失败: {e}")
+        return JSONResponse(
+            status_code=500, content={"success": False, "error": str(e)}
+        )
+
+
+@router.get("/search")
+async def search_knowledge(
+    q: str = Query(..., description="搜索关键词"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+):
+    """知识库综合搜索"""
+    try:
+        db = get_component_db()
+        components = db.get("components", {})
+
+        keyword_lower = q.lower()
+        results = []
+
+        for name, data in components.items():
+            score = 0
+            name_lower = name.lower()
+
+            # 匹配计算
+            if keyword_lower == name_lower:
+                score = 100
+            elif name_lower.startswith(keyword_lower):
+                score = 80
+            elif keyword_lower in name_lower:
+                score = 60
+
+            if score > 0:
+                results.append({
+                    "name": name,
+                    "type": "component",
+                    "symbol_library": data.get("symbol_library"),
+                    "footprint": data.get("footprint"),
+                    "score": score,
+                })
+
+        # 按分数排序
+        results.sort(key=lambda x: x["score"], reverse=True)
+
+        return {
+            "success": True,
+            "query": q,
+            "count": len(results[:limit]),
+            "results": results[:limit],
+        }
+    except Exception as e:
+        logger.error(f"知识库搜索失败: {e}")
+        return JSONResponse(
+            status_code=500, content={"success": False, "error": str(e)}
+        )
 
 
 @router.get("/recommend")

@@ -744,6 +744,48 @@ async def netlist_health():
     }
 
 
+@router.post("/parse")
+async def parse_netlist(
+    schematic_data: dict = Body(...),
+    project_id: str = Body(None),
+):
+    """
+    解析网表数据
+
+    接受原理图数据 JSON，返回网表信息
+    """
+    try:
+        parser = _get_schematic_parser()
+
+        # 如果提供了项目ID，尝试从项目数据获取
+        if project_id:
+            from routes.project_routes import get_schematic_data
+            sch_data = get_schematic_data(project_id)
+            if sch_data:
+                schematic_data = sch_data
+
+        # 解析数据
+        if isinstance(schematic_data, dict):
+            result = schematic_data
+        else:
+            result = {"components": [], "nets": []}
+
+        # 提取元件和网络
+        components = result.get("components", [])
+        nets = result.get("nets", [])
+
+        return {
+            "success": True,
+            "components_count": len(components),
+            "nets_count": len(nets),
+            "components": components,
+            "nets": nets,
+        }
+    except Exception as e:
+        logger.error(f"解析网表失败: {e}")
+        raise HTTPException(status_code=500, detail=f"解析失败: {str(e)}")
+
+
 @router.post("/parse-schematic")
 async def parse_schematic(file: UploadFile = File(...)):
     """

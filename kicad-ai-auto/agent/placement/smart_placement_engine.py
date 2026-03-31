@@ -112,24 +112,170 @@ class SmartPlacementEngine:
         self.min_spacing_relax = 0.5
         logger.info(f"SmartPlacementEngine: {board_width}x{board_height}mm")
 
-    def place(self, components, constraints=None):
-        """执行智能布局"""
-        logger.info(f"Placing {len(components)} components")
+    def place(self, components, constraints=None, smps_mode=False):
+        """
+        执行智能布局
+
+        Args:
+            components: 组件列表
+            constraints: 布局约束列表
+            smps_mode: 是否启用SMPS安全隔离布局模式
+        """
+        logger.info(f"Placing {len(components)} components (smps_mode={smps_mode})")
 
         self._categorize_components(components)
         self._identify_special_components(components)
         edge_comps, inner_comps = self._separate_edge_components(components)
 
-        inner_pos = self._shelf_packing(inner_comps)
-        edge_pos = self._place_edge_components(edge_comps)
+        if smps_mode:
+            # SMPS mode: separate primary/secondary sides with isolation zone
+            all_pos = self._smps_placement(components, edge_comps, inner_comps)
+        else:
+            inner_pos = self._shelf_packing(inner_comps)
+            edge_pos = self._place_edge_components(edge_comps)
+            all_pos = {**inner_pos, **edge_pos}
 
-        all_pos = {**inner_pos, **edge_pos}
         all_pos = self._force_directed_relaxation(all_pos, components)
         all_pos = self._compact_layout(all_pos, components)
 
         score, violations, stats = self._evaluate_layout(all_pos, components)
 
+        if smps_mode:
+            stats["smps_isolation"] = True
+            stats["isolation_boundary_y"] = self._isolation_boundary_y
+
         return PlacementResult(positions=all_pos, score=score, violations=violations, statistics=stats)
+
+    def _smps_placement(self, all_components, edge_comps, inner_comps):
+        """
+        SMPS安全隔离布局：将元件分为初级侧/次级侧，
+        在中间留出安全隔离区域。
+
+        初级侧放底部，次级侧放顶部，中间为隔离带。
+        """
+        from schematic.safety_zone_identifier import SafetyZoneIdentifier, SafetyZone
+
+        identifier = SafetyZoneIdentifier()
+        comp_dicts = [
+            {
+                "reference": c.reference,
+                "type": c.value or c.footprint,
+                "value": c.value,
+                "y": 0,
+            }
+            for c in all_components
+        ]
+        zone_result = identifier.identify_zones(comp_dicts)
+
+        # Calculate isolation zone
+        isolation_band = max(zone_result.creepage_required, zone_result.clearance_required)
+        isolation_band = max(isolation_band, 4.0)  # Minimum 4mm
+
+        # Board layout: primary (bottom) | isolation band | secondary (top)
+        primary_height = (self.board_height - isolation_band) / 2
+        secondary_start_y = primary_height + isolation_band
+
+        self._isolation_boundary_y = primary_height + isolation_band / 2
+
+        # Classify inner components
+        primary_inner = []
+        secondary_inner = []
+        isolation_inner = []
+
+        primary_refs = {c.reference for c in zone_result.primary_components}
+        secondary_refs = {c.reference for c in zone_result.secondary_components}
+        isolation_refs = {c.reference for c in zone_result.isolation_components}
+
+        for c in inner_comps:
+            if c.reference in primary_refs:
+                primary_inner.append(c)
+            elif c.reference in secondary_refs:
+                secondary_inner.append(c)
+            elif c.reference in isolation_refs:
+                isolation_inner.append(c)
+            else:
+                # Unknown - use heuristic: power keywords → primary
+                val = (c.value or "").upper()
+                if any(kw in val for kw in ["400V", "250V", "AC", "MAINS", "BRIDGE", "PWM"]):
+                    primary_inner.append(c)
+                else:
+                    secondary_inner.append(c)
+
+        # Place primary components in bottom zone
+        primary_pos = self._shelf_packing_in_zone(
+            primary_inner,
+            y_start=self.margin,
+            y_end=primary_height - self.margin,
+        )
+
+        # Place isolation components in the middle
+        isolation_pos = self._shelf_packing_in_zone(
+            isolation_inner,
+            y_start=primary_height,
+            y_end=secondary_start_y,
+        )
+
+        # Place secondary components in top zone
+        secondary_pos = self._shelf_packing_in_zone(
+            secondary_inner,
+            y_start=secondary_start_y + self.margin,
+            y_end=self.board_height - self.margin,
+        )
+
+        # Edge components
+        edge_pos = self._place_edge_components(edge_comps)
+
+        all_pos = {**primary_pos, **isolation_pos, **secondary_pos, **edge_pos}
+
+        logger.info(
+            f"SMPS layout: primary={len(primary_inner)}, "
+            f"secondary={len(secondary_inner)}, "
+            f"isolation={len(isolation_inner)}, "
+            f"band={isolation_band:.1f}mm"
+        )
+
+        return all_pos
+
+    def _shelf_packing_in_zone(self, components, y_start, y_end):
+        """在指定Y区域范围内执行shelf packing"""
+        if not components:
+            return {}
+
+        zone_height = y_end - y_start
+        if zone_height <= 0:
+            return {}
+
+        sorted_comps = sorted(
+            components,
+            key=lambda c: (
+                self.CATEGORY_PRIORITY.get(c.category, 99),
+                -c.width * c.height,
+                c.reference
+            )
+        )
+
+        positions = {}
+        x, y, row_h = self.margin, y_start, 0
+
+        for c in sorted_comps:
+            if x + c.width > self.board_width - self.margin:
+                x = self.margin
+                y += row_h + self.spacing
+                row_h = 0
+
+            if y + c.height > y_end:
+                # Zone overflow - just place anyway
+                y = y_start
+
+            positions[c.reference] = {
+                "x": x + c.width / 2,
+                "y": y + c.height / 2,
+                "rotation": 0
+            }
+            x += c.width + self.spacing
+            row_h = max(row_h, c.height)
+
+        return positions
 
     def _categorize_components(self, components):
         for c in components:

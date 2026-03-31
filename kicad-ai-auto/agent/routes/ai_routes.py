@@ -13,8 +13,8 @@ _deprecated_path = Path(__file__).parent.parent / "deprecated"
 if str(_deprecated_path) not in sys.path:
     sys.path.insert(0, str(_deprecated_path))
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -40,6 +40,13 @@ from schematic_generator import generate_standard_schematic, SchematicGenerator
 
 # Import Token management
 from models.user import deduct_token
+from models.conversation import (
+    get_conversation_db,
+    generate_conv_id,
+    Conversation,
+    ChatMessage as ConvChatMessage,
+)
+from services.context_builder import build_project_context
 
 # Import smart footprint finder
 from smart_footprint_finder import find_footprint, get_footprint_finder
@@ -57,6 +64,9 @@ from placement.smart_placement_engine import (
     Component as PlacementComponent,
     create_components_from_schematic,
 )
+
+# 导入 SPICE 仿真器
+from simulator.spice_simulator import SpiceSimulator, SimulationResult
 
 # 导入智能布线引擎
 from routing.routing_engine import (
@@ -389,12 +399,70 @@ class SchematicData(BaseModel):
     powerSymbols: List[PowerSymbol] = []  # 添加电源符号
 
 
+def _run_simulation(schematic_data: Dict[str, Any], circuit_type: str = "general") -> Optional[Dict[str, Any]]:
+    """
+    对生成的原理图运行 SPICE 仿真
+
+    Args:
+        schematic_data: 原理图数据
+        circuit_type: 电路类型
+
+    Returns:
+        仿真结果字典，如果仿真失败则返回 None
+    """
+    try:
+        # 根据电路类型选择仿真分析
+        if circuit_type in ["power_supply", "regulator"]:
+            analysis_type = "dc_op"
+            parameters = {}
+        elif circuit_type in ["amplifier", "filter"]:
+            analysis_type = "ac"
+            parameters = {"fstart": 1, "fstop": "10k", "points": 50}
+        elif circuit_type in ["oscillator", "555", "timer"]:
+            analysis_type = "tran"
+            parameters = {"tstop": 0.01, "tstep": 0.0001}
+        else:
+            # 默认使用瞬态分析
+            analysis_type = "tran"
+            parameters = {"tstop": 0.001, "tstep": 0.00001}
+
+        # 构建仿真器输入
+        sim_schematic = {
+            "components": schematic_data.get("components", []),
+            "nets": schematic_data.get("nets", []),
+        }
+
+        # 运行仿真
+        simulator = SpiceSimulator()
+        result = simulator.simulate(sim_schematic, analysis_type, parameters)
+
+        if result.success:
+            logger.info(f"仿真成功: {analysis_type}")
+            return {
+                "success": True,
+                "analysis_type": analysis_type,
+                "data": result.data,
+                "parameters": result.parameters,
+            }
+        else:
+            logger.warning(f"仿真失败: {result.error_message}")
+            return {
+                "success": False,
+                "analysis_type": analysis_type,
+                "error": result.error_message,
+            }
+    except Exception as e:
+        logger.error(f"仿真异常: {e}")
+        return None
+
+
 class AnalyzeResponse(BaseModel):
     token_used: Optional[int] = None  # 真实Token消耗
     model_used: Optional[str] = None  # 使用的模型
     spec: ProjectSpec
     schematic: SchematicData
     pcb: Optional[Dict[str, Any]] = None  # PCB 数据（可选）
+    simulation_result: Optional[Dict[str, Any]] = None  # SPICE 仿真结果
 
 
 def _generate_dynamic_project(
@@ -936,7 +1004,7 @@ def _get_footprint_for_component(comp: ComponentSpec) -> str:
 
 # 模拟 AI 分析结果 - 实际项目中会调用 Claude/OpenAI API
 def mock_ai_analyze(
-    requirements: str, answers: Optional[Dict[str, str]] = None
+    requirements: str, answers: Optional[Dict[str, str]] = None, mode: str = "full"
 ) -> AnalyzeResponse:
     """模拟 AI 分析 - 实际项目中替换为真实 AI 调用"""
     import logging
@@ -1721,8 +1789,21 @@ def mock_ai_analyze(
     # 模拟AI生成，固定消耗500 token
     mock_token_used = 500
 
+    # mode="full" 时也生成 PCB 数据
+    pcb_result = None
+    if mode in ("full", "pcb_only"):
+        try:
+            pcb_data = generate_pcb_layout(
+                schematic.model_dump() if hasattr(schematic, 'model_dump') else schematic.dict(),
+                {"width": 80, "height": 60, "layers": 2}
+            )
+            pcb_result = pcb_data.model_dump() if hasattr(pcb_data, 'model_dump') else pcb_data.dict()
+            logger.info(f"Mock PCB 生成成功: {pcb_data.width}x{pcb_data.height}mm, {len(pcb_data.components)} 个元件")
+        except Exception as e:
+            logger.warning(f"Mock PCB 生成失败 (非致命): {e}")
+
     return AnalyzeResponse(
-        spec=spec, schematic=schematic, token_used=mock_token_used, model_used="mock"
+        spec=spec, schematic=schematic, pcb=pcb_result, token_used=mock_token_used, model_used="mock"
     )
 
 
@@ -2568,7 +2649,7 @@ async def analyze_requirements(request: AnalyzeRequest):
         # 如果匹配到已知模板，跳过 AI 调用直接使用 mock 实现
         if matched_template:
             logger.info(f"检测到模板关键词 '{matched_template}'，跳过 AI 调用")
-            return mock_ai_analyze(request.requirements, request.answers)
+            return mock_ai_analyze(request.requirements, request.answers, mode=mode)
 
         # 优先使用 GLM-4 大模型
         # 优先使用 Kimi 大模型
@@ -2873,11 +2954,15 @@ async def analyze_requirements(request: AnalyzeRequest):
                 except Exception as e:
                     logger.error(f"记录Token消耗失败: {e}")
 
+                # 运行 SPICE 仿真
+                simulation_result = _run_simulation(generated_schematic, circuit_type)
+
                 return AnalyzeResponse(
                     spec=spec,
                     schematic=schematic,
                     token_used=token_used,
                     model_used="kimi",
+                    simulation_result=simulation_result,
                 )
             except Exception as glm_error:
                 # Kimi调用失败，记录详细错误信息
@@ -2966,7 +3051,9 @@ async def analyze_requirements(request: AnalyzeRequest):
                             components=schematic_components, wires=schematic_wires, nets=schematic_nets,
                             netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
                         )
-                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4")
+                        # 运行 SPICE 仿真
+                        simulation_result = _run_simulation(generated_schematic, circuit_type)
+                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4", simulation_result=simulation_result)
                     except Exception as glm_err:
                         logger.warning(f"GLM-4 也失败: {glm_err}，尝试 DeepSeek...")
                 else:
@@ -3049,14 +3136,16 @@ async def analyze_requirements(request: AnalyzeRequest):
                             components=schematic_components, wires=schematic_wires, nets=schematic_nets,
                             netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
                         )
-                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek")
+                        # 运行 SPICE 仿真
+                        simulation_result = _run_simulation(generated_schematic, circuit_type)
+                        return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek", simulation_result=simulation_result)
                     except Exception as deepseek_err:
                         logger.warning(f"DeepSeek 也失败: {deepseek_err}，回退到模拟AI...")
 
                 # 所有AI提供器都失败，回退到mock
                 logger.warning("所有AI提供器都失败，回退到模拟AI分析...")
                 try:
-                    result = mock_ai_analyze(request.requirements, request.answers)
+                    result = mock_ai_analyze(request.requirements, request.answers, mode=mode)
                     logger.warning("回退到模拟AI分析成功")
                     return result
                 except Exception as mock_err:
@@ -3146,7 +3235,10 @@ async def analyze_requirements(request: AnalyzeRequest):
                         components=schematic_components, wires=schematic_wires, nets=schematic_nets,
                         netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
                     )
-                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4")
+                    # 运行 SPICE 仿真验证电路
+                    schematic_dict = schematic.model_dump() if hasattr(schematic, 'model_dump') else schematic
+                    simulation_result = _run_simulation(schematic_dict, circuit_type)
+                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="glm4", simulation_result=simulation_result)
                 except Exception as glm_err:
                     logger.warning(f"GLM-4 调用失败: {glm_err}，尝试 DeepSeek...")
             else:
@@ -3229,13 +3321,16 @@ async def analyze_requirements(request: AnalyzeRequest):
                         components=schematic_components, wires=schematic_wires, nets=schematic_nets,
                         netLabels=schematic_net_labels, powerSymbols=schematic_power_symbols,
                     )
-                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek")
+                    # 运行 SPICE 仿真验证电路
+                    schematic_dict = schematic.model_dump() if hasattr(schematic, 'model_dump') else schematic
+                    simulation_result = _run_simulation(schematic_dict, circuit_type)
+                    return AnalyzeResponse(spec=spec, schematic=schematic, token_used=token_used, model_used="deepseek", simulation_result=simulation_result)
                 except Exception as deepseek_err:
                     logger.warning(f"DeepSeek 调用失败: {deepseek_err}，回退到模拟AI分析...")
             else:
                 logger.warning("DeepSeek 也不可用，使用模拟AI分析")
 
-            result = mock_ai_analyze(request.requirements, request.answers)
+            result = mock_ai_analyze(request.requirements, request.answers, mode=mode)
             return result
     except Exception as e:
         # 发生任何异常
@@ -3243,11 +3338,117 @@ async def analyze_requirements(request: AnalyzeRequest):
         logger.error(f"AI分析发生异常: {error_msg}")
         try:
             logger.warning("发生异常，回退到模拟AI分析")
-            result = mock_ai_analyze(request.requirements, request.answers)
+            result = mock_ai_analyze(request.requirements, request.answers, mode=mode)
             return result
         except Exception as mock_error:
             logger.error(f"模拟AI分析也失败: {mock_error}")
             raise HTTPException(status_code=500, detail=f"AI分析失败: {error_msg}")
+
+
+@router.get("/models")
+async def list_ai_models():
+    """获取可用的 AI 模型列表"""
+    models = []
+
+    # 检查各模型可用性
+    if is_kimi_available():
+        models.append({
+            "id": "kimi",
+            "name": "Kimi (月之暗面)",
+            "provider": "Moonshot",
+            "status": "available",
+            "capabilities": ["analyze", "enhance", "chat"]
+        })
+
+    if is_glm4_available():
+        models.append({
+            "id": "glm4",
+            "name": "GLM-4 (智谱AI)",
+            "provider": "Zhipu",
+            "status": "available",
+            "capabilities": ["analyze", "enhance", "chat"]
+        })
+
+    if is_deepseek_available():
+        models.append({
+            "id": "deepseek",
+            "name": "DeepSeek",
+            "provider": "DeepSeek",
+            "status": "available",
+            "capabilities": ["analyze", "enhance", "chat"]
+        })
+
+    # 如果没有可用模型，返回默认列表
+    if not models:
+        models = [
+            {"id": "kimi", "name": "Kimi", "provider": "Moonshot", "status": "unavailable", "capabilities": []},
+            {"id": "glm4", "name": "GLM-4", "provider": "Zhipu", "status": "unavailable", "capabilities": []},
+            {"id": "deepseek", "name": "DeepSeek", "provider": "DeepSeek", "status": "unavailable", "capabilities": []},
+        ]
+
+    return {
+        "success": True,
+        "models": models,
+        "default": "kimi" if is_kimi_available() else ("glm4" if is_glm4_available() else "deepseek")
+    }
+
+
+@router.get("/templates")
+async def list_ai_templates():
+    """获取 AI 设计模板列表"""
+    templates = [
+        {
+            "id": "basic_led",
+            "name": "基础LED电路",
+            "name_cn": "基础LED电路",
+            "description": "包含限流电阻的简单LED电路",
+            "category": "基础电路",
+            "components": ["LED", "Resistor"],
+            "difficulty": "入门"
+        },
+        {
+            "id": "power_supply_5v",
+            "name": "5V稳压电源",
+            "name_cn": "5V稳压电源",
+            "description": "使用7805的5V稳压电源电路",
+            "category": "电源电路",
+            "components": ["7805", "Capacitor", "LED", "Resistor"],
+            "difficulty": "入门"
+        },
+        {
+            "id": "esp32_devkit",
+            "name": "ESP32开发板",
+            "name_cn": "ESP32开发板",
+            "description": "ESP32最小系统板",
+            "category": "MCU开发板",
+            "components": ["ESP32", "CP2102", "LED", "Resistor", "Capacitor"],
+            "difficulty": "进阶"
+        },
+        {
+            "id": "stm32_mini",
+            "name": "STM32最小系统",
+            "name_cn": "STM32最小系统",
+            "description": "STM32F103C8T6最小系统板",
+            "category": "MCU开发板",
+            "components": ["STM32F103", "LED", "Resistor", "Capacitor", "Crystal"],
+            "difficulty": "进阶"
+        },
+        {
+            "id": "usb_uart",
+            "name": "USB转串口",
+            "name_cn": "USB转串口",
+            "description": "CH340C USB转串口模块",
+            "category": "接口电路",
+            "components": ["CH340C", "LED", "Resistor", "Capacitor", "USB"],
+            "difficulty": "入门"
+        },
+    ]
+
+    return {
+        "success": True,
+        "templates": templates,
+        "count": len(templates)
+    }
 
 
 @router.get("/health")
@@ -3360,6 +3561,52 @@ async def search_footprints(keyword: str, limit: int = 20):
 # ========== AI 聊天助手 API ==========
 
 
+def _save_chat_conversation(
+    request: ChatRequest,
+    ai_response: str,
+    conversation_id: Optional[str] = None,
+    user_id: int = 1,
+) -> str:
+    """
+    保存聊天对话到持久化存储
+
+    Returns:
+        conversation_id: 对话ID（新建或现有的）
+    """
+    try:
+        db = get_conversation_db()
+
+        # 获取或创建对话
+        if conversation_id:
+            conv = db.get_conversation(conversation_id)
+            if not conv:
+                conv = Conversation(
+                    id=conversation_id,
+                    user_id=user_id,
+                    title=request.message[:50] if request.message else "新对话",
+                )
+        else:
+            conv = Conversation(
+                id=generate_conv_id(),
+                user_id=user_id,
+                title=request.message[:50] if request.message else "新对话",
+            )
+
+        # 添加用户消息
+        conv.messages.append(ConvChatMessage(role="user", content=request.message))
+
+        # 添加AI回复
+        conv.messages.append(ConvChatMessage(role="assistant", content=ai_response))
+
+        # 保存
+        db.save_conversation(conv)
+
+        return conv.id
+    except Exception as e:
+        logger.warning(f"保存对话失败: {e}")
+        return conversation_id or ""
+
+
 class ChatMessage(BaseModel):
     role: str = "user"
     content: str
@@ -3369,12 +3616,14 @@ class ChatRequest(BaseModel):
     message: str
     context: Optional[Dict[str, Any]] = None
     history: Optional[List[ChatMessage]] = []
+    conversation_id: Optional[str] = None  # 对话ID，用于持久化
 
 
 class ChatResponse(BaseModel):
     response: str
     actions: Optional[List[Dict[str, str]]] = None
     modifications: Optional[List[Dict[str, Any]]] = None
+    conversation_id: Optional[str] = None  # 返回对话ID
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -3418,21 +3667,42 @@ async def chat_with_ai(request: ChatRequest):
 
                 # 构建上下文描述
                 context_desc = ""
+                project_id = ""
+
                 if request.context:
-                    context_desc = f"\n\n当前原理图信息：\n"
-                    context_desc += (
-                        f"项目：{request.context.get('projectName', '未知')}\n"
-                    )
-                    if request.context.get("components"):
-                        context_desc += (
-                            f"元件数量：{len(request.context['components'])}\n"
-                        )
-                        for i, comp in enumerate(request.context["components"][:5]):
-                            context_desc += f"  - {comp.get('name', '?')} ({comp.get('model', '?')})\n"
-                    if request.context.get("nets"):
-                        context_desc += (
-                            f"网络：{', '.join(request.context['nets'][:10])}\n"
-                        )
+                    project_id = request.context.get('projectId', '')
+
+                    # 优先使用增强的上下文构建器
+                    if project_id:
+                        try:
+                            # 尝试从项目数据构建增强上下文
+                            project_name = request.context.get('projectName', '未知项目')
+                            schematic_data = request.context.get('schematic')
+                            pcb_data = request.context.get('pcb')
+
+                            context_desc = build_project_context(
+                                project_id=project_id,
+                                schematic_data=schematic_data,
+                                pcb_data=pcb_data,
+                                project_name=project_name,
+                            )
+                        except Exception as e:
+                            logger.warning(f"增强上下文构建失败: {e}")
+                            # 降级到简单上下文
+                            ctx = request.context
+                            context_desc = f"\n\n当前原理图信息：\n项目：{ctx.get('projectName', '未知')}\n"
+                            if ctx.get("components"):
+                                context_desc += f"元件数量：{len(ctx['components'])}\n"
+                            if ctx.get("nets"):
+                                context_desc += f"网络：{', '.join(ctx['nets'][:10])}\n"
+                    else:
+                        # 简单上下文
+                        ctx = request.context
+                        context_desc = f"\n\n当前原理图信息：\n项目：{ctx.get('projectName', '未知')}\n"
+                        if ctx.get("components"):
+                            context_desc += f"元件数量：{len(ctx['components'])}\n"
+                        if ctx.get("nets"):
+                            context_desc += f"网络：{', '.join(ctx['nets'][:10])}\n"
 
                 # 构建历史对话
                 history_text = ""
@@ -3475,10 +3745,15 @@ async def chat_with_ai(request: ChatRequest):
                         }
                     )
 
+                # 保存对话并返回conversation_id
+                conv_id = _save_chat_conversation(
+                    request, ai_response, request.conversation_id
+                )
                 return ChatResponse(
                     response=ai_response,
                     actions=actions if actions else None,
                     modifications=modifications,
+                    conversation_id=conv_id,
                 )
 
             except Exception as glm_error:
@@ -3492,11 +3767,119 @@ async def chat_with_ai(request: ChatRequest):
 
     except Exception as e:
         logger.error(f"AI 聊天失败: {e}")
+        error_response = f"抱歉，处理您的请求时出错：{str(e)}"
+        conv_id = _save_chat_conversation(
+            request, error_response, request.conversation_id
+        )
         return ChatResponse(
-            response=f"抱歉，处理您的请求时出错：{str(e)}",
+            response=error_response,
             actions=None,
             modifications=None,
+            conversation_id=conv_id,
         )
+
+
+# ========== 对话管理 API ==========
+
+
+class ConversationListResponse(BaseModel):
+    """对话列表响应"""
+    conversations: List[Dict[str, Any]]
+    total: int
+
+
+class ConversationDetailResponse(BaseModel):
+    """对话详情响应"""
+    id: str
+    title: str
+    messages: List[Dict[str, Any]]
+    created_at: str
+    updated_at: str
+    model: str
+
+
+@router.get("/conversations", response_model=ConversationListResponse)
+async def list_conversations(
+    user_id: int = Query(1, description="用户ID"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+):
+    """列出用户的所有对话"""
+    db = get_conversation_db()
+    conversations = db.list_conversations(user_id, limit, offset)
+
+    return ConversationListResponse(
+        conversations=[
+            {
+                "id": c.id,
+                "title": c.title,
+                "message_count": len(c.messages),
+                "created_at": c.created_at,
+                "updated_at": c.updated_at,
+                "model": c.model,
+            }
+            for c in conversations
+        ],
+        total=len(conversations),
+    )
+
+
+@router.get("/conversations/{conversation_id}", response_model=ConversationDetailResponse)
+async def get_conversation(conversation_id: str):
+    """获取对话详情"""
+    db = get_conversation_db()
+    conv = db.get_conversation(conversation_id)
+
+    if not conv:
+        raise HTTPException(status_code=404, detail="对话未找到")
+
+    return ConversationDetailResponse(
+        id=conv.id,
+        title=conv.title,
+        messages=[m.to_dict() for m in conv.messages],
+        created_at=conv.created_at,
+        updated_at=conv.updated_at,
+        model=conv.model,
+    )
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """删除对话"""
+    db = get_conversation_db()
+    success = db.delete_conversation(conversation_id)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="删除失败")
+
+    return {"success": True, "message": "对话已删除"}
+
+
+@router.get("/conversations/search")
+async def search_conversations(
+    keyword: str = Query(..., description="搜索关键词"),
+    user_id: int = Query(1, description="用户ID"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+):
+    """搜索对话"""
+    db = get_conversation_db()
+    conversations = db.search_conversations(user_id, keyword, limit)
+
+    return {
+        "success": True,
+        "keyword": keyword,
+        "conversations": [
+            {
+                "id": c.id,
+                "title": c.title,
+                "message_count": len(c.messages),
+                "created_at": c.created_at,
+                "updated_at": c.updated_at,
+            }
+            for c in conversations
+        ],
+        "count": len(conversations),
+    }
 
 
 def mock_chat_response(request: ChatRequest) -> ChatResponse:
@@ -3792,8 +4175,156 @@ def mock_chat_response(request: ChatRequest) -> ChatResponse:
         response += '• "删除电容C3"\n'
         response += '• "在电源处添加一个100uF电容"'
 
+    # 保存对话并返回conversation_id
+    conv_id = _save_chat_conversation(
+        request, response, request.conversation_id
+    )
     return ChatResponse(
         response=response,
         actions=actions if actions else None,
         modifications=modifications,
+        conversation_id=conv_id,
+    )
+
+
+# ============== Phase 10C: SSE Streaming Chat Endpoint ==============
+
+@router.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """
+    SSE streaming version of /chat.
+
+    Returns Server-Sent Events with incremental tokens,
+    giving the user immediate feedback as the AI generates its response.
+    """
+    import asyncio
+
+    async def generate():
+        logger.info(f"SSE chat stream: {request.message[:50]}...")
+
+        # Build context (same logic as /chat)
+        context_desc = ""
+        project_id = ""
+
+        if request.context:
+            project_id = request.context.get('projectId', '')
+            if project_id:
+                try:
+                    project_name = request.context.get('projectName', '未知项目')
+                    schematic_data = request.context.get('schematic')
+                    pcb_data = request.context.get('pcb')
+
+                    context_desc = build_project_context(
+                        project_id=project_id,
+                        schematic_data=schematic_data,
+                        pcb_data=pcb_data,
+                        project_name=project_name,
+                    )
+
+                    # Phase 10C: Enhanced context with DRC state
+                    drc_state = request.context.get('drc_state')
+                    if drc_state:
+                        error_count = drc_state.get('error_count', 0)
+                        warning_count = drc_state.get('warning_count', 0)
+                        if error_count > 0 or warning_count > 0:
+                            context_desc += f"\n\n【DRC状态】\n"
+                            context_desc += f"错误: {error_count}, 警告: {warning_count}\n"
+                            top_violations = drc_state.get('top_violations', [])
+                            for v in top_violations[:5]:
+                                context_desc += f"  - {v}\n"
+
+                    # Phase 10C: Layout state
+                    layout_state = request.context.get('layout_state')
+                    if layout_state:
+                        context_desc += f"\n\n【布局状态】\n"
+                        context_desc += f"密度: {layout_state.get('density', 'N/A')}\n"
+                        context_desc += f"布线完成: {layout_state.get('routing_pct', 'N/A')}%\n"
+
+                except Exception as e:
+                    logger.warning(f"SSE context build failed: {e}")
+
+        # Build messages
+        messages = [{
+            "role": "system",
+            "content": "你是一个专业的电路设计助手。用中文回答，简洁专业。帮助用户进行PCB设计修改和优化。"
+        }]
+
+        if request.history:
+            for h in request.history[-10:]:
+                messages.append({
+                    "role": h.get("role", "user"),
+                    "content": h.get("content", "")
+                })
+
+        user_msg = request.message
+        if context_desc:
+            user_msg = f"{context_desc}\n\n用户问题：{request.message}"
+
+        messages.append({"role": "user", "content": user_msg})
+
+        # Try Kimi first, then fallback
+        full_response = ""
+
+        if is_kimi_available():
+            try:
+                client = get_kimi_client()
+                # Kimi doesn't support native streaming, so simulate it
+                result = client.chat(
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=2048,
+                )
+                full_response = result
+
+                # Send in chunks to simulate streaming
+                chunk_size = 20
+                for i in range(0, len(full_response), chunk_size):
+                    chunk = full_response[i:i + chunk_size]
+                    data = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+                    await asyncio.sleep(0.02)
+
+            except Exception as e:
+                logger.error(f"Kimi streaming failed: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'content': str(e)}, ensure_ascii=False)}\n\n"
+
+        elif is_glm4_available():
+            try:
+                client = get_glm4_client()
+                result = client.chat(
+                    messages=messages,
+                    temperature=0.7,
+                )
+                full_response = result
+
+                chunk_size = 20
+                for i in range(0, len(full_response), chunk_size):
+                    chunk = full_response[i:i + chunk_size]
+                    data = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+                    await asyncio.sleep(0.02)
+
+            except Exception as e:
+                logger.error(f"GLM-4 streaming failed: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'content': str(e)}, ensure_ascii=False)}\n\n"
+
+        else:
+            full_response = "AI 服务暂不可用，请稍后重试。"
+            yield f"data: {json.dumps({'type': 'token', 'content': full_response}, ensure_ascii=False)}\n\n"
+
+        # Save conversation
+        _save_chat_conversation(request, full_response, request.conversation_id)
+
+        # Send done event
+        conv_id = request.conversation_id or ""
+        yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )

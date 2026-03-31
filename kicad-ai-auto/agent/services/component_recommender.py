@@ -65,11 +65,11 @@ class ComponentRecommender:
     # Common component mappings
     COMPONENT_PATTERNS = {
         # Connectors
-        r"usb.*type.?c": {
+        r"usb.*type.?c|type.?c.*usb|usb.?c\s": {
             "symbols": ["Connector:USB_C_Receptacle"],
             "footprints": ["Connector_USB:USB_C_Receptacle"]
         },
-        r"usb.*type.?a": {
+        r"usb.*type.?a|type.?a.*usb": {
             "symbols": ["Connector:USB_A"],
             "footprints": ["Connector_USB:USB_A"]
         },
@@ -83,11 +83,11 @@ class ComponentRecommender:
         },
 
         # Power
-        r"5v.*regulator|regulator.*5v|lm7805|ldo.*5v": {
+        r"5v.*regulator|regulator.*5v|lm7805|ldo.*5v|5v.*稳压|稳压.*5v": {
             "symbols": ["Regulator_Linear:LM7805"],
             "footprints": ["Package_TO_SOT_THT:TO-220-3_Horizontal"]
         },
-        r"3\.3v.*regulator|regulator.*3\.3v|ams1117.*3\.3": {
+        r"3\.3v.*regulator|regulator.*3\.3v|ams1117.*3\.3|3\.3v.*稳压|稳压.*3\.3v|稳压器.*3\.3|3\.3.*稳压": {
             "symbols": ["Regulator_Linear:AMS1117-3.3"],
             "footprints": ["Package_TO_SOT_THT:SOT-223-3_TabPin2"]
         },
@@ -97,39 +97,39 @@ class ComponentRecommender:
         },
 
         # Passives
-        r"resistor|r\s*$": {
+        r"resistor|r\s*$|电阻": {
             "symbols": ["Device:R"],
             "footprints": ["Resistor_SMD:R_0805"]
         },
-        r"capacitor|c\s*$": {
+        r"capacitor|c\s*$|电容": {
             "symbols": ["Device:C"],
             "footprints": ["Capacitor_SMD:C_0805"]
         },
-        r"electrolytic.*capacitor|cap.*electrolytic": {
+        r"electrolytic.*capacitor|cap.*electrolytic|电解电容|滤波电容": {
             "symbols": ["Device:C"],
             "footprints": ["Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"]
         },
-        r"inductor|l\s*$": {
+        r"inductor|l\s*$|电感": {
             "symbols": ["Device:L"],
             "footprints": ["Inductor_SMD:L_0805"]
         },
 
         # Semiconductors
-        r"led": {
+        r"led|发光二极管": {
             "symbols": ["Device:LED"],
             "footprints": ["LED_SMD:LED_0805"]
         },
-        r"diode|1n4148|1n4007": {
+        r"diode|1n4148|1n4007|二极管": {
             "symbols": ["Device:D"],
             "footprints": ["Diode_SMD:D_0805"]
         },
-        r"zener": {
+        r"zener|稳压管": {
             "symbols": ["Device:D_Zener"],
             "footprints": ["Diode_SMD:D_0805"]
         },
 
         # ICs
-        r"mcu|microship|atmega|attiny": {
+        r"mcu|microship|atmega|attiny|单片机": {
             "symbols": ["MCU_Microchip_ATmega:ATmega328P"],
             "footprints": ["Package_QFP:TQFP-32_7x7mm_P0.8mm"]
         },
@@ -141,7 +141,7 @@ class ComponentRecommender:
             "symbols": ["MCU_ST_STM32:STM32F103C8Tx"],
             "footprints": ["Package_QFP:LQFP-48_7x7mm_P0.5mm"]
         },
-        r"ch340|usb.*to.*uart|uart.*bridge": {
+        r"ch340|usb.*to.*uart|uart.*bridge|串口芯片|串口转接": {
             "symbols": ["Interface_USB:WCH_CH340C"],
             "footprints": ["Package_SO:SOIC-16_3.9x9.9mm_P1.27mm"]
         },
@@ -149,31 +149,31 @@ class ComponentRecommender:
             "symbols": ["Interface_USB:Silicon_Labs_CP2102"],
             "footprints": ["Package_QFN:QFPN-28_5x5mm_P0.5mm"]
         },
-        r"ne555|timer": {
+        r"ne555|timer|定时器|555": {
             "symbols": ["Timer:NE555"],
             "footprints": ["Package_DIP:DIP-8_W7.62mm_Socket"]
         },
-        r"lm358|op-amp|operational.*amplifier": {
+        r"lm358|op-amp|operational.*amplifier|运放|运算放大器": {
             "symbols": ["Amplifier_Audio:LM358"],
             "footprints": ["Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"]
         },
-        r"lm317|adjustable.*regulator": {
+        r"lm317|adjustable.*regulator|可调稳压": {
             "symbols": ["Regulator_Linear:LM317"],
             "footprints": ["Package_TO_SOT_THT:TO-220-3_Horizontal"]
         },
 
         # Crystals and Oscillators
-        r"crystal|oscillator|quartz": {
+        r"crystal|oscillator|quartz|晶振": {
             "symbols": ["Device:Xtal"],
             "footprints": ["Crystal:Crystal_HC49-4H_Vertical"]
         },
 
         # Switches and Buttons
-        r"switch|tact.*button|button": {
+        r"switch|tact.*button|button|按键|开关": {
             "symbols": ["Device:SW_Push"],
             "footprints": ["Button_Switch_SMD:SW_SPST_B3U-1000P"]
         },
-        r"rotary.*encoder|encoder": {
+        r"rotary.*encoder|encoder|旋转编码器": {
             "symbols": ["Device:SW_Rotary_Encoder"],
             "footprints": ["Mechanical:Rotary_Encoder_Alps_EC11E"]
         },
@@ -416,9 +416,6 @@ class ComponentRecommender:
         """
         Search LCSC component database
 
-        Note: This is a placeholder. In production, this would call
-        the LCSC API to get real component data.
-
         Args:
             keywords: Search keywords
             limit: Maximum results
@@ -426,8 +423,37 @@ class ComponentRecommender:
         Returns:
             List of ComponentRecommendation from LCSC
         """
-        # Placeholder implementation
-        return []
+        try:
+            from kb_quality.lcsc_fetcher import LcscFetcher
+
+            fetcher = LcscFetcher()
+            results = fetcher.search_components(keywords, limit)
+
+            recommendations = []
+            for chip in results:
+                # 转换为 ComponentRecommendation 格式
+                rec = ComponentRecommendation(
+                    symbol=chip.symbol or "Device:C",
+                    footprint=chip.footprint or "Package_SOIC:SOP-8",
+                    description=chip.description or f"LCSC {chip.part_number}",
+                    parameters={
+                        "part_number": chip.part_number,
+                        "manufacturer": chip.manufacturer,
+                        "stock": chip.stock,
+                    },
+                    score=0.8,  # LCSC 数据有较高可信度
+                    source="lcsc",
+                    part_number=chip.part_number,
+                    price=chip.price,
+                    stock=chip.stock,
+                    lcsc_part=chip.part_number,
+                )
+                recommendations.append(rec)
+
+            return recommendations
+        except Exception as e:
+            logger.warning(f"LCSC search failed: {e}")
+            return []
 
     def recommend_from_requirements(
         self,

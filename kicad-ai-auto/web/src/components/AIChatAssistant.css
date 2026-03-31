@@ -365,3 +365,55 @@
     width: 40px;
   }
 }
+
+/* AI 上下文感知指示器 */
+.ai-context-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(74, 144, 217, 0.1);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #8bb8e8;
+  margin: 8px 0;
+}
+
+.ai-context-indicator-icon {
+  font-size: 14px;
+}
+
+.ai-context-indicator-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-context-indicator.has-context {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #8bb88e;
+}
+
+.ai-context-indicator.no-context {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #c9b87a;
+}
+
+.ai-context-badge {
+  font-size: 10px;
+  padding: 1px 4px;
+  background: rgba(74, 144, 217, 0.3);
+  border-radius: 2px;
+}
+
+.ai-context-indicator.has-context .ai-context-badge {
+  background: rgba(74, 222, 128, 0.3);
+}
+
+.ai-context-indicator.no-context .ai-context-badge {
+  background: rgba(251, 191, 36, 0.3);
+}

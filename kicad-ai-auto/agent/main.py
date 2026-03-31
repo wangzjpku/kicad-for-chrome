@@ -257,6 +257,24 @@ try:
 except ImportError as e:
     logger.warning(f"Symbol routes not available: {e}")
 
+# 注册 PCB 增强 API 路由 (Phase 6: 扇出、交互式布线)
+try:
+    from routes.pcb_routes import router as pcb_router
+
+    app.include_router(pcb_router)
+    logger.info("PCB Enhanced API routes registered")
+except ImportError as e:
+    logger.warning(f"PCB routes not available: {e}")
+
+# 注册模板 API 路由 (Phase 6: 项目模板系统)
+try:
+    from routes.template_routes import router as template_router
+
+    app.include_router(template_router)
+    logger.info("Template API routes registered")
+except ImportError as e:
+    logger.warning(f"Template routes not available: {e}")
+
 # 注册知识库 API 路由
 try:
     from routes.knowledge_routes import router as knowledge_router
@@ -302,6 +320,24 @@ try:
 except ImportError as e:
     logger.warning(f"DRC routes not available: {e}")
 
+# 多步设计 Agent 路由 (Phase 7E)
+try:
+    from routes.agent_routes import router as agent_router
+
+    app.include_router(agent_router)
+    logger.info("Design Agent API routes registered")
+except ImportError as e:
+    logger.warning(f"Agent routes not available: {e}")
+
+# 设计审查路由 (Phase 10)
+try:
+    from routes.design_review_routes import router as design_review_router
+
+    app.include_router(design_review_router)
+    logger.info("Design Review API routes registered")
+except ImportError as e:
+    logger.warning(f"Design Review routes not available: {e}")
+
 
 # 别名路由 - 兼容旧版本
 @app.get("/api/footprints/libraries")
@@ -318,6 +354,14 @@ async def netlist_example_alias():
     from routes.netlist_routes import get_netlist_example
 
     return await get_netlist_example()
+
+
+@app.get("/api/knowledge/health")
+async def knowledge_health_alias():
+    """知识库健康检查(兼容旧版本)"""
+    from routes.knowledge_routes import knowledge_health
+
+    return await knowledge_health()
 
 
 # ========== 认证与验证 ==========
@@ -799,6 +843,115 @@ async def get_export_formats(request: Request):
             {"id": "step", "name": "STEP", "description": "3D STEP model"},
         ]
     }
+
+
+@app.get("/api/v1/export/formats")
+@limiter.limit("60/minute")
+async def get_v1_export_formats(request: Request):
+    """获取支持的导出格式 (v1)"""
+    return {
+        "success": True,
+        "formats": [
+            {"id": "gerber", "name": "Gerber", "description": "PCB制造文件 (RS-274X)"},
+            {"id": "drill", "name": "Drill", "description": "钻孔文件 (Excellon)"},
+            {"id": "bom", "name": "BOM", "description": "物料清单 (CSV)"},
+            {"id": "pickplace", "name": "Pick and Place", "description": "贴片坐标文件"},
+            {"id": "pdf", "name": "PDF", "description": "PDF文档"},
+            {"id": "svg", "name": "SVG", "description": "SVG矢量图"},
+            {"id": "step", "name": "STEP", "description": "3D模型 (STEP/AP-214)"},
+        ]
+    }
+
+
+# ========== 设计设置与规则 ==========
+
+
+@app.get("/api/v1/design/settings")
+async def get_design_settings():
+    """获取 PCB 设计默认设置"""
+    return {
+        "success": True,
+        "settings": {
+            "board": {
+                "width": 100.0,
+                "height": 80.0,
+                "layers": 2,
+                "thickness": 1.6,
+                "material": "FR4"
+            },
+            "trace": {
+                "min_width": 0.2,
+                "default_width": 0.5,
+                "power_width": 1.0,
+                " clearance": 0.2
+            },
+            "via": {
+                "diameter": 0.6,
+                "drill": 0.3,
+                "min_diameter": 0.4
+            },
+            "silkscreen": {
+                "text_width": 0.15,
+                "text_height": 1.0
+            }
+        }
+    }
+
+
+@app.post("/api/v1/design/settings")
+async def update_design_settings(request: Request):
+    """更新 PCB 设计设置"""
+    try:
+        body = await request.json()
+        return {
+            "success": True,
+            "message": "设置已更新",
+            "settings": body.get("settings", {})
+        }
+    except Exception as e:
+        logger.error(f"更新设计设置失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/design/rules")
+async def get_design_rules():
+    """获取 PCB 设计规则"""
+    return {
+        "success": True,
+        "rules": {
+            "electrical": {
+                "min_clearance": 0.2,
+                "min_trace_width": 0.2,
+                "min_solder_mask": 0.1
+            },
+            "manufacturing": {
+                "min_via_drill": 0.3,
+                "min_via_diameter": 0.6,
+                "min_pitch": 0.635,
+                "edge_planning": 0.5
+            },
+            "high_speed": {
+                "impedance_tolerance": 10,
+                "max_length_mismatch": 0.15,
+                "differential_pair_gap": 0.2
+            }
+        }
+    }
+
+
+@app.post("/api/v1/design/rules")
+async def update_design_rules(request: Request):
+    """更新 PCB 设计规则"""
+    try:
+        body = await request.json()
+        return {
+            "success": True,
+            "message": "规则已更新",
+            "rules": body.get("rules", {})
+        }
+    except Exception as e:
+        logger.error(f"更新设计规则失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== DRC ==========

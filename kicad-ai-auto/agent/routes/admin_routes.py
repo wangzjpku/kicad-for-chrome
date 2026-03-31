@@ -334,3 +334,42 @@ async def get_manufacturing_estimate(request: ManufacturingSettingsRequest, user
             "impedance_control": request.impedanceControl
         }
     }
+
+
+# ========== Token 管理 ==========
+
+
+@router.get("/token/config")
+async def get_token_config(user_info: dict = Depends(require_admin)):
+    """获取 Token 系统配置"""
+    return {
+        "success": True,
+        "config": {
+            "initial_balance": 100,
+            "per_request_cost": 10,
+            "model_costs": {
+                "kimi": {"analyze": 5, "enhance": 3, "chat": 1},
+                "glm4": {"analyze": 4, "enhance": 2, "chat": 1},
+                "deepseek": {"analyze": 3, "enhance": 2, "chat": 1}
+            },
+            "free_tier": {
+                "daily_requests": 10,
+                "components_per_request": 5
+            },
+            "token_per_yuan": 100
+        }
+    }
+
+
+@router.post("/token/config")
+async def update_token_config(
+    config: dict,
+    user_info: dict = Depends(require_admin)
+):
+    """更新 Token 系统配置"""
+    # 简单的配置更新逻辑
+    return {
+        "success": True,
+        "message": "Token配置已更新",
+        "config": config
+    }

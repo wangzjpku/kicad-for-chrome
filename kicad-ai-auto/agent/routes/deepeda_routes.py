@@ -225,3 +225,26 @@ async def get_model_info(current_user: dict = Depends(get_optional_user)):
         "token_balance": balance,
         "is_test_mode": current_user.get("is_test_mode", False)
     }
+
+
+@router.get("/config")
+async def get_deepeda_config():
+    """获取 DeepEDA 大模型配置"""
+    return {
+        "success": True,
+        "config": {
+            "model_name": get_virtual_model_name(),
+            "supported_models": ["kimi", "glm4", "deepseek"],
+            "default_model": "kimi",
+            "capabilities": {
+                "chat": True,
+                "analyze": True,
+                "enhance": True,
+                "generate_pcb": True
+            },
+            "limits": {
+                "max_tokens": 4096,
+                "max_requests_per_minute": 30
+            }
+        }
+    }

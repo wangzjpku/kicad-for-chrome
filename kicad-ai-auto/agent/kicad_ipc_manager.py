@@ -939,6 +939,527 @@ class KiCadIPCManager:
             logger.error(f"Failed to clear selection: {e}")
             return {"success": False, "error": str(e)}
 
+    def auto_route(
+        self,
+        net_class: str = "default",
+        ripup_days: bool = False,
+        stability: int = 50,
+        max_iterations: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        执行自动布线（使用推挤式布线算法）
+
+        Args:
+            net_class: 网络类名称
+            ripup_days: 是否允许拆线重布
+            stability: 稳定性参数 (0-100)
+            max_iterations: 最大迭代次数
+
+        Returns:
+            布线结果
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            # 导入推挤式布线器
+            from routing.push_router import get_push_router, Segment, Point, Obstacle
+
+            # 获取所有网络
+            nets = self.board.nets
+            if not nets:
+                return {"success": False, "error": "No nets found"}
+
+            # 收集现有的走线作为障碍物
+            router = get_push_router()
+            router.clear_obstacles()
+
+            # 从现有走线创建障碍物
+            existing_tracks = self.board.tracks
+            for track in existing_tracks:
+                seg = Segment(
+                    start=Point(track.start.x, track.start.y),
+                    end=Point(track.end.x, track.end.y),
+                    layer=track.layer,
+                    width=track.width,
+                )
+                router.add_obstacle(Obstacle(segment=seg, priority=1))
+
+            # 获取封装焊盘作为起点/终点
+            footprints = self.board.footprints
+            pads = []
+            for fp in footprints:
+                for pad in fp.pads:
+                    pads.append({
+                        "position": (pad.position.x, pad.position.y),
+                        "net": pad.net,
+                        "layer": pad.layer,
+                    })
+
+            # 对每个网络进行布线
+            routed_count = 0
+            failed_nets = []
+            total_length = 0
+            total_vias = 0
+
+            for net in nets[:20]:  # 限制最多20个网络
+                if not net or not net.items:
+                    continue
+
+                # 获取网络的焊盘
+                net_pads = [p for p in pads if p["net"] == net.name]
+                if len(net_pads) < 2:
+                    continue
+
+                # 使用 A* 布线
+                start = net_pads[0]["position"]
+                end = net_pads[1]["position"]
+
+                result = router.route(
+                    start=start,
+                    end=end,
+                    start_layer=net_pads[0].get("layer", "F.Cu"),
+                    end_layer=net_pads[1].get("layer", "F.Cu"),
+                    net_name=net.name,
+                )
+
+                if result.success:
+                    # 在 KiCad 中创建走线
+                    for seg in result.routed_segments:
+                        track_result = self.create_track(
+                            start=(seg.start.x, seg.start.y),
+                            end=(seg.end.x, seg.end.y),
+                            layer=seg.layer,
+                            width=seg.width,
+                        )
+                        if track_result.get("success"):
+                            routed_count += 1
+                            total_length += seg.length
+
+                    total_vias += result.via_count
+                else:
+                    failed_nets.append(net.name)
+
+            return {
+                "success": True,
+                "message": f"Routed {routed_count} tracks",
+                "routed_count": routed_count,
+                "failed_nets": failed_nets,
+                "total_length": total_length,
+                "via_count": total_vias,
+            }
+
+        except Exception as e:
+            logger.error(f"Auto-route failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def clear_all_tracks(self) -> Dict[str, Any]:
+        """清除所有走线"""
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            # 获取所有走线并删除
+            tracks = self.board.tracks
+            deleted_count = 0
+            for track in tracks:
+                try:
+                    self.board.delete_item(track.id)
+                    deleted_count += 1
+                except Exception as e:
+                    logger.debug(f"Failed to delete track: {e}")
+
+            return {
+                "success": True,
+                "message": f"Deleted {deleted_count} tracks",
+                "deleted_count": deleted_count,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to clear tracks: {e}")
+            return {"success": False, "error": str(e)}
+
+    def auto_place(self, topology_aware: bool = True) -> Dict[str, Any]:
+        """
+        自动布局元件
+
+        Args:
+            topology_aware: 是否使用拓扑感知布局 (默认 True)
+
+        Returns:
+            布局结果，包含位置和分区信息
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected to KiCad"}
+
+        try:
+            from placement.netlist_topology import NetlistTopologyAnalyzer
+            from placement.topology_placement import TopologyAwarePlacementEngine
+            from placement.smart_placement_engine import (
+                Component, SmartPlacementEngine,
+            )
+
+            # 获取 PCB 数据
+            board_data = self.get_full_pcb_data()
+            footprints = board_data.get("footprints", [])
+
+            if not footprints:
+                return {"success": False, "error": "No footprints on board"}
+
+            # 获取板子尺寸
+            board_outline = board_data.get("board_outline", {})
+            board_width = 100.0
+            board_height = 80.0
+            if board_outline.get("points"):
+                pts = board_outline["points"]
+                xs = [p.get("x", 0) for p in pts]
+                ys = [p.get("y", 0) for p in pts]
+                board_width = max(xs) - min(xs) if xs else 100.0
+                board_height = max(ys) - min(ys) if ys else 80.0
+
+            # 转换为 Component 对象
+            components = []
+            for fp in footprints:
+                ref = fp.get("reference", "")
+                value = fp.get("value", "")
+                fp_name = fp.get("footprint", "")
+                pos = fp.get("position", {})
+                pads = fp.get("pads", [])
+                nets = list(set(p.get("net", "") for p in pads if p.get("net")))
+
+                # 估算元件尺寸
+                bounds = fp.get("bounding_box", {})
+                w = bounds.get("width", 5.0)
+                h = bounds.get("height", 5.0)
+
+                components.append(Component(
+                    reference=ref,
+                    footprint=fp_name,
+                    value=value,
+                    width=w,
+                    height=h,
+                    nets=nets,
+                    pins=pads,
+                ))
+
+            if topology_aware:
+                # 拓扑感知布局
+                nets_data = self._extract_nets_from_board(board_data)
+
+                engine = TopologyAwarePlacementEngine(
+                    board_width=board_width,
+                    board_height=board_height,
+                )
+                result = engine.place(components, nets_data)
+
+                # 应用位置到 KiCad
+                moved = 0
+                for ref, pos in result.positions.items():
+                    try:
+                        move_result = self.move_item(
+                            item_id=ref,
+                            x=pos["x"],
+                            y=pos["y"],
+                        )
+                        if move_result.get("success"):
+                            moved += 1
+                    except Exception as e:
+                        logger.debug(f"Failed to move {ref}: {e}")
+
+                return {
+                    "success": True,
+                    "topology_aware": True,
+                    "placed_count": moved,
+                    "total_count": len(components),
+                    "score": result.score,
+                    "zones": [
+                        {
+                            "name": z.name,
+                            "group": z.group.value,
+                            "x": z.x, "y": z.y,
+                            "width": z.width, "height": z.height,
+                            "color": z.color,
+                        }
+                        for z in result.zones
+                    ],
+                    "isolation_slots": [
+                        {
+                            "x": s.x, "y": s.y,
+                            "width": s.width, "height": s.height,
+                            "voltage_label": s.voltage_label,
+                        }
+                        for s in result.isolation_slots
+                    ],
+                    "positions": {
+                        ref: {"x": p["x"], "y": p["y"], "rotation": p.get("rotation", 0)}
+                        for ref, p in result.positions.items()
+                    },
+                    "statistics": result.statistics,
+                }
+            else:
+                # 回退到 SmartPlacementEngine
+                engine = SmartPlacementEngine(
+                    board_width=board_width,
+                    board_height=board_height,
+                )
+                result = engine.place(components)
+
+                moved = 0
+                for ref, pos in result.positions.items():
+                    try:
+                        move_result = self.move_item(
+                            item_id=ref,
+                            x=pos["x"],
+                            y=pos["y"],
+                        )
+                        if move_result.get("success"):
+                            moved += 1
+                    except Exception as e:
+                        logger.debug(f"Failed to move {ref}: {e}")
+
+                return {
+                    "success": True,
+                    "topology_aware": False,
+                    "placed_count": moved,
+                    "total_count": len(components),
+                    "score": result.score,
+                    "positions": {
+                        ref: {"x": p["x"], "y": p["y"], "rotation": p.get("rotation", 0)}
+                        for ref, p in result.positions.items()
+                    },
+                    "statistics": result.statistics,
+                }
+
+        except ImportError as e:
+            logger.error(f"Missing placement module: {e}")
+            return {"success": False, "error": f"Missing module: {e}"}
+        except Exception as e:
+            logger.error(f"Auto-place failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _extract_nets_from_board(self, board_data: Dict = None) -> List[Dict]:
+        """从板数据中提取网络信息"""
+        if board_data is None:
+            board_data = self.get_full_pcb_data()
+
+        nets_map: Dict[str, List[Dict]] = {}
+
+        # 从焊盘收集网络
+        for fp in board_data.get("footprints", []):
+            ref = fp.get("reference", "")
+            for pad in fp.get("pads", []):
+                net = pad.get("net", "")
+                if net:
+                    nets_map.setdefault(net, []).append({
+                        "ref": ref,
+                        "pin": pad.get("number", pad.get("pin", "")),
+                    })
+
+        # 从走线收集网络
+        for track in board_data.get("tracks", []):
+            net = track.get("net", "")
+            if net and net not in nets_map:
+                nets_map[net] = []
+
+        return [
+            {"name": name, "nodes": nodes}
+            for name, nodes in nets_map.items()
+        ]
+
+    def create_zone(self, net_name: str, layer: str,
+                    boundary_points: List[Dict],
+                    clearance: float = 0.3,
+                    thermal_relief: bool = True,
+                    hatched: bool = False,
+                    hatch_width: float = 1.0,
+                    hatch_gap: float = 0.5) -> Dict[str, Any]:
+        """
+        通过 IPC 创建铺铜区域
+
+        Args:
+            net_name: 网络名称 (如 GND)
+            layer: 层名称 (如 B.Cu)
+            boundary_points: 边界点列表 [{"x": ..., "y": ...}]
+            clearance: 间距 (mm)
+            thermal_relief: 是否使用热焊盘
+            hatched: 是否使用网格铺铜
+            hatch_width: 网格线宽 (mm)
+            hatch_gap: 网格间距 (mm)
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            from routing.copper_pour import CopperPourEngine, PourType
+
+            engine = CopperPourEngine(board_width=100, board_height=80)
+
+            pour_type = PourType.HATCHED if hatched else PourType.SOLID
+
+            # 创建 GND 铺铜
+            if net_name.upper() in ("GND", "AGND", "DGND"):
+                result = engine.create_ground_pour(
+                    layer=layer,
+                    clearance=clearance,
+                    thermal_style="four_spoke" if thermal_relief else None,
+                )
+            else:
+                result = engine.create_power_pour(
+                    net_name=net_name,
+                    layer=layer,
+                    clearance=clearance,
+                    thermal_style="four_spoke" if thermal_relief else None,
+                )
+
+            # 转换为 KiCad 格式
+            kicad_zone = engine.to_kicad_zone(result, net_name, layer)
+
+            return {
+                "success": True,
+                "net_name": net_name,
+                "layer": layer,
+                "zone_data": kicad_zone,
+                "area": result.area if hasattr(result, 'area') else 0,
+            }
+
+        except ImportError as e:
+            return {"success": False, "error": f"Missing copper_pour module: {e}"}
+        except Exception as e:
+            logger.error(f"Failed to create zone: {e}")
+            return {"success": False, "error": str(e)}
+
+    def create_stitching_vias(self, zone_boundary: List[Dict],
+                              spacing: float = 1.0,
+                              via_size: float = 0.6,
+                              via_drill: float = 0.3) -> Dict[str, Any]:
+        """
+        在铺铜区域内生成缝合过孔网格
+
+        Args:
+            zone_boundary: 区域边界点
+            spacing: 过孔间距 (mm)
+            via_size: 过孔外径 (mm)
+            via_drill: 过孔钻径 (mm)
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            created_vias = []
+
+            # 从边界点计算区域范围
+            if not zone_boundary:
+                return {"success": False, "error": "No boundary points"}
+
+            xs = [p.get("x", 0) for p in zone_boundary]
+            ys = [p.get("y", 0) for p in zone_boundary]
+            min_x, max_x = min(xs), max(xs)
+            min_y, max_y = min(ys), max(ys)
+
+            # 在区域内生成过孔网格
+            x = min_x + spacing
+            while x < max_x - spacing:
+                y = min_y + spacing
+                while y < max_y - spacing:
+                    # 创建过孔
+                    via_result = self.create_via(
+                        x=x, y=y,
+                        size=via_size,
+                        drill=via_drill,
+                        net="GND",
+                    )
+                    if via_result.get("success"):
+                        created_vias.append({"x": x, "y": y})
+                    y += spacing
+                x += spacing
+
+            return {
+                "success": True,
+                "created_count": len(created_vias),
+                "spacing": spacing,
+                "vias": created_vias,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to create stitching vias: {e}")
+            return {"success": False, "error": str(e)}
+
+    def auto_copper_pour(self, nets: List[str] = None,
+                         layers: List[str] = None,
+                         hatched: bool = False,
+                         stitch_spacing: float = 1.0) -> Dict[str, Any]:
+        """
+        一键铺铜: GND底层 + 电源顶层 + 缝合过孔
+
+        Args:
+            nets: 要铺铜的网络列表 (默认 ["GND"])
+            layers: 要铺铜的层列表 (默认 ["B.Cu"])
+            hatched: 是否使用网格铺铜
+            stitch_spacing: 缝合过孔间距 (mm)
+        """
+        if not self._connected or not self.board:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            if nets is None:
+                nets = ["GND"]
+            if layers is None:
+                layers = ["B.Cu"]
+
+            results = []
+
+            for net in nets:
+                for layer in layers:
+                    # 获取板子边界
+                    board_data = self.get_full_pcb_data()
+                    outline = board_data.get("board_outline", {})
+                    boundary = outline.get("points", [])
+
+                    if not boundary:
+                        # 使用默认边界
+                        bw = 100.0
+                        bh = 80.0
+                        m = 1.0
+                        boundary = [
+                            {"x": m, "y": m},
+                            {"x": bw - m, "y": m},
+                            {"x": bw - m, "y": bh - m},
+                            {"x": m, "y": bh - m},
+                        ]
+
+                    # 创建铺铜
+                    zone_result = self.create_zone(
+                        net_name=net,
+                        layer=layer,
+                        boundary_points=boundary,
+                        hatched=hatched,
+                    )
+
+                    # 添加缝合过孔
+                    stitch_result = None
+                    if stitch_spacing > 0:
+                        stitch_result = self.create_stitching_vias(
+                            zone_boundary=boundary,
+                            spacing=stitch_spacing,
+                        )
+
+                    results.append({
+                        "net": net,
+                        "layer": layer,
+                        "zone": zone_result.get("success", False),
+                        "stitching_vias": stitch_result.get("created_count", 0) if stitch_result else 0,
+                    })
+
+            return {
+                "success": True,
+                "results": results,
+                "total_zones": len(results),
+            }
+
+        except Exception as e:
+            logger.error(f"Auto copper pour failed: {e}")
+            return {"success": False, "error": str(e)}
+
     def is_connected(self) -> bool:
         """检查是否已连接"""
         with self._lock:

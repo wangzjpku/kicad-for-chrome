@@ -7,10 +7,30 @@ from .smart_placement_engine import (
     PlacementResult,
     PlacementConstraint,
 )
+from .netlist_topology import (
+    NetlistTopologyAnalyzer,
+    TopologyResult,
+    FunctionalGroup,
+    IsolationRequirement,
+)
+from .topology_placement import (
+    TopologyAwarePlacementEngine,
+    TopologyPlacementResult,
+    Zone,
+    IsolationSlot,
+)
 
 __all__ = [
     "SmartPlacementEngine",
     "Component",
     "PlacementResult",
     "PlacementConstraint",
+    "NetlistTopologyAnalyzer",
+    "TopologyResult",
+    "FunctionalGroup",
+    "IsolationRequirement",
+    "TopologyAwarePlacementEngine",
+    "TopologyPlacementResult",
+    "Zone",
+    "IsolationSlot",
 ]

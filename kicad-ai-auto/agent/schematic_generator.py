@@ -262,6 +262,20 @@ class SchematicGenerator:
                     "dcdc",
                     "buck",
                     "boost",
+                    "ams1117",
+                    "lm7805",
+                    "lm7812",
+                    "lm317",
+                    "lm337",
+                    "lt1083",
+                    "lt1117",
+                    "ap2112",
+                    "rt9013",
+                    "xc6206",
+                    "ncp511",
+                    "sot-223",  # common LDO package
+                    "sot-89",
+                    "to-220",
                 ]
             ):
                 categorized[ComponentCategory.POWER].append(comp)
@@ -293,7 +307,13 @@ class SchematicGenerator:
                     "can",
                     "rs485",
                     "ch340",
+                    "ch340c",
+                    "ch340g",
                     "cp210",
+                    "cp2102",
+                    "ft232",
+                    "ft232r",
+                    "pl2303",
                 ]
             ):
                 categorized[ComponentCategory.INTERFACE].append(comp)
@@ -779,7 +799,8 @@ class SchematicGenerator:
         package = comp.get("package", "")
 
         # ======== 集成符号库查找 ========
-        symbol_library = comp.get("symbol_library", "")
+        kb_symbol_library = comp.get("symbol_library", "")  # 知识库提供的符号库
+        symbol_library = kb_symbol_library
         symbol_name = ""
 
         try:
@@ -789,7 +810,14 @@ class SchematicGenerator:
             symbol = parser.find_symbol_for_component(comp_name, model)
 
             if symbol:
-                symbol_library = f"{symbol.library}:{symbol.name}"
+                found_lib = f"{symbol.library}:{symbol.name}"
+                # 如果符号库返回的是默认回退值(Device:R等)，且知识库有更准确的值，优先用知识库
+                fallback_symbols = {"Device:R", "Device:C", "Device:L", "Device:U", "Device:D", "Device:LED"}
+                if found_lib in fallback_symbols and kb_symbol_library and kb_symbol_library not in fallback_symbols:
+                    logger.info(f"符号库返回默认值 {found_lib}，保留知识库值 {kb_symbol_library}")
+                    symbol_library = kb_symbol_library
+                else:
+                    symbol_library = found_lib
                 symbol_name = symbol.name
                 logger.info(f"找到符号: {symbol_library} 用于 {comp_name}")
 
@@ -813,7 +841,11 @@ class SchematicGenerator:
                     self._comp_counter[ref_prefix] += 1
                     reference = f"{ref_prefix}{self._comp_counter[ref_prefix]}"
             else:
-                logger.warning(f"未找到符号: {comp_name} ({model})，使用默认")
+                # 解析器没找到，保留知识库值
+                if kb_symbol_library:
+                    logger.info(f"符号解析器未找到 {comp_name}，使用知识库值: {kb_symbol_library}")
+                else:
+                    logger.warning(f"未找到符号: {comp_name} ({model})，使用默认")
         except Exception as e:
             logger.warning(f"符号库查找失败: {e}")
 
@@ -1807,7 +1839,14 @@ class SchematicGenerator:
         y2 = comp2.position[1] + pin2.position[1]
 
         # 创建网络
-        full_net_name = f"{net_name}_{comp1.reference}_{comp2.reference}"
+        # 电源/地网络保持功能名，不加组件引用后缀
+        power_nets = {"VCC", "GND", "+5V", "+3V3", "+3.3V", "3V3", "5V", "VIN", "VOUT", "VDD", "VSS"}
+        if net_name.upper() in {n.upper() for n in power_nets}:
+            full_net_name = net_name
+        else:
+            # 信号网络: 使用 net_name 加简短引用 (去掉数字以减少重复)
+            base_net = net_name.split("_")[0] if "_" in net_name else net_name
+            full_net_name = f"{base_net}_{comp1.reference}_{comp2.reference}"
         if not any(n.name == full_net_name for n in self.sheet.nets):
             self._add_net(full_net_name, "signal")
 

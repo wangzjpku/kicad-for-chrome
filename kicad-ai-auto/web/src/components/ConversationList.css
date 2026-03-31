@@ -1,0 +1,219 @@
+/* ConversationList - 对话历史列表组件 */
+
+.conversation-list {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.conversation-list-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.conversation-list-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.conversation-list-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.conversation-list-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.conversation-list-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.conversation-list-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Search */
+.conversation-search {
+  margin-bottom: 16px;
+}
+
+.conversation-search input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.conversation-search input:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+/* Conversation Items */
+.conversation-items {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.conversation-item:hover {
+  border-color: #4a90d9;
+  background: #f8f9fa;
+}
+
+.conversation-item.selected {
+  border-color: #4a90d9;
+  background: #e8f4fd;
+}
+
+.conversation-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.conversation-item-title {
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item-date {
+  font-size: 12px;
+  color: #888;
+  margin-left: 8px;
+}
+
+.conversation-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.conversation-item-info {
+  font-size: 12px;
+  color: #888;
+}
+
+.conversation-item-model {
+  font-size: 11px;
+  background: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #666;
+}
+
+/* Empty State */
+.conversation-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+}
+
+.conversation-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+/* Loading */
+.conversation-loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+}
+
+/* Footer */
+.conversation-list-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Buttons */
+.conversation-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.conversation-btn-primary {
+  background: #4a90d9;
+  color: white;
+}
+
+.conversation-btn-primary:hover {
+  background: #3a7bc8;
+}
+
+.conversation-btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.conversation-btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.conversation-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.conversation-btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.conversation-btn-danger:hover {
+  background: #c82333;
+}

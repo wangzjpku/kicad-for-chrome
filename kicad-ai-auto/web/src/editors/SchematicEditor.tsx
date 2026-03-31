@@ -17,6 +17,8 @@ import { SchematicComponent, Wire, Label } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import SchematicSymbol from '../components/SchematicSymbol';
 import SchematicDebugOverlay, { calculateRecommendedPan } from '../components/SchematicDebugOverlay';
+import SymbolSearchPanel from '../components/SymbolSearchPanel';
+import BulkPlacementDialog from '../components/BulkPlacementDialog';
 
 // 原理图坐标转换 - 后端返回的是mm坐标，需要转换为像素
 // 元件坐标范围约 0-800mm，画布约 800x500px，所以用 0.5 缩放让元件合适显示
@@ -69,6 +71,10 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     width: 800,
     height: 500
   });
+
+  // Phase 6: 符号搜索和批量放置状态
+  const [showSymbolSearch, setShowSymbolSearch] = useState(false);
+  const [showBulkPlacement, setShowBulkPlacement] = useState(false);
 
   // 自动调整画布尺寸 - 使用 ResizeObserver 监听整个容器树
   useEffect(() => {
@@ -962,8 +968,64 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             >
               {showDebug ? '关闭调试' : '调试'}
             </button>
+
+            {/* Phase 6: 符号搜索按钮 */}
+            <button
+              onClick={() => setShowSymbolSearch(true)}
+              style={{
+                background: '#7e57c2',
+                border: 'none',
+                borderRadius: '4px',
+                color: '#fff',
+                padding: '5px 10px',
+                cursor: 'pointer',
+                fontSize: 11,
+              }}
+              title="符号搜索"
+            >
+              符号搜索
+            </button>
+
+            {/* Phase 6: 批量放置按钮 */}
+            <button
+              onClick={() => setShowBulkPlacement(true)}
+              style={{
+                background: '#26a69a',
+                border: 'none',
+                borderRadius: '4px',
+                color: '#fff',
+                padding: '5px 10px',
+                cursor: 'pointer',
+                fontSize: 11,
+              }}
+              title="批量放置"
+            >
+              批量放置
+            </button>
           </div>
         </div>
+
+        {/* Phase 6: 符号搜索面板 */}
+        {showSymbolSearch && (
+          <SymbolSearchPanel
+            onClose={() => setShowSymbolSearch(false)}
+            onSymbolSelect={(symbol) => {
+              console.log('Selected symbol:', symbol);
+              setShowSymbolSearch(false);
+            }}
+          />
+        )}
+
+        {/* Phase 6: 批量放置对话框 */}
+        {showBulkPlacement && (
+          <BulkPlacementDialog
+            onClose={() => setShowBulkPlacement(false)}
+            onApply={(components) => {
+              console.log('Bulk placement components:', components);
+              setShowBulkPlacement(false);
+            }}
+          />
+        )}
 
         {/* 属性编辑面板 */}
         {selectedIds.length > 0 && selectedElement && (

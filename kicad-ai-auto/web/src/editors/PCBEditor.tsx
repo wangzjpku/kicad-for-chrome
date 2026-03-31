@@ -22,6 +22,10 @@ import ExportPanel from '../panels/ExportPanel';
 import RoutingTool from '../canvas/RoutingTool';
 import PCBViewer3D from '../components/PCBViewer3D';
 import AIChatAssistant from '../components/AIChatAssistant';
+import FanoutDialog from '../components/FanoutDialog';
+import CopperPourDialog from '../components/CopperPourDialog';
+import DiffPairDialog from '../components/DiffPairDialog';
+import { phase6Api } from '../services/api';
 
 import BoardOutlineRenderer from '../canvas/BoardOutlineRenderer';
 import FootprintRenderer from '../canvas/FootprintRenderer';
@@ -49,6 +53,32 @@ const PCBEditor: React.FC = () => {
   const [drcReport, setDrcReport] = useState<DRCReport | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [showAIChat, setShowAIChat] = useState(false);
+
+  // Phase 6: Fanout dialog state
+  const [showFanoutDialog, setShowFanoutDialog] = useState(false);
+  const [fanoutTarget, setFanoutTarget] = useState<{ id: string; reference: string; pads: any[] } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Phase 7B/7C: Auto layout & copper pour state
+  const [isAutoLayouting, setIsAutoLayouting] = useState(false);
+  const [isCopperPouring, setIsCopperPouring] = useState(false);
+  const [showCopperPourDialog, setShowCopperPourDialog] = useState(false);
+  const [topologyZones, setTopologyZones] = useState<Array<{
+    name: string; group: string; x: number; y: number;
+    width: number; height: number; color: string;
+  }> | null>(null);
+  const [layoutScore, setLayoutScore] = useState<number | null>(null);
+  const [copperPourResult, setCopperPourResult] = useState<any>(null);
+
+  // Phase 10B: Diff pair dialog & DRC heatmap state
+  const [showDiffPairDialog, setShowDiffPairDialog] = useState(false);
+  const [diffPairResult, setDiffPairResult] = useState<any>(null);
+  const [showDRCHeatmap, setShowDRCHeatmap] = useState(false);
+
+  // Phase 10B: Diff pair & DRC heatmap state
+  const [showDiffPairDialog, setShowDiffPairDialog] = useState(false);
+  const [diffPairResult, setDiffPairResult] = useState<any>(null);
+  const [showDRCHeatmap, setShowDRCHeatmap] = useState(false);
 
   // 自动调整画布尺寸 - 严格跟随实际容器尺寸
   useEffect(() => {
@@ -380,16 +410,16 @@ const PCBEditor: React.FC = () => {
   // 渲染DRC错误标记
   const renderDRCMarkers = () => {
     if (!drcReport) return null;
-    
+
     const allItems = [...drcReport.errors, ...drcReport.warnings];
-    
+
     return allItems.map((item) => {
       if (!item.position) return null;
-      
+
       const x = item.position.x * MM_TO_PX;
       const y = item.position.y * MM_TO_PX;
       const color = item.severity === 'error' ? '#ff0000' : '#ffaa00';
-      
+
       return (
         <Group key={item.id} x={x} y={y}>
           {/* 外圈 */}
@@ -413,6 +443,63 @@ const PCBEditor: React.FC = () => {
             points={[4, -4, -4, 4]}
             stroke="#ffffff"
             strokeWidth={1}
+          />
+        </Group>
+      );
+    });
+  };
+
+  // Phase 10B: DRC heatmap overlay - clusters nearby violations into heat zones
+  const renderDRCHeatmap = () => {
+    if (!showDRCHeatmap || !drcReport) return null;
+
+    const allItems = [...drcReport.errors, ...drcReport.warnings].filter(
+      (item) => item.position
+    );
+    if (allItems.length === 0) return null;
+
+    // Cluster violations into grid cells for heatmap
+    const cellSize = 15; // mm grid
+    const heatmap = new Map<string, { count: number; errorCount: number; x: number; y: number }>();
+
+    allItems.forEach((item) => {
+      const cellX = Math.floor(item.position!.x / cellSize) * cellSize;
+      const cellY = Math.floor(item.position!.y / cellSize) * cellSize;
+      const key = `${cellX},${cellY}`;
+      const existing = heatmap.get(key) || { count: 0, errorCount: 0, x: cellX, y: cellY };
+      existing.count++;
+      if (item.severity === 'error') existing.errorCount++;
+      heatmap.set(key, existing);
+    });
+
+    const maxCount = Math.max(...Array.from(heatmap.values()).map((v) => v.count));
+
+    return Array.from(heatmap.entries()).map(([key, cell]) => {
+      const intensity = maxCount > 0 ? cell.count / maxCount : 0;
+      const x = cell.x * MM_TO_PX;
+      const y = cell.y * MM_TO_PX;
+      const size = cellSize * MM_TO_PX;
+      const fillColor = cell.errorCount > 0
+        ? `rgba(255, ${Math.round(100 * (1 - intensity))}, 0, ${0.15 + intensity * 0.35})`
+        : `rgba(255, 200, 0, ${0.1 + intensity * 0.2})`;
+
+      return (
+        <Group key={`heatmap-${key}`}>
+          <Rect
+            x={x}
+            y={y}
+            width={size}
+            height={size}
+            fill={fillColor}
+            cornerRadius={4}
+          />
+          <KonvaText
+            x={x + 4}
+            y={y + 4}
+            text={`${cell.count}`}
+            fontSize={10}
+            fill={intensity > 0.5 ? '#fff' : '#aaa'}
+            fontFamily="monospace"
           />
         </Group>
       );
@@ -534,6 +621,154 @@ const PCBEditor: React.FC = () => {
             Zoom: {(zoom * 100).toFixed(0)}% | Grid: {gridSize}mm {snapToGrid ? '(snap)' : ''}
           </div>
 
+          {/* Phase 6: 扇出按钮 */}
+          <button
+            onClick={() => {
+              // 当选中单个元件时启用扇出
+              if (selectedIds.length === 1) {
+                const fp = pcbData?.footprints.find(f => f.id === selectedIds[0]);
+                if (fp) {
+                  setFanoutTarget({
+                    id: fp.id,
+                    reference: fp.reference,
+                    pads: fp.pads.map(p => ({
+                      pad_number: p.number || p.id,
+                      x: fp.position.x + (p.position?.x || 0),
+                      y: fp.position.y + (p.position?.y || 0),
+                      net: p.netId || '',
+                      type: 'thru_hole',
+                    })),
+                  });
+                  setShowFanoutDialog(true);
+                }
+              }
+            }}
+            disabled={selectedIds.length !== 1}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 220,
+              background: selectedIds.length === 1 ? '#ba68c8' : '#3d3d3d',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              padding: '5px 12px',
+              fontSize: 11,
+              cursor: selectedIds.length === 1 ? 'pointer' : 'not-allowed',
+              opacity: selectedIds.length === 1 ? 1 : 0.5,
+            }}
+            title={selectedIds.length === 1 ? '扇出' : '请先选择一个元件'}
+          >
+            扇出
+          </button>
+
+          {/* Phase 7B: Auto Layout Button */}
+          <button
+            onClick={async () => {
+              setIsAutoLayouting(true);
+              try {
+                const result = await phase6Api.autoLayout(true);
+                if (result.success) {
+                  setTopologyZones(result.zones);
+                  setLayoutScore(result.score);
+                  // Refresh PCB data
+                  if (result.positions) {
+                    // Update footprint positions in store
+                    const store = usePCBStore.getState();
+                    if (store.pcbData?.footprints) {
+                      store.pcbData.footprints.forEach((fp: any) => {
+                        const newPos = result.positions[fp.reference];
+                        if (newPos) {
+                          fp.position = { x: newPos.x, y: newPos.y };
+                          fp.rotation = newPos.rotation || 0;
+                        }
+                      });
+                      store.setPCBData({ ...store.pcbData });
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('Auto layout failed:', e);
+              } finally {
+                setIsAutoLayouting(false);
+              }
+            }}
+            disabled={isAutoLayouting}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 280,
+              background: isAutoLayouting ? '#3d3d3d' : '#4a9eff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              padding: '5px 12px',
+              fontSize: 11,
+              cursor: isAutoLayouting ? 'wait' : 'pointer',
+            }}
+          >
+            {isAutoLayouting ? '布局中...' : 'Auto Layout'}
+          </button>
+
+          {/* Phase 7C: Copper Pour Button - opens config dialog */}
+          <button
+            onClick={() => setShowCopperPourDialog(true)}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 380,
+              background: '#ff8800',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              padding: '5px 12px',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
+          >
+            Copper Pour
+          </button>
+
+          {/* Phase 10B: Diff Pair routing button */}
+          <button
+            onClick={() => setShowDiffPairDialog(true)}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 480,
+              background: '#e040fb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              padding: '5px 12px',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
+          >
+            Diff Pair
+          </button>
+
+          {/* Phase 10B: DRC Heatmap toggle */}
+          {drcReport && (
+            <button
+              onClick={() => setShowDRCHeatmap(!showDRCHeatmap)}
+              style={{
+                position: 'absolute',
+                top: 40,
+                right: 380,
+                background: showDRCHeatmap ? '#f44336' : '#3d3d3d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                padding: '5px 12px',
+                fontSize: 10,
+                cursor: 'pointer',
+              }}
+            >
+              {showDRCHeatmap ? 'Hide Heatmap' : 'DRC Heatmap'}
+            </button>
+          )}
+
           {(() => {
             const shouldRender = viewMode === '2d' && pcbData && containerSize.width > 0 && containerSize.height > 0;
             if (shouldRender) {
@@ -620,6 +855,7 @@ const PCBEditor: React.FC = () => {
               scaleX={zoom}
               scaleY={zoom}
             >
+              {renderDRCHeatmap()}
               {renderDRCMarkers()}
             </Layer>
 
@@ -675,6 +911,74 @@ const PCBEditor: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Phase 6: 扇出对话框 */}
+      {showFanoutDialog && fanoutTarget && (
+        <FanoutDialog
+          onClose={() => {
+            setShowFanoutDialog(false);
+            setFanoutTarget(null);
+          }}
+          componentId={fanoutTarget.id}
+          componentReference={fanoutTarget.reference}
+          pads={fanoutTarget.pads}
+          onApply={(vias, traces) => {
+            console.log('Fanout applied:', { vias, traces });
+            setShowFanoutDialog(false);
+            setFanoutTarget(null);
+          }}
+        />
+      )}
+
+      {/* Phase 7C: 铺铜配置对话框 */}
+      {showCopperPourDialog && (
+        <CopperPourDialog
+          onClose={() => setShowCopperPourDialog(false)}
+          onApply={(result) => {
+            console.log('Copper pour applied:', result);
+            setCopperPourResult(result);
+            setShowCopperPourDialog(false);
+          }}
+        />
+      )}
+
+      {/* Phase 10B: Diff Pair routing dialog */}
+      {showDiffPairDialog && (
+        <DiffPairDialog
+          onClose={() => setShowDiffPairDialog(false)}
+          onApply={(result) => {
+            console.log('Diff pair routed:', result);
+            setDiffPairResult(result);
+            // Add routed tracks to PCB data
+            if (result.success && result.pos_points && result.neg_points) {
+              const store = usePCBStore.getState();
+              const newTracks = [
+                {
+                  id: `diff-pos-${Date.now()}`,
+                  type: 'track' as const,
+                  layer: 'F.Cu',
+                  width: 0.15,
+                  points: result.pos_points.map((p: any) => ({ x: p.x, y: p.y })),
+                  netId: 'DIFF_P',
+                },
+                {
+                  id: `diff-neg-${Date.now()}`,
+                  type: 'track' as const,
+                  layer: 'F.Cu',
+                  width: 0.15,
+                  points: result.neg_points.map((p: any) => ({ x: p.x, y: p.y })),
+                  netId: 'DIFF_N',
+                },
+              ];
+              store.setPCBData({
+                ...store.pcbData!,
+                tracks: [...store.pcbData!.tracks, ...newTracks],
+              });
+            }
+            setShowDiffPairDialog(false);
+          }}
+        />
+      )}
 
     </div>
   );

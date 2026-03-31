@@ -148,6 +148,71 @@ export const projectApi = {
   },
 };
 
+// ==================== 项目快照 API ====================
+
+export interface Snapshot {
+  id: string;
+  project_id: string;
+  version: number;
+  title: string;
+  description: string;
+  created_at: string;
+  has_schematic: boolean;
+  has_pcb: boolean;
+}
+
+export interface SnapshotDetail extends Snapshot {
+  schematic?: any;
+  pcb?: any;
+}
+
+export const snapshotApi = {
+  // 创建快照
+  create: async (
+    projectId: string,
+    data: { title: string; description?: string; include_schematic?: boolean; include_pcb?: boolean }
+  ): Promise<ApiResponse<Snapshot>> => {
+    const response = await apiClient.post(`/projects/${projectId}/snapshots`, data);
+    return response.data;
+  },
+
+  // 列出项目的所有快照
+  list: async (
+    projectId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<ApiResponse<{ snapshots: Snapshot[]; total: number }>> => {
+    const response = await apiClient.get(`/projects/${projectId}/snapshots`, {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+
+  // 获取快照详情
+  get: async (projectId: string, snapshotId: string): Promise<ApiResponse<{ snapshot: SnapshotDetail }>> => {
+    const response = await apiClient.get(`/projects/${projectId}/snapshots/${snapshotId}`);
+    return response.data;
+  },
+
+  // 恢复到指定快照
+  restore: async (projectId: string, snapshotId: string): Promise<ApiResponse<{ version: number }>> => {
+    const response = await apiClient.post(`/projects/${projectId}/snapshots/${snapshotId}/restore`);
+    return response.data;
+  },
+
+  // 删除快照
+  delete: async (projectId: string, snapshotId: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete(`/projects/${projectId}/snapshots/${snapshotId}`);
+    return response.data;
+  },
+
+  // 获取快照数量
+  count: async (projectId: string): Promise<ApiResponse<{ count: number }>> => {
+    const response = await apiClient.get(`/projects/${projectId}/snapshots/count`);
+    return response.data;
+  },
+};
+
 // ==================== PCB API ====================
 
 export const pcbApi = {
@@ -191,7 +256,8 @@ export const pcbApi = {
   },
 
   getPCBItems: async (projectId: string): Promise<ApiResponse<PCBData>> => {
-    const response = await apiClient.get(`/projects/${projectId}/pcb/items`);
+    // 使用 /pcb/design 端点获取所有 PCB 数据（包含 items）
+    const response = await apiClient.get(`/projects/${projectId}/pcb/design`);
     return response.data;
   },
 
@@ -242,12 +308,48 @@ export const schematicApi = {
 
 export const drcApi = {
   runDRC: async (projectId: string, pcbData?: PCBData): Promise<ApiResponse<DRCReport>> => {
-    const response = await apiClient.post(`/projects/${projectId}/drc/run`, pcbData || {});
+    // Phase 7A: Call /drc/run with real engine
+    const response = await apiClient.post('/drc/run', {
+      project_id: projectId,
+      board_width: pcbData?.board?.width ?? 100,
+      board_height: pcbData?.board?.height ?? 80,
+      layer_count: pcbData?.layerCount ?? 2,
+    });
     return response.data;
   },
 
   getDRCReport: async (projectId: string): Promise<ApiResponse<DRCReport>> => {
-    const response = await apiClient.get(`/projects/${projectId}/drc/report`);
+    const response = await apiClient.get(`/drc/report`, { params: { project_id: projectId } });
+    return response.data;
+  },
+
+  runAdvancedDRC: async (projectId: string, pcbData?: PCBData, manufacturer: string = 'jlcpcb', level: string = 'standard'): Promise<any> => {
+    const response = await apiClient.post('/drc/advanced-check', {
+      project_id: projectId,
+      pcb_data: pcbData,
+      manufacturer,
+      level,
+    });
+    return response.data;
+  },
+
+  runSIAnalysis: async (pcbData: PCBData): Promise<any> => {
+    const response = await apiClient.post('/drc/si/analyze', {
+      pcb_data: pcbData,
+    });
+    return response.data;
+  },
+
+  runEMIAnalysis: async (pcbData: PCBData, sensitivity: string = 'medium'): Promise<any> => {
+    const response = await apiClient.post('/drc/emi/analyze', {
+      pcb_data: pcbData,
+      sensitivity,
+    });
+    return response.data;
+  },
+
+  getManufacturerCapabilities: async (manufacturer: string = 'jlcpcb', level: string = 'standard'): Promise<any> => {
+    const response = await apiClient.get(`/drc/capabilities/${manufacturer}`, { params: { level } });
     return response.data;
   },
 };
@@ -444,6 +546,126 @@ export const aiApi = {
   // 搜索封装
   searchFootprints: async (keyword: string, limit: number = 20): Promise<ApiResponse<FootprintSearchResult[]>> => {
     const response = await apiClient.get('/ai/footprint/search', { params: { keyword, limit } });
+    return response.data;
+  },
+};
+
+// ==================== AI 对话 API ====================
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+  model: string;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: ChatMessage[];
+}
+
+export interface ChatRequest {
+  message: string;
+  context?: Record<string, unknown>;
+  history?: ChatMessage[];
+  conversation_id?: string;
+}
+
+export interface ChatResponse {
+  response: string;
+  actions?: Array<{ type: string; target: string; description: string }>;
+  modifications?: unknown[];
+  conversation_id?: string;
+}
+
+export const conversationApi = {
+  // 发送消息并获取AI回复
+  chat: async (request: ChatRequest): Promise<ChatResponse> => {
+    const response = await apiClient.post('/ai/chat', request);
+    return response.data;
+  },
+
+  // Phase 10C: SSE streaming chat — returns tokens incrementally
+  chatStream: async function* (
+    request: ChatRequest,
+  ): AsyncGenerator<{ type: string; content?: string; conversation_id?: string }> {
+    const baseURL = apiClient.defaults.baseURL || '';
+    const response = await fetch(`${baseURL}/ai/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok || !response.body) {
+      yield { type: 'error', content: `HTTP ${response.status}` };
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          yield data;
+          if (data.type === 'done') return;
+        } catch {
+          // skip malformed SSE lines
+        }
+      }
+    }
+  },
+
+  // 列出用户的所有对话
+  list: async (
+    userId: number = 1,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<ApiResponse<{ conversations: Conversation[]; total: number }>> => {
+    const response = await apiClient.get('/ai/conversations', {
+      params: { user_id: userId, limit, offset },
+    });
+    return response.data;
+  },
+
+  // 获取对话详情
+  get: async (conversationId: string): Promise<ApiResponse<ConversationDetail>> => {
+    const response = await apiClient.get(`/ai/conversations/${conversationId}`);
+    return response.data;
+  },
+
+  // 删除对话
+  delete: async (conversationId: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete(`/ai/conversations/${conversationId}`);
+    return response.data;
+  },
+
+  // 搜索对话
+  search: async (
+    keyword: string,
+    userId: number = 1,
+    limit: number = 20
+  ): Promise<ApiResponse<{ conversations: Conversation[]; count: number }>> => {
+    const response = await apiClient.get('/ai/conversations/search', {
+      params: { keyword, user_id: userId, limit },
+    });
     return response.data;
   },
 };
@@ -925,8 +1147,9 @@ export const kicadIpcApi = {
   },
 
   // 获取完整PCB数据
+  // 注意: IPC 路由注册在 /api/kicad-ipc, 不是 /api/v1/kicad-ipc
   getFullPCB: async (): Promise<FullPCBData> => {
-    const response = await apiClient.get('/kicad-ipc/full-pcb');
+    const response = await axios.get('/api/kicad-ipc/full-pcb');
     return response.data;
   },
 
@@ -1001,6 +1224,709 @@ export const kicadIpcApi = {
     path?: string;
   }> => {
     const response = await apiClient.post('/kicad-ipc/save');
+    return response.data;
+  },
+};
+
+// ==================== Phase 6 API: Symbol Search ====================
+
+export interface SymbolSearchFilters {
+  category?: string;
+  library?: string;
+  package?: string;
+  pin_count_min?: number;
+  pin_count_max?: number;
+  manufacturer?: string;
+}
+
+export interface SymbolInfo {
+  name: string;
+  library: string;
+  description: string;
+  keywords: string[];
+  package: string;
+  pin_count: number;
+  category: string;
+  datasheet?: string;
+  manufacturer?: string;
+}
+
+export interface SearchSymbolsRequest {
+  query: string;
+  filters?: SymbolSearchFilters;
+  page?: number;
+  page_size?: number;
+}
+
+// ==================== Phase 6 API: Bulk Placement ====================
+
+export interface BOMItem {
+  reference: string;
+  value: string;
+  footprint?: string;
+  symbol?: string;
+  quantity?: number;
+}
+
+export interface BulkPlacementRequest {
+  bom_text?: string;
+  bom_items?: BOMItem[];
+  strategy?: string;
+  start_x?: number;
+  start_y?: number;
+  spacing_x?: number;
+  spacing_y?: number;
+  max_cols?: number;
+}
+
+export interface PlacedComponent {
+  reference: string;
+  symbol_name: string;
+  library: string;
+  x: number;
+  y: number;
+  rotation: number;
+  properties: Record<string, string>;
+}
+
+// ==================== Phase 6 API: Fanout ====================
+
+export interface PadInfo {
+  pad_number: string;
+  x: number;
+  y: number;
+  net: string;
+  type?: string;
+}
+
+export interface FanoutRequest {
+  component_id: string;
+  reference: string;
+  pads: PadInfo[];
+  direction?: string;
+  pin_spacing?: number;
+}
+
+export interface ViaInfo {
+  via_id: string;
+  x: number;
+  y: number;
+  net: string;
+  from_layer: string;
+  to_layer: string;
+  outer_diameter: number;
+  drill: number;
+}
+
+export interface TraceInfo {
+  trace_id: string;
+  net: string;
+  start_x: number;
+  start_y: number;
+  end_x: number;
+  end_y: number;
+  layer: string;
+  width: number;
+}
+
+// ==================== Phase 6 API: Route Planning ====================
+
+export interface RoutePoint {
+  x: number;
+  y: number;
+}
+
+export interface RouteSegment {
+  start_x: number;
+  start_y: number;
+  end_x: number;
+  end_y: number;
+  layer: string;
+  width: number;
+}
+
+export interface RoutePlanRequest {
+  start_x: number;
+  start_y: number;
+  start_layer: string;
+  end_x: number;
+  end_y: number;
+  end_layer: string;
+  net_name: string;
+  trace_width?: number;
+  clearance?: number;
+  max_vias?: number;
+}
+
+// ==================== Phase 6 API: Templates ====================
+
+export interface TemplateInfo {
+  template_id: string;
+  name: string;
+  name_cn: string;
+  description: string;
+  category: string;
+  tags: string[];
+  author: string;
+  is_predefined: boolean;
+  created_at?: string;
+}
+
+export interface TemplateDetail extends TemplateInfo {
+  schematic?: any;
+  pcb?: any;
+}
+
+// ==================== Phase 6 API Namespace ====================
+
+export const phase6Api = {
+  // Symbol Search API
+  searchSymbols: async (
+    query: string,
+    filters?: SymbolSearchFilters,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ success: boolean; symbols: SymbolInfo[]; total: number; page: number; page_size: number }> => {
+    const response = await apiClient.post('/symbols/search', {
+      query,
+      filters,
+      page,
+      page_size: pageSize,
+    });
+    return response.data;
+  },
+
+  getSymbolCategories: async (): Promise<{ success: boolean; categories: string[] }> => {
+    const response = await apiClient.get('/symbols/categories');
+    return response.data;
+  },
+
+  // Bulk Placement API
+  bulkPlace: async (request: BulkPlacementRequest): Promise<{
+    success: boolean;
+    components: PlacedComponent[];
+    total: number;
+    strategy: string;
+    grid_cols: number;
+    grid_rows: number;
+  }> => {
+    const response = await apiClient.post('/symbols/bulk-place', request);
+    return response.data;
+  },
+
+  // Fanout API
+  fanout: async (request: FanoutRequest): Promise<{
+    success: boolean;
+    component_id: string;
+    reference: string;
+    pads: PadInfo[];
+    vias: ViaInfo[];
+    traces: TraceInfo[];
+  }> => {
+    const response = await apiClient.post('/pcb/fanout', request);
+    return response.data;
+  },
+
+  fanoutBatch: async (
+    components: FanoutRequest[],
+    options?: { default_direction?: string; spacing?: number; via_size?: number; drill_size?: number; trace_width?: number }
+  ): Promise<{
+    success: boolean;
+    component_results: Array<{
+      component_id: string;
+      reference: string;
+      vias: ViaInfo[];
+      traces: TraceInfo[];
+    }>;
+    total_vias: number;
+    total_traces: number;
+  }> => {
+    const response = await apiClient.post('/pcb/fanout/batch', {
+      components,
+      ...options,
+    });
+    return response.data;
+  },
+
+  getPinSpacing: async (packageType: string): Promise<{ success: boolean; package_type: string; pin_spacing_mm: number }> => {
+    const response = await apiClient.get(`/pcb/fanout/pin-spacing/${encodeURIComponent(packageType)}`);
+    return response.data;
+  },
+
+  // Route Planning API
+  planRoute: async (request: RoutePlanRequest): Promise<{
+    success: boolean;
+    candidates: Array<{
+      route_id: string;
+      segments: RouteSegment[];
+      total_length: number;
+      via_count: number;
+      score: number;
+      status: string;
+    }>;
+    best_route: {
+      route_id: string;
+      segments: RouteSegment[];
+      total_length: number;
+      via_count: number;
+      score: number;
+    } | null;
+    message: string;
+  }> => {
+    const response = await apiClient.post('/pcb/route/plan', request);
+    return response.data;
+  },
+
+  getRoutePreview: async (
+    startX: number,
+    startY: number,
+    currentX: number,
+    currentY: number,
+    layer: string
+  ): Promise<{ success: boolean; preview: RoutePoint[] }> => {
+    const response = await apiClient.post('/pcb/route/preview', {
+      start_x: startX,
+      start_y: startY,
+      current_x: currentX,
+      current_y: currentY,
+      layer,
+    });
+    return response.data;
+  },
+
+  adjustRouteWidth: async (
+    routeId: string,
+    newWidth: number
+  ): Promise<{ success: boolean; route: any; message?: string }> => {
+    const response = await apiClient.post('/pcb/route/adjust-width', null, {
+      params: { route_id: routeId, new_width: newWidth },
+    });
+    return response.data;
+  },
+
+  addRouteObstacle: async (x: number, y: number, layer: string = 'F.Cu'): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/pcb/route/add-obstacle', null, {
+      params: { x, y, layer },
+    });
+    return response.data;
+  },
+
+  clearRouteObstacles: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/pcb/route/clear-obstacles');
+    return response.data;
+  },
+
+  // Template API
+  getTemplates: async (category?: string, search?: string): Promise<{
+    success: boolean;
+    templates: TemplateInfo[];
+    count: number;
+  }> => {
+    const response = await apiClient.get('/templates', {
+      params: { category, search },
+    });
+    return response.data;
+  },
+
+  getTemplateCategories: async (): Promise<{
+    success: boolean;
+    categories: Array<{ value: string; label: string }>;
+  }> => {
+    const response = await apiClient.get('/templates/categories');
+    return response.data;
+  },
+
+  getTemplate: async (templateId: string): Promise<{
+    success: boolean;
+    template: TemplateDetail;
+  }> => {
+    const response = await apiClient.get(`/templates/${templateId}`);
+    return response.data;
+  },
+
+  createProjectFromTemplate: async (
+    templateId: string,
+    projectName: string,
+    schematicOverrides?: any,
+    pcbOverrides?: any
+  ): Promise<{
+    success: boolean;
+    project_id: string;
+    project_name: string;
+    template_id: string;
+    schematic?: any;
+    pcb?: any;
+  }> => {
+    const response = await apiClient.post('/templates/create-project', {
+      template_id: templateId,
+      project_name: projectName,
+      schematic_overrides: schematicOverrides,
+      pcb_overrides: pcbOverrides,
+    });
+    return response.data;
+  },
+
+  // Phase 7B: Topology-aware Auto Layout
+  autoLayout: async (
+    topologyAware: boolean = true,
+    boardConstraints?: { width: number; height: number }
+  ): Promise<{
+    success: boolean;
+    topology_aware: boolean;
+    placed_count: number;
+    total_count: number;
+    score: number;
+    zones: Array<{
+      name: string;
+      group: string;
+      x: number; y: number;
+      width: number; height: number;
+      color: string;
+    }>;
+    isolation_slots: Array<{
+      x: number; y: number;
+      width: number; height: number;
+      voltage_label: string;
+      standard: string;
+    }>;
+    positions: Record<string, { x: number; y: number; rotation: number }>;
+    statistics: Record<string, any>;
+  }> => {
+    const response = await apiClient.post('/pcb/auto-layout', {
+      topology_aware: topologyAware,
+      board_constraints: boardConstraints,
+    });
+    return response.data;
+  },
+
+  // Phase 7C: Copper Pour
+  copperPour: async (options: {
+    nets?: string[];
+    layers?: string[];
+    style?: 'solid' | 'hatched';
+    hatch_width?: number;
+    hatch_gap?: number;
+    thermal_relief?: boolean;
+    stitch_vias?: boolean;
+    stitch_spacing?: number;
+    clearance?: number;
+  } = {}): Promise<{
+    success: boolean;
+    results: Array<{
+      net: string;
+      layer: string;
+      zone: boolean;
+      stitching_vias: number;
+    }>;
+    total_zones: number;
+    drc_check?: {
+      passed: boolean | null;
+      total_violations: number;
+      copper_violations: number;
+      violations: Array<{ rule: string; message: string }>;
+    };
+  }> => {
+    const response = await apiClient.post('/pcb/copper-pour', {
+      nets: options.nets || ['GND'],
+      layers: options.layers || ['B.Cu'],
+      style: options.style || 'solid',
+      hatch_width: options.hatch_width || 1.0,
+      hatch_gap: options.hatch_gap || 0.5,
+      thermal_relief: options.thermal_relief !== false,
+      stitch_vias: options.stitch_vias !== false,
+      stitch_spacing: options.stitch_spacing || 1.0,
+      clearance: options.clearance || 0.3,
+    });
+    return response.data;
+  },
+
+  createZone: async (request: {
+    net_name: string;
+    layer: string;
+    boundary_points: Array<{ x: number; y: number }>;
+    clearance?: number;
+    thermal_relief?: boolean;
+    hatched?: boolean;
+    hatch_width?: number;
+    hatch_gap?: number;
+  }): Promise<{
+    success: boolean;
+    net_name: string;
+    layer: string;
+    zone_data: any;
+    area: number;
+  }> => {
+    const response = await apiClient.post('/pcb/create-zone', request);
+    return response.data;
+  },
+
+  // Phase 8: Thermal Via Generation
+  generateThermalVias: async (request: {
+    component_x: number;
+    component_y: number;
+    component_width: number;
+    component_height: number;
+    target_rth?: number;
+    via_drill?: number;
+    via_size?: number;
+    spacing?: number;
+    net?: string;
+    avoid_pins?: Array<{ x: number; y: number; radius: number }>;
+  }): Promise<{
+    success: boolean;
+    via_count: number;
+    estimated_rth: number;
+    target_rth: number;
+    grid_rows: number;
+    grid_cols: number;
+    vias: Array<{ x: number; y: number; drill: number; size: number }>;
+    kicad_output: string;
+  }> => {
+    const response = await apiClient.post('/pcb/thermal-vias', request);
+    return response.data;
+  },
+
+  // Phase 8: Safety Isolation Generation
+  generateIsolation: async (request: {
+    board_width: number;
+    board_height: number;
+    primary_zone: number[];
+    secondary_zone: number[];
+    voltage?: number;
+    voltage_label?: string;
+    standard?: string;
+    add_barriers?: boolean;
+    num_barriers?: number;
+  }): Promise<{
+    success: boolean;
+    slot: { x: number; y: number; width: number; height: number; voltage_label: string; standard: string };
+    min_creepage_mm: number;
+    barriers_count: number;
+    kicad_output: string;
+  }> => {
+    const response = await apiClient.post('/pcb/isolation-generate', request);
+    return response.data;
+  },
+
+  getCreepageDistance: async (voltage: number, standard: string = 'IEC 60950-1'): Promise<{
+    success: boolean;
+    voltage: number;
+    standard: string;
+    min_creepage_mm: number;
+  }> => {
+    const response = await apiClient.get(`/pcb/isolation-creepage/${voltage}`, { params: { standard } });
+    return response.data;
+  },
+
+  // Phase 9: Differential Pair Routing
+  routeDiffPair: async (request: {
+    start_pos_x: number; start_pos_y: number;
+    start_neg_x: number; start_neg_y: number;
+    end_pos_x: number; end_pos_y: number;
+    end_neg_x: number; end_neg_y: number;
+    layer?: string;
+    target_impedance?: number;
+    max_length_mismatch?: number;
+  }): Promise<{
+    success: boolean;
+    pos_points: Array<{ x: number; y: number }>;
+    neg_points: Array<{ x: number; y: number }>;
+    pos_length: number;
+    neg_length: number;
+    length_mismatch: number;
+    impedance: number;
+    target_impedance: number;
+  }> => {
+    const response = await apiClient.post('/pcb/diff-pair-route', request);
+    return response.data;
+  },
+
+  calculateImpedance: async (request: {
+    target_impedance?: number;
+    tolerance_pct?: number;
+    substrate_height?: number;
+    er?: number;
+  }): Promise<{
+    success: boolean;
+    target_z: number;
+    tolerance_pct: number;
+    min_z: number;
+    max_z: number;
+    trace_width_mm: number;
+    trace_gap_mm: number;
+    common_targets: Record<string, number>;
+  }> => {
+    const response = await apiClient.post('/pcb/impedance-calculate', request);
+    return response.data;
+  },
+
+  lengthTune: async (request: {
+    points: Array<{ x: number; y: number }>;
+    target_length: number;
+    style?: 'serpentine' | 'sawtooth';
+    amplitude?: number;
+    pitch?: number;
+  }): Promise<{
+    success: boolean;
+    tuned_points: Array<{ x: number; y: number }>;
+    original_length: number;
+    tuned_length: number;
+    added_length: number;
+    bend_count: number;
+    style: string;
+  }> => {
+    const response = await apiClient.post('/pcb/length-tune', request);
+    return response.data;
+  },
+};
+
+// ==================== Design Agent API (Phase 7E) ====================
+
+export interface AgentProgress {
+  task_id: string;
+  current_step: string;
+  step_index: number;
+  total_steps: number;
+  progress_pct: number;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  intermediate_results: Record<string, unknown>;
+  step_durations: Record<string, number>;
+}
+
+export interface AgentStepResult {
+  step_type: string;
+  status: string;
+  message: string;
+  duration_s: number;
+  data?: Record<string, unknown>;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface AgentDesignResult {
+  task_id: string;
+  success: boolean;
+  steps: AgentStepResult[];
+  total_duration_s: number;
+  iterations: number;
+  error_message: string;
+  schematic?: Record<string, unknown>;
+  pcb?: Record<string, unknown>;
+  drc_result?: Record<string, unknown>;
+  bom?: Array<Record<string, unknown>>;
+}
+
+export const agentApi = {
+  // 启动多步设计流水线
+  startDesign: async (request: {
+    requirements: string;
+    max_iterations?: number;
+    project_name?: string;
+  }): Promise<{ success: boolean; task_id: string; message: string }> => {
+    const response = await apiClient.post('/agent/design', request);
+    return response.data;
+  },
+
+  // 获取实时进度
+  getProgress: async (taskId: string): Promise<AgentProgress> => {
+    const response = await apiClient.get(`/agent/progress/${taskId}`);
+    return response.data;
+  },
+
+  // 获取最终结果
+  getResult: async (taskId: string): Promise<AgentDesignResult> => {
+    const response = await apiClient.get(`/agent/result/${taskId}`);
+    return response.data;
+  },
+
+  // 列出所有任务
+  listTasks: async (): Promise<{
+    active: Array<{
+      task_id: string;
+      current_step: string;
+      progress_pct: number;
+      status: string;
+    }>;
+    recent_completed: Array<{
+      task_id: string;
+      success: boolean;
+      total_duration_s: number;
+    }>;
+    total_active: number;
+  }> => {
+    const response = await apiClient.get('/agent/tasks');
+    return response.data;
+  },
+
+  // 取消设计任务
+  cancelDesign: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post(`/agent/cancel/${taskId}`);
+    return response.data;
+  },
+
+  // 布局方案生成 (Phase 9)
+  generateLayoutCandidates: async (request: {
+    board_width: number;
+    board_height: number;
+    components: Array<{
+      reference: string;
+      footprint: string;
+      value: string;
+      width: number;
+      height: number;
+    }>;
+    net_connections?: Array<{ net: string; ref1: string; ref2: string }>;
+  }): Promise<{
+    success: boolean;
+    candidates: Array<{
+      strategy: string;
+      positions: Record<string, { x: number; y: number; rotation: number }>;
+      scores: {
+        overall: number;
+        utilization: number;
+        wire_length: number;
+        thermal: number;
+        routing: number;
+      };
+      description: string;
+    }>;
+    recommended: string | null;
+    message: string;
+  }> => {
+    const response = await apiClient.post('/pcb/layout-candidates', request);
+    return response.data;
+  },
+
+  // Phase 8D: Routing quality scoring
+  scoreRoutingQuality: async (request: {
+    total_nets: number;
+    routed_nets: number;
+    failed_nets?: string[];
+    drc_violations?: number;
+    total_track_length?: number;
+    ideal_track_length?: number;
+    total_vias?: number;
+    diff_pair_count?: number;
+    diff_pair_impedance_errors?: number;
+    diff_pair_length_mismatches?: number;
+    board_area?: number;
+  }): Promise<{
+    success: boolean;
+    total_score: number;
+    grade: string;
+    is_passing: boolean;
+    is_production_ready: boolean;
+    dimensions: Array<{
+      name: string;
+      score: number;
+      weight: number;
+      weighted_score: number;
+      details: string;
+    }>;
+    improvements: string[];
+    message: string;
+  }> => {
+    const response = await apiClient.post('/pcb/routing-quality', request);
     return response.data;
   },
 };

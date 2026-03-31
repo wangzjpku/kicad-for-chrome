@@ -26,6 +26,9 @@ from footprint_library import (
     infer_component_type,
 )
 
+# 导入快照模块
+from models.project_snapshot import get_snapshot_db
+
 logger = logging.getLogger(__name__)
 
 # 导入 PCB 评估器
@@ -820,6 +823,43 @@ async def list_projects(
         return all_projects[start:end]
 
 
+@router.get("/count", summary="获取项目数量")
+async def count_projects(
+    current_user: dict = Depends(get_current_user),
+    search: str = None,
+    filter: str = None,
+):
+    """获取当前用户项目数量"""
+    async with _projects_lock:
+        projects = list(_projects.values())
+
+        # 只返回当前用户自己的项目
+        user_id = str(current_user["user_id"])
+        projects = [p for p in projects if p.get("ownerId") == user_id]
+
+        # 搜索过滤
+        if search:
+            projects = [
+                p for p in projects if search.lower() in p.get("name", "").lower()
+            ]
+
+        # 状态过滤
+        if filter:
+            projects = [p for p in projects if p.get("status") == filter]
+
+        # 去重，保留最新
+        seen = {}
+        for project in projects:
+            name = project.get("name", "")
+            if name not in seen:
+                seen[name] = project
+            else:
+                if project.get("updatedAt", "") > seen[name].get("updatedAt", ""):
+                    seen[name] = project
+
+        return {"count": len(list(seen.values()))}
+
+
 @router.delete("/clear-all")
 async def clear_all_projects(
     confirm: str = Query(..., description="必须填写 CONFIRM_DELETE_ALL"),
@@ -1587,6 +1627,28 @@ async def get_drc_report(project_id: str):
 # ========== 导出 ==========
 
 
+@router.get("/{project_id}/export/formats")
+async def get_project_export_formats(project_id: str):
+    """获取项目支持的导出格式列表"""
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+    return {
+        "success": True,
+        "project_id": project_id,
+        "formats": [
+            {"id": "gerber", "name": "Gerber", "description": "PCB制造文件 (RS-274X)"},
+            {"id": "drill", "name": "Drill", "description": "钻孔文件 (Excellon)"},
+            {"id": "bom", "name": "BOM", "description": "物料清单 (CSV)"},
+            {"id": "pickplace", "name": "Pick and Place", "description": "贴片坐标文件"},
+            {"id": "pdf", "name": "PDF", "description": "PDF文档"},
+            {"id": "svg", "name": "SVG", "description": "SVG矢量图"},
+            {"id": "step", "name": "STEP", "description": "3D模型 (STEP/AP-214)"},
+        ]
+    }
+
+
 @router.post("/{project_id}/export/gerber")
 async def export_gerber(project_id: str):
     """导出 Gerber 文件 - 直接生成Gerber文件"""
@@ -2034,3 +2096,188 @@ async def get_export_formats():
             {"id": "step", "name": "STEP", "description": "3D模型"},
         ]
     }
+
+
+# ========== 项目快照 API ==========
+
+
+class CreateSnapshotRequest(BaseModel):
+    """创建快照请求"""
+    title: str
+    description: str = ""
+    include_schematic: bool = True
+    include_pcb: bool = True
+
+
+class SnapshotResponse(BaseModel):
+    """快照响应"""
+    id: str
+    project_id: str
+    version: int
+    title: str
+    description: str
+    created_at: str
+    has_schematic: bool
+    has_pcb: bool
+
+
+@router.post("/{project_id}/snapshots", response_model=SnapshotResponse)
+async def create_snapshot(
+    project_id: str,
+    request: CreateSnapshotRequest,
+):
+    """
+    创建项目快照
+
+    快照会保存当前的原理图和PCB数据，可以用于恢复或对比。
+    """
+    # 获取项目数据
+    schematic = _schematic_data.get(project_id)
+    pcb = _pcb_data.get(project_id)
+
+    if not schematic and not pcb:
+        raise HTTPException(status_code=404, detail="项目不存在或没有数据")
+
+    # 创建快照
+    db = get_snapshot_db()
+    snapshot = db.create_snapshot(
+        project_id=project_id,
+        title=request.title,
+        description=request.description,
+        schematic_data=schematic if request.include_schematic else None,
+        pcb_data=pcb if request.include_pcb else None,
+    )
+
+    if not snapshot:
+        raise HTTPException(status_code=500, detail="创建快照失败")
+
+    return SnapshotResponse(
+        id=snapshot.id,
+        project_id=snapshot.project_id,
+        version=snapshot.version,
+        title=snapshot.title,
+        description=snapshot.description,
+        created_at=snapshot.created_at,
+        has_schematic=bool(snapshot.schematic_data),
+        has_pcb=bool(snapshot.pcb_data),
+    )
+
+
+@router.get("/{project_id}/snapshots")
+async def list_snapshots(
+    project_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """列出项目的所有快照"""
+    db = get_snapshot_db()
+    snapshots = db.list_snapshots(project_id, limit, offset)
+
+    return {
+        "success": True,
+        "project_id": project_id,
+        "snapshots": [
+            {
+                "id": s.id,
+                "version": s.version,
+                "title": s.title,
+                "description": s.description,
+                "created_at": s.created_at,
+                "has_schematic": bool(s.schematic_data),
+                "has_pcb": bool(s.pcb_data),
+            }
+            for s in snapshots
+        ],
+        "total": len(snapshots),
+    }
+
+
+@router.get("/{project_id}/snapshots/{snapshot_id}")
+async def get_snapshot(
+    project_id: str,
+    snapshot_id: str,
+):
+    """获取快照详情"""
+    db = get_snapshot_db()
+    snapshot = db.get_snapshot(snapshot_id)
+
+    if not snapshot or snapshot.project_id != project_id:
+        raise HTTPException(status_code=404, detail="快照未找到")
+
+    return {
+        "success": True,
+        "snapshot": {
+            "id": snapshot.id,
+            "project_id": snapshot.project_id,
+            "version": snapshot.version,
+            "title": snapshot.title,
+            "description": snapshot.description,
+            "created_at": snapshot.created_at,
+            "schematic": snapshot.get_schematic_data(),
+            "pcb": snapshot.get_pcb_data(),
+        },
+    }
+
+
+@router.post("/{project_id}/snapshots/{snapshot_id}/restore")
+async def restore_snapshot(
+    project_id: str,
+    snapshot_id: str,
+):
+    """
+    恢复到指定快照
+
+    将快照中的原理图和PCB数据恢复到当前项目。
+    """
+    db = get_snapshot_db()
+    snapshot = db.get_snapshot(snapshot_id)
+
+    if not snapshot or snapshot.project_id != project_id:
+        raise HTTPException(status_code=404, detail="快照未找到")
+
+    # 恢复数据
+    if snapshot.schematic_data:
+        schematic = snapshot.get_schematic_data()
+        if schematic:
+            _schematic_data[project_id] = schematic
+            _save_schematic_data(project_id, schematic)
+
+    if snapshot.pcb_data:
+        pcb = snapshot.get_pcb_data()
+        if pcb:
+            _pcb_data[project_id] = pcb
+            _save_pcb_data(project_id, pcb)
+
+    return {
+        "success": True,
+        "message": f"已恢复到版本 {snapshot.version}",
+        "version": snapshot.version,
+    }
+
+
+@router.delete("/{project_id}/snapshots/{snapshot_id}")
+async def delete_snapshot(
+    project_id: str,
+    snapshot_id: str,
+):
+    """删除快照"""
+    db = get_snapshot_db()
+    snapshot = db.get_snapshot(snapshot_id)
+
+    if not snapshot or snapshot.project_id != project_id:
+        raise HTTPException(status_code=404, detail="快照未找到")
+
+    success = db.delete_snapshot(snapshot_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="删除失败")
+
+    return {"success": True, "message": "快照已删除"}
+
+
+@router.get("/{project_id}/snapshots/count")
+async def get_snapshot_count(project_id: str):
+    """获取快照数量"""
+    db = get_snapshot_db()
+    count = db.get_snapshot_count(project_id)
+    return {"success": True, "count": count}
+

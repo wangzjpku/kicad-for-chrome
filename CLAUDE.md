@@ -255,6 +255,22 @@ The agent (`kicad-ai-auto/agent/main.py`) provides multiple API sets depending o
 - `/api/admin/settings/ai` - AI model configuration
 - `/api/admin/settings/manufacturing` - Manufacturing options
 
+**Phase 6 Routes**:
+- `/api/v1/symbols/search` - Symbol search with fuzzy matching and category filters
+- `/api/v1/symbols/categories` - Symbol category listing
+- `/api/v1/symbols/bulk-place` - Bulk component placement from BOM
+- `/api/v1/pcb/fanout` - PCB fanout generation
+- `/api/v1/pcb/fanout/pin-spacing/{package_type}` - Get pin spacing for package
+- `/api/v1/templates` - Project template listing
+- `/api/v1/templates/categories` - Template categories
+- `/api/v1/templates/create-project` - Create project from template
+- `/api/v1/knowledge/health` - Knowledge base health status
+- `/api/v1/knowledge/quality/summary` - Quality gate statistics
+- `/api/v1/knowledge/categories` - Component categories
+- `/api/v1/knowledge/lcsc/search` - LCSC component search
+- `/api/v1/knowledge/parse/ad` - Parse Altium Designer schematics
+- `/api/v1/knowledge/parse/jlc` - Parse JLC EDA projects
+
 **Common Routes**:
 - `/api/health` - Health check endpoint
 - `/docs` - Swagger UI documentation (Auto-generated)

@@ -1,7 +1,7 @@
 {
-  "81415b4c-5f7a-478c-94c7-aff85a60e1e9": {
-    "id": "pcb-81415b4c-5f7a-478c-94c7-aff85a60e1e9",
-    "projectId": "81415b4c-5f7a-478c-94c7-aff85a60e1e9",
+  "12f76307-9781-4e95-9593-53e835f7373b": {
+    "id": "pcb-12f76307-9781-4e95-9593-53e835f7373b",
+    "projectId": "12f76307-9781-4e95-9593-53e835f7373b",
     "boardOutline": [
       {
         "x": 3,
@@ -124,9 +124,9 @@
       "netclassRules": []
     }
   },
-  "862ec44c-b08a-4eab-94f0-6cedda0fd7c0": {
-    "id": "pcb-862ec44c-b08a-4eab-94f0-6cedda0fd7c0",
-    "projectId": "862ec44c-b08a-4eab-94f0-6cedda0fd7c0",
+  "47a0b913-0b2e-4e80-9d72-a83081d5a231": {
+    "id": "pcb-47a0b913-0b2e-4e80-9d72-a83081d5a231",
+    "projectId": "47a0b913-0b2e-4e80-9d72-a83081d5a231",
     "boardOutline": [
       {
         "x": 3,
@@ -249,9 +249,9 @@
       "netclassRules": []
     }
   },
-  "10970860-766a-4125-8132-beeb22d5775d": {
-    "id": "pcb-10970860-766a-4125-8132-beeb22d5775d",
-    "projectId": "10970860-766a-4125-8132-beeb22d5775d",
+  "d16f5c91-1ddb-4207-a4d5-7ebb48725350": {
+    "id": "pcb-d16f5c91-1ddb-4207-a4d5-7ebb48725350",
+    "projectId": "d16f5c91-1ddb-4207-a4d5-7ebb48725350",
     "boardOutline": [
       {
         "x": 3,
@@ -374,9 +374,9 @@
       "netclassRules": []
     }
   },
-  "87b4b64e-f875-4a43-9e45-832adb005633": {
-    "id": "pcb-87b4b64e-f875-4a43-9e45-832adb005633",
-    "projectId": "87b4b64e-f875-4a43-9e45-832adb005633",
+  "267811dc-1c45-4dff-822c-f02fb58fc04e": {
+    "id": "pcb-267811dc-1c45-4dff-822c-f02fb58fc04e",
+    "projectId": "267811dc-1c45-4dff-822c-f02fb58fc04e",
     "boardOutline": [
       {
         "x": 3,
@@ -499,9 +499,9 @@
       "netclassRules": []
     }
   },
-  "ee333401-694a-4d73-8ced-93d134d70a29": {
-    "id": "pcb-ee333401-694a-4d73-8ced-93d134d70a29",
-    "projectId": "ee333401-694a-4d73-8ced-93d134d70a29",
+  "49910b1f-aae6-4ad6-9e57-c6895a4b00e4": {
+    "id": "pcb-49910b1f-aae6-4ad6-9e57-c6895a4b00e4",
+    "projectId": "49910b1f-aae6-4ad6-9e57-c6895a4b00e4",
     "boardOutline": [
       {
         "x": 3,
@@ -624,9 +624,9 @@
       "netclassRules": []
     }
   },
-  "75411f92-df5d-464d-ba37-07c518240565": {
-    "id": "pcb-75411f92-df5d-464d-ba37-07c518240565",
-    "projectId": "75411f92-df5d-464d-ba37-07c518240565",
+  "8ce754f6-4185-48cb-8fc9-de0d79d7797e": {
+    "id": "pcb-8ce754f6-4185-48cb-8fc9-de0d79d7797e",
+    "projectId": "8ce754f6-4185-48cb-8fc9-de0d79d7797e",
     "boardOutline": [
       {
         "x": 3,
@@ -749,9 +749,9 @@
       "netclassRules": []
     }
   },
-  "a2107a10-8ad3-4d84-92c1-33b2121624a7": {
-    "id": "pcb-a2107a10-8ad3-4d84-92c1-33b2121624a7",
-    "projectId": "a2107a10-8ad3-4d84-92c1-33b2121624a7",
+  "903dbcff-2c98-4ee9-b1e6-e460c0c69eea": {
+    "id": "pcb-903dbcff-2c98-4ee9-b1e6-e460c0c69eea",
+    "projectId": "903dbcff-2c98-4ee9-b1e6-e460c0c69eea",
     "boardOutline": [
       {
         "x": 3,
@@ -874,9 +874,9 @@
       "netclassRules": []
     }
   },
-  "e845bf3d-5e42-400e-ab56-1082ea893846": {
-    "id": "pcb-e845bf3d-5e42-400e-ab56-1082ea893846",
-    "projectId": "e845bf3d-5e42-400e-ab56-1082ea893846",
+  "baeaa2a3-b148-4ca1-8822-2541c770f651": {
+    "id": "pcb-baeaa2a3-b148-4ca1-8822-2541c770f651",
+    "projectId": "baeaa2a3-b148-4ca1-8822-2541c770f651",
     "boardOutline": [
       {
         "x": 3,
@@ -999,9 +999,134 @@
       "netclassRules": []
     }
   },
-  "977cc80f-d4bb-44ff-af4a-9e1355db6540": {
-    "id": "pcb-977cc80f-d4bb-44ff-af4a-9e1355db6540",
-    "projectId": "977cc80f-d4bb-44ff-af4a-9e1355db6540",
+  "f7731e51-4043-46dc-85bf-57a611be64c5": {
+    "id": "pcb-f7731e51-4043-46dc-85bf-57a611be64c5",
+    "projectId": "f7731e51-4043-46dc-85bf-57a611be64c5",
+    "boardOutline": [
+      {
+        "x": 3.0,
+        "y": 3.0
+      },
+      {
+        "x": 77.0,
+        "y": 3.0
+      },
+      {
+        "x": 77.0,
+        "y": 57.0
+      },
+      {
+        "x": 3.0,
+        "y": 57.0
+      }
+    ],
+    "boardWidth": 80.0,
+    "boardHeight": 60.0,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "R1",
+        "value": "1K",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": -0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0.75,
+              "y": 0
+            },
+            "size": {
+              "x": 0.8,
+              "y": 0.9
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "5c0530c2-d4a6-4033-827f-6a31a2b8ed6b": {
+    "id": "pcb-5c0530c2-d4a6-4033-827f-6a31a2b8ed6b",
+    "projectId": "5c0530c2-d4a6-4033-827f-6a31a2b8ed6b",
     "boardOutline": [
       {
         "x": 3,
@@ -1124,134 +1249,9 @@
       "netclassRules": []
     }
   },
-  "2abd6035-6499-4f1a-9374-faefb6c1d850": {
-    "id": "pcb-2abd6035-6499-4f1a-9374-faefb6c1d850",
-    "projectId": "2abd6035-6499-4f1a-9374-faefb6c1d850",
-    "boardOutline": [
-      {
-        "x": 3,
-        "y": 3
-      },
-      {
-        "x": 77,
-        "y": 3
-      },
-      {
-        "x": 77,
-        "y": 57
-      },
-      {
-        "x": 3,
-        "y": 57
-      }
-    ],
-    "boardWidth": 80,
-    "boardHeight": 60,
-    "boardThickness": 1.6,
-    "layerStack": [
-      {
-        "id": "F.Cu",
-        "name": "F.Cu",
-        "type": "signal",
-        "color": "#FF0000",
-        "visible": true,
-        "active": true,
-        "layerNumber": 0,
-        "thickness": 0.035
-      },
-      {
-        "id": "B.Cu",
-        "name": "B.Cu",
-        "type": "signal",
-        "color": "#00FF00",
-        "visible": true,
-        "active": false,
-        "layerNumber": 31,
-        "thickness": 0.035
-      }
-    ],
-    "footprints": [
-      {
-        "id": "FP1",
-        "reference": "R1",
-        "value": "1K",
-        "footprint": "Resistor_SMD:R_0603_1608Metric",
-        "layer": "F.Cu",
-        "position": {
-          "x": 30,
-          "y": 30
-        },
-        "rotation": 0,
-        "locked": false,
-        "attributes": [],
-        "pad": [
-          {
-            "id": "P1",
-            "number": "1",
-            "name": "1",
-            "type": "smd",
-            "shape": "rect",
-            "position": {
-              "x": -0.75,
-              "y": 0
-            },
-            "size": {
-              "x": 0.8,
-              "y": 0.9
-            },
-            "drill": 0,
-            "layer": "F.Cu",
-            "net": null
-          },
-          {
-            "id": "P2",
-            "number": "2",
-            "name": "2",
-            "type": "smd",
-            "shape": "rect",
-            "position": {
-              "x": 0.75,
-              "y": 0
-            },
-            "size": {
-              "x": 0.8,
-              "y": 0.9
-            },
-            "drill": 0,
-            "layer": "F.Cu",
-            "net": null
-          }
-        ]
-      }
-    ],
-    "tracks": [],
-    "vias": [],
-    "zones": [],
-    "texts": [],
-    "nets": [
-      {
-        "id": "net-gnd",
-        "name": "GND"
-      },
-      {
-        "id": "net-vcc",
-        "name": "VCC"
-      }
-    ],
-    "netclasses": [],
-    "designRules": {
-      "minTrackWidth": 0.1,
-      "minViaSize": 0.4,
-      "minViaDrill": 0.2,
-      "minClearance": 0.1,
-      "minHoleClearance": 0.2,
-      "layerRules": {},
-      "netclassRules": []
-    }
-  },
-  "eae0f8ea-2d98-424b-a5fd-e88b22142f44": {
-    "id": "pcb-eae0f8ea-2d98-424b-a5fd-e88b22142f44",
-    "projectId": "eae0f8ea-2d98-424b-a5fd-e88b22142f44",
+  "b530b4f9-412d-4bb5-9bfc-e6af7b33daf2": {
+    "id": "pcb-b530b4f9-412d-4bb5-9bfc-e6af7b33daf2",
+    "projectId": "b530b4f9-412d-4bb5-9bfc-e6af7b33daf2",
     "boardOutline": [
       {
         "x": 3,
@@ -1321,9 +1321,9 @@
       "netclassRules": []
     }
   },
-  "818f24b9-ed9f-4fee-be4d-d042c1a32fdf": {
-    "id": "pcb-818f24b9-ed9f-4fee-be4d-d042c1a32fdf",
-    "projectId": "818f24b9-ed9f-4fee-be4d-d042c1a32fdf",
+  "7de953b5-b563-4dd1-984e-c873884888b2": {
+    "id": "pcb-7de953b5-b563-4dd1-984e-c873884888b2",
+    "projectId": "7de953b5-b563-4dd1-984e-c873884888b2",
     "boardOutline": [
       {
         "x": 3,
@@ -1369,17 +1369,6 @@
     ],
     "footprints": [
       {
-        "reference": "R0",
-        "value": "1K",
-        "libraryName": "Resistor_SMD",
-        "footprintName": "R_0603_1608Metric",
-        "position": {
-          "x": 0,
-          "y": 0
-        },
-        "id": "fp-e43fbade-679c-49a8-8b2b-9977e7fc7b64"
-      },
-      {
         "reference": "R1",
         "value": "1K",
         "libraryName": "Resistor_SMD",
@@ -1388,7 +1377,18 @@
           "x": 10,
           "y": 10
         },
-        "id": "fp-b7210ac5-4beb-40cc-ad0e-4c2e12911cc6"
+        "id": "fp-f40748b7-ea49-4946-86e3-5d634163e264"
+      },
+      {
+        "reference": "R0",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "id": "fp-99f5755d-8d3f-4974-a616-8fc015f1f07b"
       },
       {
         "reference": "R2",
@@ -1399,29 +1399,7 @@
           "x": 20,
           "y": 20
         },
-        "id": "fp-04d24af7-20d9-4da7-a8ca-a40683076546"
-      },
-      {
-        "reference": "R4",
-        "value": "1K",
-        "libraryName": "Resistor_SMD",
-        "footprintName": "R_0603_1608Metric",
-        "position": {
-          "x": 40,
-          "y": 40
-        },
-        "id": "fp-419f0b78-1004-448a-af85-98a136274072"
-      },
-      {
-        "reference": "R5",
-        "value": "1K",
-        "libraryName": "Resistor_SMD",
-        "footprintName": "R_0603_1608Metric",
-        "position": {
-          "x": 50,
-          "y": 50
-        },
-        "id": "fp-6b1078f9-4a09-4e38-a6c2-54f7ba0174a1"
+        "id": "fp-ab4d72db-b0c1-481b-9d00-1fe5d70c32ff"
       },
       {
         "reference": "R3",
@@ -1432,7 +1410,29 @@
           "x": 30,
           "y": 30
         },
-        "id": "fp-a4722749-9124-499c-8622-654a01f251a6"
+        "id": "fp-5a9db3dc-7ccb-4554-807a-3b4ce8fc48e1"
+      },
+      {
+        "reference": "R4",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "id": "fp-b1f93d39-3a82-45e2-a77d-7bdbec1895ab"
+      },
+      {
+        "reference": "R5",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 50,
+          "y": 50
+        },
+        "id": "fp-3f83dc18-3dc9-4026-9b90-6ae8f44aa287"
       },
       {
         "reference": "R6",
@@ -1443,7 +1443,7 @@
           "x": 60,
           "y": 60
         },
-        "id": "fp-34c90016-a262-4570-9b74-ca367ad4821c"
+        "id": "fp-4735cfae-a8fa-4971-8d36-683eedb425fd"
       },
       {
         "reference": "R7",
@@ -1454,7 +1454,7 @@
           "x": 70,
           "y": 70
         },
-        "id": "fp-5ffedecd-2402-44a3-a0b4-f7f8fe28e6e1"
+        "id": "fp-f71841c8-a72e-43a9-a6d1-f938cac2fe5c"
       },
       {
         "reference": "R8",
@@ -1465,7 +1465,7 @@
           "x": 80,
           "y": 80
         },
-        "id": "fp-15545383-90e9-4480-b73c-187d7b3a0014"
+        "id": "fp-41e52dc2-c312-4c16-9077-7e2a7bde56c7"
       },
       {
         "reference": "R9",
@@ -1476,7 +1476,7 @@
           "x": 90,
           "y": 90
         },
-        "id": "fp-c8a01bac-a655-4129-8b2d-d23c527cdd7e"
+        "id": "fp-30f12d1d-50f3-4e65-a587-f23c47a84f8f"
       },
       {
         "reference": "R10",
@@ -1487,18 +1487,7 @@
           "x": 100,
           "y": 100
         },
-        "id": "fp-67357057-559a-4c70-8147-dc664c751f1f"
-      },
-      {
-        "reference": "R11",
-        "value": "1K",
-        "libraryName": "Resistor_SMD",
-        "footprintName": "R_0603_1608Metric",
-        "position": {
-          "x": 110,
-          "y": 110
-        },
-        "id": "fp-c634dbf1-2ae6-436a-b81a-058b0a6c555e"
+        "id": "fp-36078b1b-a138-4330-814c-cab3d8259be9"
       },
       {
         "reference": "R12",
@@ -1509,7 +1498,18 @@
           "x": 120,
           "y": 120
         },
-        "id": "fp-25267bc4-a334-43b0-805d-b17dbe2ba05d"
+        "id": "fp-feac2739-44e8-4a20-8d2e-646c630d9ce3"
+      },
+      {
+        "reference": "R11",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 110,
+          "y": 110
+        },
+        "id": "fp-e92be8c7-2aab-4ae7-95d6-7e2c4c80bf21"
       },
       {
         "reference": "R13",
@@ -1520,7 +1520,7 @@
           "x": 130,
           "y": 130
         },
-        "id": "fp-1ee379fa-d124-4f47-abf0-321023787dcb"
+        "id": "fp-316c08fd-ecba-45a8-839d-27f514189b2f"
       },
       {
         "reference": "R14",
@@ -1531,7 +1531,7 @@
           "x": 140,
           "y": 140
         },
-        "id": "fp-73935d18-e15b-4903-a603-8629fa9a681b"
+        "id": "fp-37bd82ca-06d2-442c-b014-69a72e657a11"
       },
       {
         "reference": "R15",
@@ -1542,18 +1542,7 @@
           "x": 150,
           "y": 150
         },
-        "id": "fp-d35e15c9-cff3-44fe-83ff-070a0d7d57d5"
-      },
-      {
-        "reference": "R17",
-        "value": "1K",
-        "libraryName": "Resistor_SMD",
-        "footprintName": "R_0603_1608Metric",
-        "position": {
-          "x": 170,
-          "y": 170
-        },
-        "id": "fp-931e04f5-122b-4282-b534-4ac781dcbf2f"
+        "id": "fp-8bade23f-30fe-4da9-abb4-d5fa09d9bd23"
       },
       {
         "reference": "R16",
@@ -1564,7 +1553,18 @@
           "x": 160,
           "y": 160
         },
-        "id": "fp-92a6f477-a3e1-41f9-b1c9-acbe6853a1f0"
+        "id": "fp-c704634b-e5d6-4f90-a98e-79867328b76a"
+      },
+      {
+        "reference": "R17",
+        "value": "1K",
+        "libraryName": "Resistor_SMD",
+        "footprintName": "R_0603_1608Metric",
+        "position": {
+          "x": 170,
+          "y": 170
+        },
+        "id": "fp-7fab9ae9-cfda-420b-8643-a42b01e51a01"
       },
       {
         "reference": "R18",
@@ -1575,7 +1575,7 @@
           "x": 180,
           "y": 180
         },
-        "id": "fp-dfc501aa-df2d-4d64-a4aa-255c6999db8d"
+        "id": "fp-8b9582e3-5d47-49f5-bcfc-fb3d351e58b9"
       },
       {
         "reference": "R19",
@@ -1586,7 +1586,7 @@
           "x": 190,
           "y": 190
         },
-        "id": "fp-76a7d3c9-59fb-488d-8bde-8a756765c735"
+        "id": "fp-5b42e6c6-8b23-42b4-b966-95302e9a117d"
       }
     ],
     "tracks": [],
@@ -1614,9 +1614,9 @@
       "netclassRules": []
     }
   },
-  "3da9fef0-e910-4eee-96b7-1dcfa7317263": {
-    "id": "pcb-3da9fef0-e910-4eee-96b7-1dcfa7317263",
-    "projectId": "3da9fef0-e910-4eee-96b7-1dcfa7317263",
+  "b0646fa1-7657-46c1-aa09-35f2e759f617": {
+    "id": "pcb-b0646fa1-7657-46c1-aa09-35f2e759f617",
+    "projectId": "b0646fa1-7657-46c1-aa09-35f2e759f617",
     "boardOutline": [
       {
         "x": 3,
@@ -1686,9 +1686,9 @@
       "netclassRules": []
     }
   },
-  "dab63ec0-9173-4a60-925a-f5f924142137": {
-    "id": "pcb-dab63ec0-9173-4a60-925a-f5f924142137",
-    "projectId": "dab63ec0-9173-4a60-925a-f5f924142137",
+  "e1fe3ebf-1647-414e-a22f-2539e5d6a8e7": {
+    "id": "pcb-e1fe3ebf-1647-414e-a22f-2539e5d6a8e7",
+    "projectId": "e1fe3ebf-1647-414e-a22f-2539e5d6a8e7",
     "boardOutline": [
       {
         "x": 3,
@@ -1745,6 +1745,4428 @@
       {
         "id": "net-vcc",
         "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "7f0580bb-8d89-458b-a9e9-1bd1f2c8e1b3": {
+    "id": "pcb-7f0580bb-8d89-458b-a9e9-1bd1f2c8e1b3",
+    "projectId": "7f0580bb-8d89-458b-a9e9-1bd1f2c8e1b3",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "7bbe98a5-3c0b-405a-a8c1-763e3692b942": {
+    "id": "pcb-7bbe98a5-3c0b-405a-a8c1-763e3692b942",
+    "projectId": "7bbe98a5-3c0b-405a-a8c1-763e3692b942",
+    "boardOutline": [
+      {
+        "x": 3,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 3
+      },
+      {
+        "x": 77,
+        "y": 57
+      },
+      {
+        "x": 3,
+        "y": 57
+      }
+    ],
+    "boardWidth": 80,
+    "boardHeight": 60,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [],
+    "tracks": [],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-gnd",
+        "name": "GND"
+      },
+      {
+        "id": "net-vcc",
+        "name": "VCC"
+      }
+    ],
+    "netclasses": [],
+    "designRules": {
+      "minTrackWidth": 0.1,
+      "minViaSize": 0.4,
+      "minViaDrill": 0.2,
+      "minClearance": 0.1,
+      "minHoleClearance": 0.2,
+      "layerRules": {},
+      "netclassRules": []
+    }
+  },
+  "de4c2045-7004-4271-beb9-ebe32600e62e": {
+    "id": "pcb-de4c2045-7004-4271-beb9-ebe32600e62e",
+    "projectId": "de4c2045-7004-4271-beb9-ebe32600e62e",
+    "boardOutline": [
+      {
+        "x": 3.0,
+        "y": 3.0
+      },
+      {
+        "x": 47.0,
+        "y": 3.0
+      },
+      {
+        "x": 47.0,
+        "y": 27.0
+      },
+      {
+        "x": 3.0,
+        "y": 27.0
+      }
+    ],
+    "boardWidth": 50.0,
+    "boardHeight": 30.0,
+    "boardThickness": 1.6,
+    "layerStack": [
+      {
+        "id": "F.Cu",
+        "name": "F.Cu",
+        "type": "signal",
+        "color": "#FF0000",
+        "visible": true,
+        "active": true,
+        "layerNumber": 0,
+        "thickness": 0.035
+      },
+      {
+        "id": "B.Cu",
+        "name": "B.Cu",
+        "type": "signal",
+        "color": "#00FF00",
+        "visible": true,
+        "active": false,
+        "layerNumber": 31,
+        "thickness": 0.035
+      }
+    ],
+    "footprints": [
+      {
+        "id": "FP1",
+        "reference": "U2",
+        "value": "AMS1117-3.3",
+        "footprint": "Package_TO_SOT_SMD:SOT-223",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "VOUT",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P3",
+            "number": "3",
+            "name": "VIN",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 5.08
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP2",
+        "reference": "U4",
+        "value": "ESP32-WROOM",
+        "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "layer": "F.Cu",
+        "position": {
+          "x": 55,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "VDD",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P3",
+            "number": "3",
+            "name": "EN",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 5.08
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P4",
+            "number": "4",
+            "name": "SENSOR_VP",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 7.62
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P5",
+            "number": "5",
+            "name": "SENSOR_VN",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 10.16
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P6",
+            "number": "6",
+            "name": "IO34",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 12.7
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P7",
+            "number": "7",
+            "name": "IO35",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 15.24
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P8",
+            "number": "8",
+            "name": "IO32",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 17.78
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P9",
+            "number": "9",
+            "name": "IO33",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 20.32
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P10",
+            "number": "10",
+            "name": "IO25",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 22.86
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P11",
+            "number": "11",
+            "name": "IO26",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 25.4
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P12",
+            "number": "12",
+            "name": "IO27",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 27.94
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P13",
+            "number": "13",
+            "name": "IO14",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 30.48
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P14",
+            "number": "14",
+            "name": "IO12",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 33.02
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P15",
+            "number": "15",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 35.56
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P16",
+            "number": "16",
+            "name": "IO13",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 38.1
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P17",
+            "number": "17",
+            "name": "SHD/SD2",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 40.64
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P18",
+            "number": "18",
+            "name": "SWP/SD3",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 43.18
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P19",
+            "number": "19",
+            "name": "SCS/CMD",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 45.72
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P20",
+            "number": "20",
+            "name": "SCK/CLK",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 48.26
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P21",
+            "number": "21",
+            "name": "SDO/SD0",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 50.8
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P22",
+            "number": "22",
+            "name": "SDI/SD1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 53.34
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P23",
+            "number": "23",
+            "name": "IO15",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 55.88
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P24",
+            "number": "24",
+            "name": "IO2",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 58.42
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P25",
+            "number": "25",
+            "name": "IO0",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 60.96
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P26",
+            "number": "26",
+            "name": "IO4",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 63.5
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P27",
+            "number": "27",
+            "name": "IO16",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 66.04
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P28",
+            "number": "28",
+            "name": "IO17",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 68.58
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P29",
+            "number": "29",
+            "name": "IO5",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 71.12
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P30",
+            "number": "30",
+            "name": "IO18",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 73.66
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P31",
+            "number": "31",
+            "name": "IO19",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 76.2
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P32",
+            "number": "32",
+            "name": "NC",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 78.74
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P33",
+            "number": "33",
+            "name": "IO21",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 81.28
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P34",
+            "number": "34",
+            "name": "RXD0/IO3",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 83.82000000000001
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P35",
+            "number": "35",
+            "name": "TXD0/IO1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 86.36
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P36",
+            "number": "36",
+            "name": "IO22",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 88.9
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P37",
+            "number": "37",
+            "name": "IO23",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 91.44
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P38",
+            "number": "38",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 93.98
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P39",
+            "number": "39",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 96.52
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP3",
+        "reference": "J1",
+        "value": "Micro-USB",
+        "footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001",
+        "layer": "F.Cu",
+        "position": {
+          "x": 80,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "VBUS",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "D-",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P3",
+            "number": "3",
+            "name": "D+",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 5.08
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P4",
+            "number": "4",
+            "name": "ID",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 7.62
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P5",
+            "number": "5",
+            "name": "GND",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 10.16
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P6",
+            "number": "SH",
+            "name": "Shield",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 12.7
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP4",
+        "reference": "C1",
+        "value": "10uF 25V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 105,
+          "y": 30
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "+",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "-",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP5",
+        "reference": "C2",
+        "value": "10uF 25V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 50
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "+",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "-",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP6",
+        "reference": "C3",
+        "value": "100nF 50V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 55,
+          "y": 50
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP7",
+        "reference": "C4",
+        "value": "100nF 50V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 80,
+          "y": 50
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP8",
+        "reference": "C5",
+        "value": "100nF 50V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 105,
+          "y": 50
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP9",
+        "reference": "C6",
+        "value": "100nF 50V",
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 70
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP10",
+        "reference": "R8",
+        "value": "10kΩ 5%",
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 55,
+          "y": 70
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP11",
+        "reference": "R10",
+        "value": "10kΩ 5%",
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 80,
+          "y": 70
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP12",
+        "reference": "D2",
+        "value": "0603 Red",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 105,
+          "y": 70
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "A",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "K",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      },
+      {
+        "id": "FP13",
+        "reference": "SW1",
+        "value": "6x6x5",
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "layer": "F.Cu",
+        "position": {
+          "x": 30,
+          "y": 90
+        },
+        "rotation": 0,
+        "locked": false,
+        "attributes": [],
+        "pad": [
+          {
+            "id": "P1",
+            "number": "1",
+            "name": "P1",
+            "type": "smd",
+            "shape": "circle",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          },
+          {
+            "id": "P2",
+            "number": "2",
+            "name": "P2",
+            "type": "smd",
+            "shape": "rect",
+            "position": {
+              "x": 0,
+              "y": 2.54
+            },
+            "size": {
+              "x": 1.5,
+              "y": 1.5
+            },
+            "drill": 0,
+            "layer": "F.Cu",
+            "net": null
+          }
+        ]
+      }
+    ],
+    "tracks": [
+      {
+        "id": "track-1",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 30
+          },
+          {
+            "x": 30,
+            "y": 30
+          },
+          {
+            "x": 30,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-2",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 32.54
+          },
+          {
+            "x": 30,
+            "y": 32.54
+          },
+          {
+            "x": 30,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-3",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 35.08
+          },
+          {
+            "x": 30,
+            "y": 35.08
+          },
+          {
+            "x": 30,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-4",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 50
+          },
+          {
+            "x": 30,
+            "y": 50
+          },
+          {
+            "x": 30,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-5",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 52.54
+          },
+          {
+            "x": 30,
+            "y": 52.54
+          },
+          {
+            "x": 30,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-6",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 70
+          },
+          {
+            "x": 30,
+            "y": 70
+          },
+          {
+            "x": 30,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-7",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 72.54
+          },
+          {
+            "x": 30,
+            "y": 72.54
+          },
+          {
+            "x": 30,
+            "y": 90
+          }
+        ]
+      },
+      {
+        "id": "track-8",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 90
+          },
+          {
+            "x": 30,
+            "y": 90
+          },
+          {
+            "x": 30,
+            "y": 92.54
+          }
+        ]
+      },
+      {
+        "id": "track-9",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 92.54
+          },
+          {
+            "x": 55,
+            "y": 92.54
+          },
+          {
+            "x": 55,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-10",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 30
+          },
+          {
+            "x": 55,
+            "y": 30
+          },
+          {
+            "x": 55,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-11",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 32.54
+          },
+          {
+            "x": 55,
+            "y": 32.54
+          },
+          {
+            "x": 55,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-12",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 35.08
+          },
+          {
+            "x": 55,
+            "y": 35.08
+          },
+          {
+            "x": 55,
+            "y": 37.62
+          }
+        ]
+      },
+      {
+        "id": "track-13",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 37.62
+          },
+          {
+            "x": 55,
+            "y": 37.62
+          },
+          {
+            "x": 55,
+            "y": 40.16
+          }
+        ]
+      },
+      {
+        "id": "track-14",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 40.16
+          },
+          {
+            "x": 55,
+            "y": 40.16
+          },
+          {
+            "x": 55,
+            "y": 42.7
+          }
+        ]
+      },
+      {
+        "id": "track-15",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 42.7
+          },
+          {
+            "x": 55,
+            "y": 42.7
+          },
+          {
+            "x": 55,
+            "y": 45.24
+          }
+        ]
+      },
+      {
+        "id": "track-16",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 45.24
+          },
+          {
+            "x": 55,
+            "y": 45.24
+          },
+          {
+            "x": 55,
+            "y": 47.78
+          }
+        ]
+      },
+      {
+        "id": "track-17",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 47.78
+          },
+          {
+            "x": 55,
+            "y": 47.78
+          },
+          {
+            "x": 55,
+            "y": 50.32
+          }
+        ]
+      },
+      {
+        "id": "track-18",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 50.32
+          },
+          {
+            "x": 55,
+            "y": 50.32
+          },
+          {
+            "x": 55,
+            "y": 52.86
+          }
+        ]
+      },
+      {
+        "id": "track-19",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 52.86
+          },
+          {
+            "x": 55,
+            "y": 52.86
+          },
+          {
+            "x": 55,
+            "y": 55.4
+          }
+        ]
+      },
+      {
+        "id": "track-20",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 55.4
+          },
+          {
+            "x": 55,
+            "y": 55.4
+          },
+          {
+            "x": 55,
+            "y": 57.94
+          }
+        ]
+      },
+      {
+        "id": "track-21",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 57.94
+          },
+          {
+            "x": 55,
+            "y": 57.94
+          },
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          }
+        ]
+      },
+      {
+        "id": "track-22",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          },
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          },
+          {
+            "x": 55,
+            "y": 63.02
+          }
+        ]
+      },
+      {
+        "id": "track-23",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 63.02
+          },
+          {
+            "x": 55,
+            "y": 63.02
+          },
+          {
+            "x": 55,
+            "y": 65.56
+          }
+        ]
+      },
+      {
+        "id": "track-24",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 65.56
+          },
+          {
+            "x": 55,
+            "y": 65.56
+          },
+          {
+            "x": 55,
+            "y": 68.1
+          }
+        ]
+      },
+      {
+        "id": "track-25",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 68.1
+          },
+          {
+            "x": 55,
+            "y": 68.1
+          },
+          {
+            "x": 55,
+            "y": 70.64
+          }
+        ]
+      },
+      {
+        "id": "track-26",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 70.64
+          },
+          {
+            "x": 55,
+            "y": 70.64
+          },
+          {
+            "x": 55,
+            "y": 73.18
+          }
+        ]
+      },
+      {
+        "id": "track-27",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 73.18
+          },
+          {
+            "x": 55,
+            "y": 73.18
+          },
+          {
+            "x": 55,
+            "y": 75.72
+          }
+        ]
+      },
+      {
+        "id": "track-28",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 75.72
+          },
+          {
+            "x": 55,
+            "y": 75.72
+          },
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          }
+        ]
+      },
+      {
+        "id": "track-29",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          },
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          },
+          {
+            "x": 55,
+            "y": 80.8
+          }
+        ]
+      },
+      {
+        "id": "track-30",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 80.8
+          },
+          {
+            "x": 55,
+            "y": 80.8
+          },
+          {
+            "x": 55,
+            "y": 83.34
+          }
+        ]
+      },
+      {
+        "id": "track-31",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 83.34
+          },
+          {
+            "x": 55,
+            "y": 83.34
+          },
+          {
+            "x": 55,
+            "y": 85.88
+          }
+        ]
+      },
+      {
+        "id": "track-32",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 85.88
+          },
+          {
+            "x": 55,
+            "y": 85.88
+          },
+          {
+            "x": 55,
+            "y": 88.42
+          }
+        ]
+      },
+      {
+        "id": "track-33",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 88.42
+          },
+          {
+            "x": 55,
+            "y": 88.42
+          },
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          }
+        ]
+      },
+      {
+        "id": "track-34",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          },
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          },
+          {
+            "x": 55,
+            "y": 93.5
+          }
+        ]
+      },
+      {
+        "id": "track-35",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 93.5
+          },
+          {
+            "x": 55,
+            "y": 93.5
+          },
+          {
+            "x": 55,
+            "y": 96.04
+          }
+        ]
+      },
+      {
+        "id": "track-36",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 96.04
+          },
+          {
+            "x": 55,
+            "y": 96.04
+          },
+          {
+            "x": 55,
+            "y": 98.58
+          }
+        ]
+      },
+      {
+        "id": "track-37",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 98.58
+          },
+          {
+            "x": 55,
+            "y": 98.58
+          },
+          {
+            "x": 55,
+            "y": 101.12
+          }
+        ]
+      },
+      {
+        "id": "track-38",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 101.12
+          },
+          {
+            "x": 55,
+            "y": 101.12
+          },
+          {
+            "x": 55,
+            "y": 103.66
+          }
+        ]
+      },
+      {
+        "id": "track-39",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 103.66
+          },
+          {
+            "x": 55,
+            "y": 103.66
+          },
+          {
+            "x": 55,
+            "y": 106.2
+          }
+        ]
+      },
+      {
+        "id": "track-40",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 106.2
+          },
+          {
+            "x": 55,
+            "y": 106.2
+          },
+          {
+            "x": 55,
+            "y": 108.74
+          }
+        ]
+      },
+      {
+        "id": "track-41",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 108.74
+          },
+          {
+            "x": 55,
+            "y": 108.74
+          },
+          {
+            "x": 55,
+            "y": 111.28
+          }
+        ]
+      },
+      {
+        "id": "track-42",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 111.28
+          },
+          {
+            "x": 55,
+            "y": 111.28
+          },
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          }
+        ]
+      },
+      {
+        "id": "track-43",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          },
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          },
+          {
+            "x": 55,
+            "y": 116.36
+          }
+        ]
+      },
+      {
+        "id": "track-44",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 116.36
+          },
+          {
+            "x": 55,
+            "y": 116.36
+          },
+          {
+            "x": 55,
+            "y": 118.9
+          }
+        ]
+      },
+      {
+        "id": "track-45",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 118.9
+          },
+          {
+            "x": 55,
+            "y": 118.9
+          },
+          {
+            "x": 55,
+            "y": 121.44
+          }
+        ]
+      },
+      {
+        "id": "track-46",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 121.44
+          },
+          {
+            "x": 55,
+            "y": 121.44
+          },
+          {
+            "x": 55,
+            "y": 123.98
+          }
+        ]
+      },
+      {
+        "id": "track-47",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 123.98
+          },
+          {
+            "x": 55,
+            "y": 123.98
+          },
+          {
+            "x": 55,
+            "y": 126.52
+          }
+        ]
+      },
+      {
+        "id": "track-48",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 126.52
+          },
+          {
+            "x": 55,
+            "y": 126.52
+          },
+          {
+            "x": 55,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-49",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 50
+          },
+          {
+            "x": 55,
+            "y": 50
+          },
+          {
+            "x": 55,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-50",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 52.54
+          },
+          {
+            "x": 55,
+            "y": 52.54
+          },
+          {
+            "x": 55,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-51",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 70
+          },
+          {
+            "x": 55,
+            "y": 70
+          },
+          {
+            "x": 55,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-52",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 72.54
+          },
+          {
+            "x": 80,
+            "y": 72.54
+          },
+          {
+            "x": 80,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-53",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 30
+          },
+          {
+            "x": 80,
+            "y": 30
+          },
+          {
+            "x": 80,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-54",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 32.54
+          },
+          {
+            "x": 80,
+            "y": 32.54
+          },
+          {
+            "x": 80,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-55",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 35.08
+          },
+          {
+            "x": 80,
+            "y": 35.08
+          },
+          {
+            "x": 80,
+            "y": 37.62
+          }
+        ]
+      },
+      {
+        "id": "track-56",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 37.62
+          },
+          {
+            "x": 80,
+            "y": 37.62
+          },
+          {
+            "x": 80,
+            "y": 40.16
+          }
+        ]
+      },
+      {
+        "id": "track-57",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 40.16
+          },
+          {
+            "x": 80,
+            "y": 40.16
+          },
+          {
+            "x": 80,
+            "y": 42.7
+          }
+        ]
+      },
+      {
+        "id": "track-58",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 42.7
+          },
+          {
+            "x": 80,
+            "y": 42.7
+          },
+          {
+            "x": 80,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-59",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 50
+          },
+          {
+            "x": 80,
+            "y": 50
+          },
+          {
+            "x": 80,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-60",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 52.54
+          },
+          {
+            "x": 80,
+            "y": 52.54
+          },
+          {
+            "x": 80,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-61",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 70
+          },
+          {
+            "x": 80,
+            "y": 70
+          },
+          {
+            "x": 80,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-62",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 72.54
+          },
+          {
+            "x": 105,
+            "y": 72.54
+          },
+          {
+            "x": 105,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-63",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 30
+          },
+          {
+            "x": 105,
+            "y": 30
+          },
+          {
+            "x": 105,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-64",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 32.54
+          },
+          {
+            "x": 105,
+            "y": 32.54
+          },
+          {
+            "x": 105,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-65",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 50
+          },
+          {
+            "x": 105,
+            "y": 50
+          },
+          {
+            "x": 105,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-66",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 52.54
+          },
+          {
+            "x": 105,
+            "y": 52.54
+          },
+          {
+            "x": 105,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-67",
+        "net": "VCC",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 70
+          },
+          {
+            "x": 105,
+            "y": 70
+          },
+          {
+            "x": 105,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-68",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 30
+          },
+          {
+            "x": 30,
+            "y": 30
+          },
+          {
+            "x": 30,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-69",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 32.54
+          },
+          {
+            "x": 30,
+            "y": 32.54
+          },
+          {
+            "x": 30,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-70",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 35.08
+          },
+          {
+            "x": 30,
+            "y": 35.08
+          },
+          {
+            "x": 30,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-71",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 50
+          },
+          {
+            "x": 30,
+            "y": 50
+          },
+          {
+            "x": 30,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-72",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 52.54
+          },
+          {
+            "x": 30,
+            "y": 52.54
+          },
+          {
+            "x": 30,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-73",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 70
+          },
+          {
+            "x": 30,
+            "y": 70
+          },
+          {
+            "x": 30,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-74",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 72.54
+          },
+          {
+            "x": 30,
+            "y": 72.54
+          },
+          {
+            "x": 30,
+            "y": 90
+          }
+        ]
+      },
+      {
+        "id": "track-75",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 90
+          },
+          {
+            "x": 30,
+            "y": 90
+          },
+          {
+            "x": 30,
+            "y": 92.54
+          }
+        ]
+      },
+      {
+        "id": "track-76",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 30,
+            "y": 92.54
+          },
+          {
+            "x": 55,
+            "y": 92.54
+          },
+          {
+            "x": 55,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-77",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 30
+          },
+          {
+            "x": 55,
+            "y": 30
+          },
+          {
+            "x": 55,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-78",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 32.54
+          },
+          {
+            "x": 55,
+            "y": 32.54
+          },
+          {
+            "x": 55,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-79",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 35.08
+          },
+          {
+            "x": 55,
+            "y": 35.08
+          },
+          {
+            "x": 55,
+            "y": 37.62
+          }
+        ]
+      },
+      {
+        "id": "track-80",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 37.62
+          },
+          {
+            "x": 55,
+            "y": 37.62
+          },
+          {
+            "x": 55,
+            "y": 40.16
+          }
+        ]
+      },
+      {
+        "id": "track-81",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 40.16
+          },
+          {
+            "x": 55,
+            "y": 40.16
+          },
+          {
+            "x": 55,
+            "y": 42.7
+          }
+        ]
+      },
+      {
+        "id": "track-82",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 42.7
+          },
+          {
+            "x": 55,
+            "y": 42.7
+          },
+          {
+            "x": 55,
+            "y": 45.24
+          }
+        ]
+      },
+      {
+        "id": "track-83",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 45.24
+          },
+          {
+            "x": 55,
+            "y": 45.24
+          },
+          {
+            "x": 55,
+            "y": 47.78
+          }
+        ]
+      },
+      {
+        "id": "track-84",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 47.78
+          },
+          {
+            "x": 55,
+            "y": 47.78
+          },
+          {
+            "x": 55,
+            "y": 50.32
+          }
+        ]
+      },
+      {
+        "id": "track-85",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 50.32
+          },
+          {
+            "x": 55,
+            "y": 50.32
+          },
+          {
+            "x": 55,
+            "y": 52.86
+          }
+        ]
+      },
+      {
+        "id": "track-86",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 52.86
+          },
+          {
+            "x": 55,
+            "y": 52.86
+          },
+          {
+            "x": 55,
+            "y": 55.4
+          }
+        ]
+      },
+      {
+        "id": "track-87",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 55.4
+          },
+          {
+            "x": 55,
+            "y": 55.4
+          },
+          {
+            "x": 55,
+            "y": 57.94
+          }
+        ]
+      },
+      {
+        "id": "track-88",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 57.94
+          },
+          {
+            "x": 55,
+            "y": 57.94
+          },
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          }
+        ]
+      },
+      {
+        "id": "track-89",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          },
+          {
+            "x": 55,
+            "y": 60.480000000000004
+          },
+          {
+            "x": 55,
+            "y": 63.02
+          }
+        ]
+      },
+      {
+        "id": "track-90",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 63.02
+          },
+          {
+            "x": 55,
+            "y": 63.02
+          },
+          {
+            "x": 55,
+            "y": 65.56
+          }
+        ]
+      },
+      {
+        "id": "track-91",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 65.56
+          },
+          {
+            "x": 55,
+            "y": 65.56
+          },
+          {
+            "x": 55,
+            "y": 68.1
+          }
+        ]
+      },
+      {
+        "id": "track-92",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 68.1
+          },
+          {
+            "x": 55,
+            "y": 68.1
+          },
+          {
+            "x": 55,
+            "y": 70.64
+          }
+        ]
+      },
+      {
+        "id": "track-93",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 70.64
+          },
+          {
+            "x": 55,
+            "y": 70.64
+          },
+          {
+            "x": 55,
+            "y": 73.18
+          }
+        ]
+      },
+      {
+        "id": "track-94",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 73.18
+          },
+          {
+            "x": 55,
+            "y": 73.18
+          },
+          {
+            "x": 55,
+            "y": 75.72
+          }
+        ]
+      },
+      {
+        "id": "track-95",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 75.72
+          },
+          {
+            "x": 55,
+            "y": 75.72
+          },
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          }
+        ]
+      },
+      {
+        "id": "track-96",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          },
+          {
+            "x": 55,
+            "y": 78.25999999999999
+          },
+          {
+            "x": 55,
+            "y": 80.8
+          }
+        ]
+      },
+      {
+        "id": "track-97",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 80.8
+          },
+          {
+            "x": 55,
+            "y": 80.8
+          },
+          {
+            "x": 55,
+            "y": 83.34
+          }
+        ]
+      },
+      {
+        "id": "track-98",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 83.34
+          },
+          {
+            "x": 55,
+            "y": 83.34
+          },
+          {
+            "x": 55,
+            "y": 85.88
+          }
+        ]
+      },
+      {
+        "id": "track-99",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 85.88
+          },
+          {
+            "x": 55,
+            "y": 85.88
+          },
+          {
+            "x": 55,
+            "y": 88.42
+          }
+        ]
+      },
+      {
+        "id": "track-100",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 88.42
+          },
+          {
+            "x": 55,
+            "y": 88.42
+          },
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          }
+        ]
+      },
+      {
+        "id": "track-101",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          },
+          {
+            "x": 55,
+            "y": 90.96000000000001
+          },
+          {
+            "x": 55,
+            "y": 93.5
+          }
+        ]
+      },
+      {
+        "id": "track-102",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 93.5
+          },
+          {
+            "x": 55,
+            "y": 93.5
+          },
+          {
+            "x": 55,
+            "y": 96.04
+          }
+        ]
+      },
+      {
+        "id": "track-103",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 96.04
+          },
+          {
+            "x": 55,
+            "y": 96.04
+          },
+          {
+            "x": 55,
+            "y": 98.58
+          }
+        ]
+      },
+      {
+        "id": "track-104",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 98.58
+          },
+          {
+            "x": 55,
+            "y": 98.58
+          },
+          {
+            "x": 55,
+            "y": 101.12
+          }
+        ]
+      },
+      {
+        "id": "track-105",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 101.12
+          },
+          {
+            "x": 55,
+            "y": 101.12
+          },
+          {
+            "x": 55,
+            "y": 103.66
+          }
+        ]
+      },
+      {
+        "id": "track-106",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 103.66
+          },
+          {
+            "x": 55,
+            "y": 103.66
+          },
+          {
+            "x": 55,
+            "y": 106.2
+          }
+        ]
+      },
+      {
+        "id": "track-107",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 106.2
+          },
+          {
+            "x": 55,
+            "y": 106.2
+          },
+          {
+            "x": 55,
+            "y": 108.74
+          }
+        ]
+      },
+      {
+        "id": "track-108",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 108.74
+          },
+          {
+            "x": 55,
+            "y": 108.74
+          },
+          {
+            "x": 55,
+            "y": 111.28
+          }
+        ]
+      },
+      {
+        "id": "track-109",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 111.28
+          },
+          {
+            "x": 55,
+            "y": 111.28
+          },
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          }
+        ]
+      },
+      {
+        "id": "track-110",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          },
+          {
+            "x": 55,
+            "y": 113.82000000000001
+          },
+          {
+            "x": 55,
+            "y": 116.36
+          }
+        ]
+      },
+      {
+        "id": "track-111",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 116.36
+          },
+          {
+            "x": 55,
+            "y": 116.36
+          },
+          {
+            "x": 55,
+            "y": 118.9
+          }
+        ]
+      },
+      {
+        "id": "track-112",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 118.9
+          },
+          {
+            "x": 55,
+            "y": 118.9
+          },
+          {
+            "x": 55,
+            "y": 121.44
+          }
+        ]
+      },
+      {
+        "id": "track-113",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 121.44
+          },
+          {
+            "x": 55,
+            "y": 121.44
+          },
+          {
+            "x": 55,
+            "y": 123.98
+          }
+        ]
+      },
+      {
+        "id": "track-114",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 123.98
+          },
+          {
+            "x": 55,
+            "y": 123.98
+          },
+          {
+            "x": 55,
+            "y": 126.52
+          }
+        ]
+      },
+      {
+        "id": "track-115",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 126.52
+          },
+          {
+            "x": 55,
+            "y": 126.52
+          },
+          {
+            "x": 55,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-116",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 50
+          },
+          {
+            "x": 55,
+            "y": 50
+          },
+          {
+            "x": 55,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-117",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 52.54
+          },
+          {
+            "x": 55,
+            "y": 52.54
+          },
+          {
+            "x": 55,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-118",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 70
+          },
+          {
+            "x": 55,
+            "y": 70
+          },
+          {
+            "x": 55,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-119",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 55,
+            "y": 72.54
+          },
+          {
+            "x": 80,
+            "y": 72.54
+          },
+          {
+            "x": 80,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-120",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 30
+          },
+          {
+            "x": 80,
+            "y": 30
+          },
+          {
+            "x": 80,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-121",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 32.54
+          },
+          {
+            "x": 80,
+            "y": 32.54
+          },
+          {
+            "x": 80,
+            "y": 35.08
+          }
+        ]
+      },
+      {
+        "id": "track-122",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 35.08
+          },
+          {
+            "x": 80,
+            "y": 35.08
+          },
+          {
+            "x": 80,
+            "y": 37.62
+          }
+        ]
+      },
+      {
+        "id": "track-123",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 37.62
+          },
+          {
+            "x": 80,
+            "y": 37.62
+          },
+          {
+            "x": 80,
+            "y": 40.16
+          }
+        ]
+      },
+      {
+        "id": "track-124",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 40.16
+          },
+          {
+            "x": 80,
+            "y": 40.16
+          },
+          {
+            "x": 80,
+            "y": 42.7
+          }
+        ]
+      },
+      {
+        "id": "track-125",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 42.7
+          },
+          {
+            "x": 80,
+            "y": 42.7
+          },
+          {
+            "x": 80,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-126",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 50
+          },
+          {
+            "x": 80,
+            "y": 50
+          },
+          {
+            "x": 80,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-127",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 52.54
+          },
+          {
+            "x": 80,
+            "y": 52.54
+          },
+          {
+            "x": 80,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-128",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 70
+          },
+          {
+            "x": 80,
+            "y": 70
+          },
+          {
+            "x": 80,
+            "y": 72.54
+          }
+        ]
+      },
+      {
+        "id": "track-129",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 80,
+            "y": 72.54
+          },
+          {
+            "x": 105,
+            "y": 72.54
+          },
+          {
+            "x": 105,
+            "y": 30
+          }
+        ]
+      },
+      {
+        "id": "track-130",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 30
+          },
+          {
+            "x": 105,
+            "y": 30
+          },
+          {
+            "x": 105,
+            "y": 32.54
+          }
+        ]
+      },
+      {
+        "id": "track-131",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 32.54
+          },
+          {
+            "x": 105,
+            "y": 32.54
+          },
+          {
+            "x": 105,
+            "y": 50
+          }
+        ]
+      },
+      {
+        "id": "track-132",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 50
+          },
+          {
+            "x": 105,
+            "y": 50
+          },
+          {
+            "x": 105,
+            "y": 52.54
+          }
+        ]
+      },
+      {
+        "id": "track-133",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 52.54
+          },
+          {
+            "x": 105,
+            "y": 52.54
+          },
+          {
+            "x": 105,
+            "y": 70
+          }
+        ]
+      },
+      {
+        "id": "track-134",
+        "net": "GND",
+        "layer": "F.Cu",
+        "width": 0.25,
+        "points": [
+          {
+            "x": 105,
+            "y": 70
+          },
+          {
+            "x": 105,
+            "y": 70
+          },
+          {
+            "x": 105,
+            "y": 72.54
+          }
+        ]
+      }
+    ],
+    "vias": [],
+    "zones": [],
+    "texts": [],
+    "nets": [
+      {
+        "id": "net-1",
+        "name": "VCC"
+      },
+      {
+        "id": "net-2",
+        "name": "GND"
+      },
+      {
+        "id": "net-3",
+        "name": "VOUT_U2_C1"
+      },
+      {
+        "id": "net-4",
+        "name": "VOUT_U2_C2"
+      },
+      {
+        "id": "net-5",
+        "name": "VOUT_U2_C3"
+      },
+      {
+        "id": "net-6",
+        "name": "VOUT_U2_C4"
+      },
+      {
+        "id": "net-7",
+        "name": "VOUT_U2_C5"
+      },
+      {
+        "id": "net-8",
+        "name": "VOUT_U2_C6"
+      },
+      {
+        "id": "net-9",
+        "name": "VOUT_U2_R8"
+      },
+      {
+        "id": "net-10",
+        "name": "VOUT_U2_R10"
+      },
+      {
+        "id": "net-11",
+        "name": "VOUT_U2_U2"
+      },
+      {
+        "id": "net-12",
+        "name": "VOUT_U2_U4"
+      },
+      {
+        "id": "net-13",
+        "name": "VOUT_U2_SW1"
+      },
+      {
+        "id": "net-14",
+        "name": "RC_R8_C1"
+      },
+      {
+        "id": "net-15",
+        "name": "RC_R8_C2"
+      },
+      {
+        "id": "net-16",
+        "name": "RC_R8_C3"
+      },
+      {
+        "id": "net-17",
+        "name": "RC_R8_C4"
+      },
+      {
+        "id": "net-18",
+        "name": "RC_R8_C5"
+      },
+      {
+        "id": "net-19",
+        "name": "RC_R8_C6"
+      },
+      {
+        "id": "net-20",
+        "name": "RC_R10_C1"
+      },
+      {
+        "id": "net-21",
+        "name": "RC_R10_C2"
+      },
+      {
+        "id": "net-22",
+        "name": "RC_R10_C3"
+      },
+      {
+        "id": "net-23",
+        "name": "RC_R10_C4"
+      },
+      {
+        "id": "net-24",
+        "name": "RC_R10_C5"
+      },
+      {
+        "id": "net-25",
+        "name": "RC_R10_C6"
       }
     ],
     "netclasses": [],

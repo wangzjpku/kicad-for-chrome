@@ -169,8 +169,8 @@ class LayerCalculator:
 
         # 从 high_speed_signals 提取高速信号信息
         high_speed_signals = circuit_data.get("high_speed_signals", [])
-        if isinstance(high_speed_signals, list):
-            analysis.high_speed_io_count = len(high_speed_signals)
+        if isinstance(high_speed_signals, list) and high_speed_signals:
+            analysis.high_speed_io_count = max(analysis.high_speed_io_count, len(high_speed_signals))
             for signal in high_speed_signals:
                 if isinstance(signal, dict):
                     freq = signal.get("frequency_ghz", 0)
@@ -278,9 +278,23 @@ class LayerCalculator:
 
     def _analyze_components(self, analysis: CircuitAnalysis, components: List) -> None:
         """从元件列表中推断电路类型"""
-        high_speed_keywords = ["USB", "Ethernet", "PCIe", "DDR", "HDMI", "DP", "SFP"]
-        power_keywords = ["MOSFET", "IGBT", "Motor", "Driver", " regulator", "power"]
-        rf_keywords = ["RF", "Wifi", "Bluetooth", " transceiver", "antenna"]
+        high_speed_keywords = [
+            "USB", "usb_c", "usb_b", "usb_a", "usb3",
+            "Ethernet", "eth", "phy",
+            "PCIe", "DDR", "HDMI", "DP", "SFP",
+        ]
+        power_keywords = [
+            "MOSFET", "IGBT", "Motor", "Driver", " regulator", "power",
+            "ams1117", "lm7805", "lm7812", "lm317", "lm337",
+            "lt1083", "ap2112", "rt9013",
+        ]
+        rf_keywords = [
+            "RF", "Wifi", "WiFi", "Bluetooth", "BLE", " transceiver", "antenna",
+            "esp32", "esp8266", "esp-c3", "esp-c6", "esp-s2", "esp-s3",
+            "nrf52", "nrf52832", "nrf52840",
+            "cc2530", "cc2652",
+            "wroom",
+        ]
 
         component_refs = [str(c) for c in components]
 

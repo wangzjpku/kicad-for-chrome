@@ -398,6 +398,15 @@ class SymbolLibParser:
             "attiny85": ("MCU_Microchip_ATtiny", "ATtiny85-20PU"),
             "ch340": ("Interface_USB", "CH340G"),
             "cp2102": ("Interface_USB", "CP2102"),
+            "ne555": ("Timer", "NE555"),
+            "lm555": ("Timer", "LM555"),
+            "ttl": ("Timer", "NE555"),
+            "op07": ("Amplifier_Operational", "OP07"),
+            "lm358": ("Amplifier_Operational", "LM358"),
+            "lm741": ("Amplifier_Operational", "UA741"),
+            "lm393": ("Comparator", "LM393"),
+            "max232": ("Interface_UART", "MAX232"),
+            "ft232": ("Interface_USB", "FT232RL"),
         }
 
         # 知识库到KiCad实际库名的映射（解决knowledge_base与KiCad库名不一致问题）
@@ -427,9 +436,11 @@ class SymbolLibParser:
         if search_results:
             return search_results[0]
 
-        # 返回默认符号 (通用IC)
+        # 返回默认符号 (通用IC符号)
+        # 优先使用 Device:U (IC), 而非 Device:R (电阻)
         return (
-            self.get_symbol("Device", "R")
+            self.get_symbol("Device", "U")
+            or self.get_symbol("Device", "R")
             or list(self._libs_cache.get("Device", {}).values())[0]
             if self._libs_cache.get("Device")
             else None

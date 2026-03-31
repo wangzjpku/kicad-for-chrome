@@ -60,7 +60,7 @@ interface ApiEndpoint {
 }
 
 export default function AdminPanel({ onClose }: { onClose?: () => void }) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tokens' | 'projects' | 'system' | 'cache' | 'pcb' | 'ai' | 'manufacturing'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tokens' | 'projects' | 'system' | 'cache' | 'pcb' | 'ai' | 'manufacturing' | 'templates' | 'knowledge'>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
   const [logs, setLogs] = useState<TokenLog[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -240,6 +240,8 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
     { id: 'pcb', label: '🔧 PCB参数' },
     { id: 'ai', label: '🤖 AI模型' },
     { id: 'manufacturing', label: '🏭 制造选项' },
+    { id: 'templates', label: '📋 模板管理' },
+    { id: 'knowledge', label: '🧠 知识库' },
   ];
 
   return (
@@ -371,6 +373,14 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
         {!loading && activeTab === 'manufacturing' && (
           <ManufacturingSettingsView />
+        )}
+
+        {!loading && activeTab === 'templates' && (
+          <TemplatesView />
+        )}
+
+        {!loading && activeTab === 'knowledge' && (
+          <KnowledgeBaseView />
         )}
       </div>
     </div>
@@ -1060,6 +1070,448 @@ function ManufacturingSettingsView() {
           <p>总价: ${estimate.total_price}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ========== 模板管理 ==========
+
+function TemplatesView() {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadTemplates();
+    loadCategories();
+  }, [selectedCategory, searchKeyword]);
+
+  const loadTemplates = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedCategory) params.append('category', selectedCategory);
+      if (searchKeyword) params.append('search', searchKeyword);
+      const queryString = params.toString();
+      const res = await fetch(`/api/v1/templates${queryString ? `?${queryString}` : ''}`);
+      const data = await res.json();
+      if (data.success) {
+        setTemplates(data.templates);
+      }
+    } catch (e) {
+      console.error('Failed to load templates:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await fetch('/api/v1/templates/categories');
+      const data = await res.json();
+      if (data.success) {
+        setCategories(data.categories);
+      }
+    } catch (e) {
+      console.error('Failed to load categories:', e);
+    }
+  };
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    mcu_board: '#ba68c8',
+    power: '#f44336',
+    sensor: '#42a5f5',
+    interface: '#5c6bc0',
+    wireless: '#26c6da',
+    display: '#ff7043',
+    motor: '#8d6e63',
+    custom: '#78909c',
+  };
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 20px' }}>📋 项目模板管理</h3>
+
+      {/* 搜索框 */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          placeholder="搜索模板名称或描述..."
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            backgroundColor: '#2d2d2d',
+            border: '1px solid #4a4a4a',
+            borderRadius: 4,
+            color: '#e0e0e0',
+            fontSize: 13,
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      {/* 类别过滤 */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setSelectedCategory(null)}
+          style={{
+            padding: '6px 14px',
+            backgroundColor: selectedCategory === null ? '#4a9eff' : '#3d3d3d',
+            border: '1px solid #4a4a4a',
+            borderRadius: 4,
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: 12,
+          }}
+        >
+          全部
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setSelectedCategory(cat.value)}
+            style={{
+              padding: '6px 14px',
+              backgroundColor: selectedCategory === cat.value ? '#4a9eff' : '#3d3d3d',
+              border: '1px solid #4a4a4a',
+              borderRadius: 4,
+              color: selectedCategory === cat.value ? '#fff' : CATEGORY_COLORS[cat.value] || '#a0a0a0',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 模板列表 */}
+      {loading ? (
+        <div style={{ color: '#707070', textAlign: 'center', padding: 40 }}>加载中...</div>
+      ) : templates.length === 0 ? (
+        <div style={{ color: '#707070', textAlign: 'center', padding: 40 }}>暂无模板</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {templates.map((template) => (
+            <div
+              key={template.template_id}
+              style={{
+                backgroundColor: THEME.bg.card,
+                borderRadius: 8,
+                padding: 16,
+                border: '1px solid #3d3d3d',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    backgroundColor: CATEGORY_COLORS[template.category] || '#78909c',
+                    borderRadius: 3,
+                    fontSize: 10,
+                    color: '#fff',
+                  }}
+                >
+                  {template.category}
+                </span>
+                {template.is_predefined && (
+                  <span style={{ fontSize: 10, color: '#4a9eff' }}>预定义</span>
+                )}
+              </div>
+              <h4 style={{ margin: '0 0 4px', color: '#e0e0e0' }}>{template.name}</h4>
+              <div style={{ color: '#a0a0a0', fontSize: 12, marginBottom: 8 }}>
+                {template.name_cn}
+              </div>
+              <p style={{ color: '#707070', fontSize: 11, margin: '0 0 12px', lineHeight: 1.5 }}>
+                {template.description?.substring(0, 80)}
+                {template.description && template.description.length > 80 ? '...' : ''}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {template.tags?.slice(0, 3).map((tag: string) => (
+                  <span
+                    key={tag}
+                    style={{
+                      padding: '2px 6px',
+                      backgroundColor: '#3d3d3d',
+                      borderRadius: 3,
+                      fontSize: 10,
+                      color: '#a0a0a0',
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div style={{ marginTop: 12, color: '#707070', fontSize: 10 }}>
+                作者: {template.author}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== 知识库管理 ==========
+
+interface KnowledgeStats {
+  components_count: number;
+  templates_count: number;
+  categories_count: number;
+  quality_stats: Record<string, number>;
+}
+
+function KnowledgeBaseView() {
+  const [stats, setStats] = useState<KnowledgeStats | null>(null);
+  const [qualitySummary, setQualitySummary] = useState<any>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadKnowledgeData();
+  }, []);
+
+  const loadKnowledgeData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [healthRes, qualityRes, catRes] = await Promise.all([
+        fetch('/api/v1/knowledge/health'),
+        fetch('/api/v1/knowledge/quality/summary'),
+        fetch('/api/v1/knowledge/categories'),
+      ]);
+
+      const [healthData, qualityData, catData] = await Promise.all([
+        healthRes.json(),
+        qualityRes.json(),
+        catRes.json(),
+      ]);
+
+      if (healthData.status === 'ok') {
+        setStats({
+          components_count: healthData.components_count || 0,
+          templates_count: healthData.templates_count || 0,
+          categories_count: catData.count || 0,
+          quality_stats: qualityData.stats?.by_category || {},
+        });
+      }
+
+      if (qualityData.success) {
+        setQualitySummary(qualityData);
+      }
+
+      if (catData.success) {
+        setCategories(catData.categories || []);
+      }
+    } catch (e) {
+      console.error('Failed to load knowledge data:', e);
+      setError('加载知识库数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ color: '#707070', textAlign: 'center', padding: 40 }}>
+        加载中...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ color: '#ef4444', textAlign: 'center', padding: 40 }}>
+        {error}
+      </div>
+    );
+  }
+
+  const categoryColors: Record<string, string> = {
+    mcu: '#ba68c8',
+    wireless: '#26c6da',
+    usb: '#5c6bc0',
+    power: '#f44336',
+    driver: '#ff7043',
+    amplifier: '#42a5f5',
+    rtc: '#5c6bc0',
+    memory: '#8d6e63',
+    sensor: '#26c6da',
+    audio: '#fbbf24',
+  };
+
+  const totalComponents = stats?.components_count || 0;
+  const topCategories = Object.entries(stats?.quality_stats || {})
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, 8);
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 20px' }}>🧠 知识库状态</h3>
+
+      {/* 统计卡片 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div style={{
+          backgroundColor: THEME.bg.card,
+          borderRadius: 8,
+          padding: 16,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32, fontWeight: 'bold', color: '#4a9eff' }}>
+            {totalComponents}
+          </div>
+          <div style={{ color: '#a0a0a0', fontSize: 12 }}>元件总数</div>
+        </div>
+        <div style={{
+          backgroundColor: THEME.bg.card,
+          borderRadius: 8,
+          padding: 16,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32, fontWeight: 'bold', color: '#4caf50' }}>
+            {stats?.templates_count || 0}
+          </div>
+          <div style={{ color: '#a0a0a0', fontSize: 12 }}>模板数量</div>
+        </div>
+        <div style={{
+          backgroundColor: THEME.bg.card,
+          borderRadius: 8,
+          padding: 16,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32, fontWeight: 'bold', color: '#ba68c8' }}>
+            {stats?.categories_count || 0}
+          </div>
+          <div style={{ color: '#a0a0a0', fontSize: 12 }}>元件类别</div>
+        </div>
+        <div style={{
+          backgroundColor: THEME.bg.card,
+          borderRadius: 8,
+          padding: 16,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32, fontWeight: 'bold', color: '#fbbf24' }}>
+            {qualitySummary?.stats?.total || 0}
+          </div>
+          <div style={{ color: '#a0a0a0', fontSize: 12 }}>质量门控项</div>
+        </div>
+      </div>
+
+      {/* 质量门控状态 */}
+      {qualitySummary && (
+        <div style={{
+          backgroundColor: THEME.bg.card,
+          borderRadius: 8,
+          padding: 16,
+          marginBottom: 24,
+        }}>
+          <h4 style={{ margin: '0 0 12px', color: '#e0e0e0' }}>质量门控服务</h4>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ color: '#4caf50', fontSize: 13 }}>
+              ✓ 服务状态: {qualitySummary.service}
+            </div>
+            <div style={{ color: '#a0a0a0', fontSize: 13 }}>
+              版本: {qualitySummary.version}
+            </div>
+            <div style={{ color: '#a0a0a0', fontSize: 13 }}>
+              元件验证: {qualitySummary.stats?.total || 0} 项
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 元件类别分布 */}
+      <div style={{
+        backgroundColor: THEME.bg.card,
+        borderRadius: 8,
+        padding: 16,
+        marginBottom: 24,
+      }}>
+        <h4 style={{ margin: '0 0 12px', color: '#e0e0e0' }}>元件类别分布</h4>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {topCategories.map(([cat, count]) => (
+            <div
+              key={cat}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                backgroundColor: '#2d2d2d',
+                borderRadius: 4,
+                borderLeft: `3px solid ${categoryColors[cat] || '#78909c'}`,
+              }}
+            >
+              <span style={{ color: '#e0e0e0', fontSize: 13, fontWeight: 500 }}>
+                {cat}
+              </span>
+              <span style={{
+                padding: '2px 8px',
+                backgroundColor: categoryColors[cat] || '#78909c',
+                borderRadius: 3,
+                fontSize: 11,
+                color: '#fff',
+              }}>
+                {count as number}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 知识库类别列表 */}
+      <div style={{
+        backgroundColor: THEME.bg.card,
+        borderRadius: 8,
+        padding: 16,
+      }}>
+        <h4 style={{ margin: '0 0 12px', color: '#e0e0e0' }}>所有元件类别 ({categories.length})</h4>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {categories.slice(0, 30).map((cat) => (
+            <span
+              key={cat}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: '#3d3d3d',
+                borderRadius: 4,
+                fontSize: 11,
+                color: '#a0a0a0',
+              }}
+            >
+              {cat}
+            </span>
+          ))}
+          {categories.length > 30 && (
+            <span style={{ padding: '4px 10px', fontSize: 11, color: '#707070' }}>
+              ... 还有 {categories.length - 30} 个
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 刷新按钮 */}
+      <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <button
+          onClick={loadKnowledgeData}
+          style={{
+            padding: '8px 24px',
+            backgroundColor: '#4a9eff',
+            border: 'none',
+            borderRadius: 4,
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: 13,
+          }}
+        >
+          刷新数据
+        </button>
+      </div>
     </div>
   );
 }

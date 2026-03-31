@@ -29,6 +29,7 @@ class RuleType(Enum):
     MANUFACTURING = "manufacturing"      # 制造规则
     HIGH_SPEED = "high_speed"            # 高速信号规则
     THERMAL = "thermal"                  # 热设计规则
+    SAFETY = "safety"                    # 安全隔离规则
 
 
 class RuleSeverity(Enum):
@@ -320,6 +321,61 @@ class AdvancedDRCEngine:
                    description="测试点覆盖率(%)", severity=RuleSeverity.INFO),
         ]
         self.rules.extend(manufacturing_rules)
+
+        # ========== 6. 安全隔离规则 (4条) — Phase 8 ==========
+        safety_rules = [
+            DRCRule("SAFETY_010", RuleType.SAFETY, 6.0,
+                   description="Primary/secondary clearance: 6mm for 220V AC "
+                               "(IEC 60950-1)",
+                   severity=RuleSeverity.ERROR,
+                   category="safety"),
+            DRCRule("SAFETY_011", RuleType.SAFETY, 0.0,
+                   description="Isolation slot integrity: no copper breaks across "
+                               "the isolation barrier",
+                   severity=RuleSeverity.ERROR,
+                   category="safety"),
+            DRCRule("SAFETY_012", RuleType.SAFETY, 4.0,
+                   description="Thermal via density: >= 4 vias per Watt for "
+                               "power ICs",
+                   severity=RuleSeverity.WARNING,
+                   category="safety"),
+            DRCRule("SAFETY_013", RuleType.SAFETY, 1.0,
+                   description="High-voltage trace to board edge distance: "
+                               ">= 1mm",
+                   severity=RuleSeverity.ERROR,
+                   category="safety"),
+        ]
+        self.rules.extend(safety_rules)
+
+        # ========== 7. SMPS安规增强规则 (5条) — Phase 9 ==========
+        smps_safety_rules = [
+            DRCRule("SMPS_001", RuleType.SAFETY, 6.0,
+                   description="Creepage distance: primary to secondary "
+                               ">= 6mm (reinforced, 220V AC, IEC 62368-1)",
+                   severity=RuleSeverity.ERROR,
+                   category="smps_safety"),
+            DRCRule("SMPS_002", RuleType.SAFETY, 4.0,
+                   description="Clearance distance: primary to secondary "
+                               ">= 4mm (reinforced, 220V AC)",
+                   severity=RuleSeverity.ERROR,
+                   category="smps_safety"),
+            DRCRule("SMPS_003", RuleType.SAFETY, 3.0,
+                   description="Y-capacitor creepage: Y-cap body must span "
+                               ">= 3mm across isolation barrier",
+                   severity=RuleSeverity.WARNING,
+                   category="smps_safety"),
+            DRCRule("SMPS_004", RuleType.SAFETY, 0.0,
+                   description="No primary-side copper in secondary zone "
+                               "(and vice versa)",
+                   severity=RuleSeverity.ERROR,
+                   category="smps_safety"),
+            DRCRule("SMPS_005", RuleType.SAFETY, 0.5,
+                   description="Solder mask bridge over isolation slot: "
+                               ">= 0.5mm each side",
+                   severity=RuleSeverity.WARNING,
+                   category="smps_safety"),
+        ]
+        self.rules.extend(smps_safety_rules)
 
         logger.info(f"Initialized {len(self.rules)} DRC rules")
 

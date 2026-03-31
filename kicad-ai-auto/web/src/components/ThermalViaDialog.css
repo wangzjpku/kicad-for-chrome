@@ -1,0 +1,243 @@
+.thermal-via-overlay,
+.isolation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.thermal-via-dialog,
+.isolation-dialog {
+  background: #1e1e2e;
+  border: 1px solid #3d3d6b;
+  border-radius: 12px;
+  width: 460px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Header */
+.tvd-header,
+.iso-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #3d3d6b;
+}
+
+.tvd-header h3,
+.iso-header h3 {
+  margin: 0;
+  font-size: 15px;
+  flex: 1;
+}
+
+.tvd-ref {
+  font-size: 11px;
+  background: #1a3a5c;
+  color: #4fc3f7;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-right: 8px;
+}
+
+.tvd-close-btn,
+.iso-close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.tvd-close-btn:hover,
+.iso-close-btn:hover {
+  color: #fff;
+}
+
+/* Body */
+.tvd-body,
+.iso-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tvd-section,
+.iso-section {
+  margin-bottom: 14px;
+}
+
+.tvd-label,
+.iso-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #aaa;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Grid layouts */
+.tvd-grid-2,
+.iso-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tvd-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.tvd-grid-4,
+.iso-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+
+.tvd-field,
+.iso-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tvd-field span,
+.iso-field span {
+  font-size: 10px;
+  color: #888;
+}
+
+.tvd-field input,
+.iso-field input,
+.iso-field select {
+  background: #2a2a4a;
+  border: 1px solid #3d3d6b;
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: #e0e0e0;
+  font-size: 12px;
+}
+
+.tvd-field input:focus,
+.iso-field input:focus,
+.iso-field select:focus {
+  outline: none;
+  border-color: #4fc3f7;
+}
+
+/* Result */
+.tvd-result {
+  background: #2a2a4a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.tvd-result-stats {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.tvd-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.tvd-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4fc3f7;
+}
+
+.tvd-stat-label {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Isolation result */
+.iso-result {
+  background: #2a2a4a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.iso-result-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px solid #333;
+}
+
+.iso-result-row:last-child { border-bottom: none; }
+
+.iso-result-label { color: #888; }
+.iso-result-value { color: #e0e0e0; font-weight: 500; }
+
+/* Errors */
+.tvd-error,
+.iso-error {
+  color: #ef5350;
+  font-size: 12px;
+  padding: 8px;
+  background: #3c1a1a;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+/* Footer */
+.tvd-footer,
+.iso-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #3d3d6b;
+  justify-content: flex-end;
+}
+
+.tvd-btn,
+.iso-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+}
+
+.tvd-btn:disabled,
+.iso-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tvd-btn-secondary,
+.iso-btn-secondary {
+  background: #2a2a4a;
+  color: #ccc;
+  border: 1px solid #3d3d6b;
+}
+
+.tvd-btn-primary,
+.iso-btn-primary {
+  background: #1a5c8a;
+  color: #fff;
+}
+
+.tvd-btn-primary:hover:not(:disabled),
+.iso-btn-primary:hover:not(:disabled) {
+  background: #2a7cba;
+}
+
+.tvd-btn-apply,
+.iso-btn-apply {
+  background: #1a5c3a;
+  color: #fff;
+}
+
+.tvd-btn-apply:hover,
+.iso-btn-apply:hover {
+  background: #2a8c5a;
+}

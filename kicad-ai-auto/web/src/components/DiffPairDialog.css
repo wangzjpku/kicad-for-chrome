@@ -1,0 +1,119 @@
+/* Diff Pair Dialog Styles */
+
+.diff-pair-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.diff-pair-dialog {
+  background: #1e1e2e;
+  border: 1px solid #3d3d6b;
+  border-radius: 12px;
+  width: 440px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.dpd-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #3d3d6b;
+}
+
+.dpd-header h3 { margin: 0; font-size: 15px; flex: 1; }
+
+.dpd-close-btn {
+  background: none; border: none; color: #888; font-size: 18px; cursor: pointer; padding: 4px;
+}
+.dpd-close-btn:hover { color: #fff; }
+
+.dpd-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.dpd-section { margin-bottom: 14px; }
+
+.dpd-label {
+  display: block; font-size: 11px; font-weight: 600; color: #aaa;
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* Presets */
+.dpd-presets {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+
+.dpd-preset-btn {
+  background: #2a2a4a; border: 1px solid #3d3d6b; border-radius: 6px;
+  padding: 6px 8px; cursor: pointer; text-align: center; transition: all 0.2s;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dpd-preset-btn:hover { background: #3a3a5a; }
+.dpd-preset-btn.active { background: #1a3a5c; border-color: #4fc3f7; }
+
+.dpd-preset-name { font-size: 11px; color: #ccc; }
+.dpd-preset-z { font-size: 13px; font-weight: 700; color: #4fc3f7; }
+
+/* Pin grid */
+.dpd-pins-grid {
+  background: #2a2a4a; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
+}
+
+.dpd-pin-header {
+  display: grid; grid-template-columns: 30px 1fr 1fr; gap: 4px; font-size: 10px; color: #666;
+}
+
+.dpd-pin-row {
+  display: grid; grid-template-columns: 30px 1fr 1fr; gap: 4px; align-items: center;
+}
+
+.dpd-pin-label {
+  font-size: 11px; font-weight: 700; text-align: center;
+}
+.dpd-pos { color: #ef5350; }
+.dpd-neg { color: #42a5f5; }
+
+.dpd-pin-row input {
+  background: #1a1a2e; border: 1px solid #333; border-radius: 3px;
+  padding: 4px 6px; color: #e0e0e0; font-size: 12px;
+}
+
+/* Grid */
+.dpd-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dpd-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+.dpd-field { display: flex; flex-direction: column; gap: 3px; }
+.dpd-field span { font-size: 10px; color: #888; }
+.dpd-field input, .dpd-field select {
+  background: #2a2a4a; border: 1px solid #3d3d6b; border-radius: 4px;
+  padding: 5px 8px; color: #e0e0e0; font-size: 12px;
+}
+.dpd-field input:focus, .dpd-field select:focus { outline: none; border-color: #4fc3f7; }
+
+/* Result */
+.dpd-result { background: #2a2a4a; border-radius: 8px; padding: 12px; margin-top: 8px; }
+.dpd-result-stats { display: flex; justify-content: space-around; text-align: center; }
+.dpd-stat { display: flex; flex-direction: column; }
+.dpd-stat-value { font-size: 16px; font-weight: 700; color: #4fc3f7; }
+.dpd-stat-label { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* Error */
+.dpd-error { color: #ef5350; font-size: 12px; padding: 8px; background: #3c1a1a; border-radius: 4px; margin-top: 8px; }
+
+/* Footer */
+.dpd-footer { display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid #3d3d6b; justify-content: flex-end; }
+.dpd-btn { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; }
+.dpd-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dpd-btn-secondary { background: #2a2a4a; color: #ccc; border: 1px solid #3d3d6b; }
+.dpd-btn-secondary:hover:not(:disabled) { background: #3a3a5a; }
+.dpd-btn-primary { background: #1a5c8a; color: #fff; }
+.dpd-btn-primary:hover:not(:disabled) { background: #2a7cba; }
+.dpd-btn-apply { background: #1a5c3a; color: #fff; }
+.dpd-btn-apply:hover { background: #2a8c5a; }

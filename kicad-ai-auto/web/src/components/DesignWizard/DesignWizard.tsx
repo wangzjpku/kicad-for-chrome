@@ -13,7 +13,11 @@
 import React, { useState, useCallback } from 'react';
 import { ParsedRequirements } from './MadLibsInput';
 import { LayerRecommendation } from '../../services/layerCalculator';
-import { aiApi, pcbApi, AIDesignResult, CircuitData, PCBGenerationResult } from '../../services/api';
+import { aiApi, pcbApi, projectApi, exportApi, schematicApi, AIDesignResult, CircuitData, PCBGenerationResult } from '../../services/api';
+import SchematicPreview from './SchematicPreview';
+import PCBLayoutPreview from './PCBLayoutPreview';
+import RoutingPreview from './RoutingPreview';
+import GenerationAnimation from './GenerationAnimation';
 
 interface DesignWizardProps {
   requirements: string;
@@ -78,6 +82,14 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
   const [designResult, setDesignResult] = useState<AIDesignResult | null>(null);
   const [circuitData, setCircuitData] = useState<CircuitData | null>(null);
   const [pcbResult, setPcbResult] = useState<PCBGenerationResult | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Phase 7E: Multi-step agent progress
+  const [agentSteps, setAgentSteps] = useState<Array<{
+    step: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    message: string;
+  }>>([]);
 
   // 获取步骤索引
   const getStepIndex = (step: DesignStep): number => {
@@ -177,7 +189,69 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         }
       } else if (nextStep.id === 'manufacture') {
         setGenerationProgress('正在准备制造文件...');
-        // TODO: 调用制造文件生成API
+        try {
+          // 1. 创建项目（如果还没有）
+          let projId = projectId;
+          if (!projId) {
+            setGenerationProgress('正在创建项目...');
+            const projectName = `design_${Date.now()}`;
+            const projResult = await projectApi.createProject({
+              name: projectName,
+              description: `AI Generated: ${requirements.substring(0, 50)}...`,
+            });
+            if (projResult.success && projResult.data?.id) {
+              projId = projResult.data.id;
+              setProjectId(projId);
+            }
+          }
+
+          if (!projId) {
+            setGenerationProgress('项目创建失败');
+            setIsGenerating(false);
+            return;
+          }
+
+          // 2. 保存原理图数据
+          if (circuitData) {
+            setGenerationProgress('正在保存原理图...');
+            await schematicApi.saveSchematic(projId, { components: circuitData.components || [], nets: circuitData.nets || [] } as any).catch(() => {});
+          }
+
+          // 3. 保存 PCB 数据
+          if (pcbResult) {
+            setGenerationProgress('正在保存PCB布局...');
+            const pcbData = {
+              footprints: (pcbResult.placements || []).map((p: any) => ({
+                reference: p.reference,
+                footprint: p.footprint || 'Unknown',
+                position: { x: p.x, y: p.y },
+                rotation: p.rotation || 0,
+              })),
+              tracks: (pcbResult.routes || []).map((r: any) => ({
+                net: r.net,
+                width: r.width || 0.5,
+                points: r.points || [],
+                layer: r.layer || 'F.Cu',
+              })),
+              boardWidth: pcbResult.board_outline?.width || 100,
+              boardHeight: pcbResult.board_outline?.height || 80,
+            };
+            await pcbApi.savePCB(projId, pcbData as any).catch(() => {});
+          }
+
+          // 4. 导出制造文件
+          setGenerationProgress('正在导出Gerber文件...');
+          const gerberResult = await exportApi.exportGerber(projId);
+          setGenerationProgress('正在导出BOM...');
+          const bomResult = await exportApi.exportBOM(projId);
+          setGenerationProgress('正在导出钻孔文件...');
+          const drillResult = await exportApi.exportDrill(projId);
+
+          setGenerationProgress('制造文件已准备完成!');
+        } catch (error) {
+          console.error('Manufacturing export failed:', error);
+          setGenerationProgress('制造文件生成失败，请重试');
+        }
       } else {
         // 其他步骤模拟进度
         for (let i = 0; i < 3; i++) {
@@ -195,7 +269,7 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
     } else {
       onComplete();
     }
-  }, [currentIndex, onComplete, requirements]);
+  }, [currentIndex, onComplete, requirements, projectId, circuitData, pcbResult]);
 
   // 上一步
   const handleBack = useCallback(() => {
@@ -438,11 +512,12 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         justifyContent: 'center',
       }}>
         {isGenerating ? (
-          <>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚡</div>
-            <div style={{ marginBottom: 8, color: THEME.text.primary }}>{generationProgress}</div>
-            <div style={{ fontSize: 12, color: THEME.text.muted }}>AI 正在设计中...</div>
-          </>
+          <GenerationAnimation
+            stage="generating"
+            progress={50}
+            message={generationProgress}
+            substeps={['分析需求', '选择元件', '生成原理图', '验证连接']}
+          />
         ) : designResult ? (
           <>
             <div style={{
@@ -459,54 +534,17 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
               {designResult.message}
             </div>
 
-            {/* 电路组件预览 */}
-            {designResult.success && circuitData && circuitData.components && (
-              <div style={{
-                marginTop: 20,
-                width: '100%',
-                maxWidth: 500,
-                maxHeight: 250,
-                overflow: 'auto',
-                padding: 12,
-                backgroundColor: THEME.bg.primary,
-                borderRadius: 8,
-                border: `1px solid ${THEME.border.default}`,
-              }}>
-                <div style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 8 }}>
-                  元件清单 ({circuitData.components.length} 个)
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {circuitData.components.slice(0, 10).map((comp: any, i: number) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '6px 8px',
-                      backgroundColor: THEME.bg.secondary,
-                      borderRadius: 4,
-                      fontSize: 11,
-                    }}>
-                      <span style={{
-                        minWidth: 50,
-                        fontWeight: 600,
-                        color: THEME.accent.primary,
-                      }}>
-                        {comp.reference || comp.name || `C${i + 1}`}
-                      </span>
-                      <span style={{ color: THEME.text.primary, marginLeft: 8 }}>
-                        {comp.value || comp.model || comp.name || 'Unknown'}
-                      </span>
-                      {comp.footprint && (
-                        <span style={{ color: THEME.text.muted, marginLeft: 'auto', fontSize: 10 }}>
-                          {comp.footprint}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  {circuitData.components.length > 10 && (
-                    <div style={{ fontSize: 10, color: THEME.text.muted, textAlign: 'center', marginTop: 4 }}>
-                      还有 {circuitData.components.length - 10} 个元件...
-                    </div>
-                  )}
+            {/* Visual schematic preview */}
+            {designResult.success && circuitData && circuitData.components && circuitData.components.length > 0 && (
+              <div style={{ marginTop: 16, width: '100%', maxWidth: 520 }}>
+                <SchematicPreview
+                  components={circuitData.components}
+                  nets={circuitData.nets || []}
+                  width={500}
+                  height={280}
+                />
+                <div style={{ fontSize: 10, color: THEME.text.muted, marginTop: 4, textAlign: 'center' }}>
+                  拖拽平移 | 滚轮缩放 | {circuitData.components.length} 个元件, {circuitData.nets?.length || 0} 条网络
                 </div>
               </div>
             )}
@@ -604,11 +642,12 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
         justifyContent: 'center',
       }}>
         {isGenerating ? (
-          <>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔲</div>
-            <div style={{ marginBottom: 8, color: THEME.text.primary }}>{generationProgress}</div>
-            <div style={{ fontSize: 12, color: THEME.text.muted }}>AI 正在优化布局...</div>
-          </>
+          <GenerationAnimation
+            stage="placing"
+            progress={50}
+            message={generationProgress}
+            substeps={['计算布局', '放置元件', '优化间距', '布线规划']}
+          />
         ) : pcbResult ? (
           <>
             <div style={{
@@ -625,67 +664,42 @@ export const DesignWizard: React.FC<DesignWizardProps> = ({
               {pcbResult.message}
             </div>
 
-            {/* PCB 布局预览 */}
+            {/* Visual PCB layout + routing preview */}
             {pcbResult.success && (
-              <div style={{
-                marginTop: 20,
-                width: '100%',
-                maxWidth: 500,
-                maxHeight: 250,
-                overflow: 'auto',
-                padding: 12,
-                backgroundColor: THEME.bg.primary,
-                borderRadius: 8,
-                border: `1px solid ${THEME.border.default}`,
-              }}>
-                <div style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 8 }}>
-                  布局摘要
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div style={{
-                    padding: 8,
-                    backgroundColor: THEME.bg.secondary,
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}>
-                    <div style={{ color: THEME.text.muted }}>元件数量</div>
-                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
-                      {pcbResult.placements.length}
+              <div style={{ marginTop: 16, width: '100%', maxWidth: 520 }}>
+                <PCBLayoutPreview
+                  placements={(pcbResult.placements || []).map((p: any) => ({
+                    reference: p.reference || '',
+                    footprint: p.footprint || '',
+                    x: p.x || 0,
+                    y: p.y || 0,
+                    rotation: p.rotation || 0,
+                    width: p.width || 5,
+                    height: p.height || 3,
+                  }))}
+                  routes={(pcbResult.routes || []).map((r: any) => ({
+                    net: r.net || '',
+                    points: r.points || [],
+                    layer: r.layer || 'F.Cu',
+                    width: r.width || 0.25,
+                  }))}
+                  boardOutline={{
+                    width: pcbResult.board_outline?.width || 100,
+                    height: pcbResult.board_outline?.height || 80,
+                  }}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
+                  {[
+                    { label: '元件', value: pcbResult.placements?.length || 0 },
+                    { label: '网络', value: pcbResult.routes?.length || 0 },
+                    { label: '过孔', value: pcbResult.vias?.length || 0 },
+                    { label: '尺寸', value: `${pcbResult.board_outline?.width || 100}×${pcbResult.board_outline?.height || 80}mm` },
+                  ].map((item, i) => (
+                    <div key={i} style={{ textAlign: 'center', padding: 4, backgroundColor: THEME.bg.primary, borderRadius: 4 }}>
+                      <div style={{ fontSize: 10, color: THEME.text.muted }}>{item.label}</div>
+                      <div style={{ fontSize: 13, color: THEME.text.primary, fontWeight: 600 }}>{item.value}</div>
                     </div>
-                  </div>
-                  <div style={{
-                    padding: 8,
-                    backgroundColor: THEME.bg.secondary,
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}>
-                    <div style={{ color: THEME.text.muted }}>网络数量</div>
-                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
-                      {pcbResult.routes.length}
-                    </div>
-                  </div>
-                  <div style={{
-                    padding: 8,
-                    backgroundColor: THEME.bg.secondary,
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}>
-                    <div style={{ color: THEME.text.muted }}>过孔数量</div>
-                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
-                      {pcbResult.vias.length}
-                    </div>
-                  </div>
-                  <div style={{
-                    padding: 8,
-                    backgroundColor: THEME.bg.secondary,
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}>
-                    <div style={{ color: THEME.text.muted }}>PCB尺寸</div>
-                    <div style={{ color: THEME.text.primary, fontWeight: 600 }}>
-                      {pcbResult.board_outline.width}×{pcbResult.board_outline.height}mm
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             )}

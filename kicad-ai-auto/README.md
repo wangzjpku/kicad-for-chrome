@@ -36,6 +36,15 @@ KiCad AI Automation 是一个完整的 AI 驱动的 KiCad PCB 设计自动化解
 - **制造检查**: JLCPCB/PCBWay 规则验证
 - **IPC-2221 进阶**: 多铜厚/温升/内层外层选项
 
+### ⚡ Phase 6 增强功能
+- **符号搜索**: 支持模糊匹配、类别过滤、分页检索 KiCad 符号库
+- **批量放置**: 通过 BOM 文本批量放置元件，支持网格/水平/垂直布局策略
+- **扇出引擎**: 自动为元件引脚生成扇出过孔和走线
+- **交互式布线**: A* 寻路算法支持障碍规避、45度角约束
+- **铜箔填充**: 支持地铜/电源铜箔、热焊盘、通孔隔离
+- **项目模板**: 预定义项目模板（Arduino Shield、Raspberry Pi Pico 等）
+- **原理图层次化**: 支持层次化原理图设计
+
 ## 快速开始
 
 ### Windows 本地运行 (推荐)
@@ -87,6 +96,8 @@ docker-compose up -d
 - 添加/删除导线
 - 添加网络标签
 - 编辑元件属性
+- **符号搜索**: 点击工具栏"符号搜索"按钮，检索和放置符号
+- **批量放置**: 点击"批量放置"按钮，通过 BOM 批量添加元件
 
 ### 3. 编辑 PCB
 
@@ -96,6 +107,7 @@ docker-compose up -d
 - 添加过孔
 - 铺铜
 - 设计规则检查 (DRC)
+- **扇出**: 选中元件后点击"扇出"按钮，自动生成引脚扇出过孔
 
 ## 项目结构
 
@@ -107,7 +119,18 @@ kicad-ai-auto/
 │   │   ├── ai_routes.py   # AI 分析和生成
 │   │   ├── project_routes.py  # 项目管理
 │   │   ├── drc_routes.py  # DRC/SI/EMI 分析
-│   │   └── kicad_ipc_routes.py  # KiCad IPC
+│   │   ├── symbol_routes.py  # Phase 6 符号搜索
+│   │   ├── template_routes.py  # Phase 6 项目模板
+│   │   └── knowledge_routes.py  # Phase 6 知识库
+│   ├── schematic/           # Phase 6 原理图引擎
+│   │   ├── symbol_search.py  # 符号搜索引擎
+│   │   ├── bulk_placement.py  # 批量放置引擎
+│   │   └── hierarchical_sch.py  # 层次化原理图
+│   ├── routing/            # Phase 6 布线引擎
+│   │   ├── astar_router.py  # A* 寻路算法
+│   │   └── copper_pour.py  # 铜箔填充
+│   ├── placement/          # Phase 6 放置引擎
+│   │   └── smart_placement_engine.py  # 智能放置
 │   ├── drc/                # 设计规则检查
 │   │   ├── advanced_drc.py
 │   │   └── si_analyzer.py  # 信号完整性分析
@@ -122,17 +145,26 @@ kicad-ai-auto/
 │   │   ├── net_classifier.py
 │   │   ├── current_calculator.py  # IPC-2221 进阶
 │   │   └── layer_stackup.py
+│   ├── kb_quality/         # Phase 5/6 知识库质量体系
+│   │   ├── validators.py
+│   │   ├── cross_checker.py
+│   │   └── quality_runner.py
 │   └── tests/              # 测试
 ├── web/                    # React 前端
 │   ├── src/
 │   │   ├── components/    # UI 组件
+│   │   │   ├── SymbolSearchPanel.tsx  # Phase 6 符号搜索面板
+│   │   │   ├── BulkPlacementDialog.tsx  # Phase 6 批量放置
+│   │   │   ├── FanoutDialog.tsx  # Phase 6 扇出对话框
+│   │   │   └── TemplateSelector.tsx  # Phase 6 模板选择器
 │   │   ├── pages/         # 页面
+│   │   │   └── AdminPanel.tsx  # 含知识库管理
 │   │   ├── stores/        # 状态管理
 │   │   └── editors/       # 编辑器
 │   └── package.json
 ├── docker/                # Docker 配置
 ├── playwright-tests/       # 自动化测试
-└── docs/plans/           # 开发计划文档
+└── docs/           # 文档
 ```
 
 ## API 文档
@@ -177,6 +209,26 @@ kicad-ai-auto/
 - `POST /api/kicad-ipc/stop` - 停止 KiCad
 - `POST /api/kicad-ipc/action` - 执行 KiCad 操作
 - `GET /api/kicad-ipc/items` - 获取 PCB 元素列表
+
+### Phase 6 符号与模板接口
+
+- `POST /api/v1/symbols/search` - 搜索符号（支持模糊匹配、分类过滤）
+- `GET /api/v1/symbols/categories` - 获取符号类别列表
+- `POST /api/v1/symbols/bulk-place` - 批量放置元件
+- `POST /api/v1/pcb/fanout` - PCB 扇出
+- `GET /api/v1/pcb/fanout/pin-spacing/{package_type}` - 获取引脚间距
+- `GET /api/v1/templates` - 获取项目模板列表
+- `GET /api/v1/templates/categories` - 获取模板类别
+- `POST /api/v1/templates/create-project` - 从模板创建项目
+
+### Phase 6 知识库接口
+
+- `GET /api/v1/knowledge/health` - 知识库健康状态
+- `GET /api/v1/knowledge/quality/summary` - 质量门控统计
+- `GET /api/v1/knowledge/categories` - 元件类别列表
+- `POST /api/v1/knowledge/lcsc/search` - LCSC 元件搜索
+- `POST /api/v1/knowledge/parse/ad` - 解析 Altium Designer 原理图
+- `POST /api/v1/knowledge/parse/jlc` - 解析嘉立创 EDA 项目
 
 完整 API 文档请访问: http://localhost:8000/docs
 

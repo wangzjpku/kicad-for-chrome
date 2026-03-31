@@ -55,10 +55,14 @@ interface AIChatAssistantProps {
   schematicData?: SchematicData | Project | PCBData | null;
   // 当前项目规格
   projectSpec?: Project | { name: string } | null;
+  // 当前项目ID
+  projectId?: string;
   // 修改回调
   onModifySchematic?: (modifications: Modification[]) => void;
   // 是否展开
   defaultExpanded?: boolean;
+  // 当前对话ID
+  conversationId?: string;
 }
 
 // 构建欢迎消息，包含项目规格（元件列表）
@@ -91,8 +95,10 @@ const buildWelcomeMessage = (schematicData: SchematicData | null): Message => {
 const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   schematicData,
   projectSpec,
+  projectId,
   onModifySchematic,
-  defaultExpanded = true
+  defaultExpanded = true,
+  conversationId
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -957,6 +963,17 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         <button className="toggle-btn">
           {isExpanded ? '◀' : '▶'}
         </button>
+      </div>
+
+      {/* AI 上下文感知指示器 */}
+      <div className={`ai-context-indicator ${projectId ? 'has-context' : 'no-context'}`}>
+        <span className="ai-context-indicator-icon">📊</span>
+        <span className="ai-context-indicator-text">
+          {projectId ? `项目: ${projectId}` : '无项目上下文'}
+        </span>
+        <span className="ai-context-badge">
+          {conversationId ? '对话中' : '新对话'}
+        </span>
       </div>
 
       {isExpanded && (
