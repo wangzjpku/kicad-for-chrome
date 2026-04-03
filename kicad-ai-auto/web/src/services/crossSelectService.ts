@@ -54,7 +54,6 @@ export function useCrossSelection() {
   useEffect(() => {
     // 监听原理图选择事件
     const handleSchematicSelect = (data: { id: string; reference: string }) => {
-      console.log('[CrossSelect] Schematic selected:', data);
       // 在PCB中查找对应封装的ID
       const { pcbData } = usePCBStore.getState();
       if (pcbData) {
@@ -69,7 +68,6 @@ export function useCrossSelection() {
 
     // 监听PCB选择事件
     const handlePCBSelect = (data: { id: string; reference: string }) => {
-      console.log('[CrossSelect] PCB selected:', data);
       // 在原理图中查找对应元件的ID
       const { schematicData } = useSchematicStore.getState();
       if (schematicData) {

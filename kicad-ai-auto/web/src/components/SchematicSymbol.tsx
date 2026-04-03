@@ -655,7 +655,6 @@ const SchematicSymbol: React.FC<SchematicSymbolProps> = ({
 
   // 调试日志 - 打印关键信息
   const hasKiCadGraphics = kicadSymbol?.graphics?.length > 0;
-  console.log(`[SchematicSymbol] Component ${component.id}: symbolType=${symbolType}, useKiCad=${useKiCadRenderer}, hasGraphics=${hasKiCadGraphics}, isLoading=${isLoading}, mmPos=(${component.position?.x}, ${component.position?.y}), pxPos=(${x}, ${y}), name=${component.name}`);
   if (kicadSymbol && !hasKiCadGraphics) {
     console.warn(`[SchematicSymbol] KiCad symbol ${kicadSymbol.library}:${kicadSymbol.name} has no graphics, falling back to hardcoded symbol`);
   }

@@ -1,0 +1,38 @@
+# Ruff Configuration
+#
+# Phase 3.5: Python linting and formatting configuration
+
+target-version = "py311"
+line-length = 100
+indent-width = 4
+
+# Enable recommended rules
+select = ["E", "F", "I", "N", "W", "C90", "UP"]
+
+# Ignore certain directories
+exclude = [
+    "venv",
+    ".venv",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    "tests/fixtures",
+]
+
+# Allow unused imports in __init__.py files
+[per-file-ignores]
+"__init__.py" = ["F401"]
+
+# Allow star imports in certain files
+[per-file-ignores]
+"__init__.py" = ["F403"]
+
+# Formatting settings
+[format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# Import sorting
+[isort]
+known-first-party = ["fastapi", "pydantic", "sqlalchemy", "kicad_sch_api"]

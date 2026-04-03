@@ -1,0 +1,55 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "文件" [ref=e623] [cursor=pointer]
+    - button "编辑" [ref=e625] [cursor=pointer]
+    - button "视图" [ref=e627] [cursor=pointer]
+    - button "放置" [ref=e629] [cursor=pointer]
+    - button "工具" [ref=e631] [cursor=pointer]
+    - button "帮助" [ref=e633] [cursor=pointer]
+    - button "← 返回项目列表" [ref=e634] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e635]:
+      - button "⚡ 原理图" [ref=e636] [cursor=pointer]
+      - button "🔲 PCB" [ref=e637] [cursor=pointer]
+    - generic [ref=e638]:
+      - button "↖" [ref=e639] [cursor=pointer]
+      - button "✥" [ref=e640] [cursor=pointer]
+      - button "↻" [ref=e641] [cursor=pointer]
+      - button "⇆" [ref=e642] [cursor=pointer]
+    - generic [ref=e644]:
+      - button "□" [ref=e645] [cursor=pointer]
+      - button "⬡" [ref=e646] [cursor=pointer]
+      - button "◎" [ref=e647] [cursor=pointer]
+      - button "▣" [ref=e648] [cursor=pointer]
+      - button "A" [ref=e649] [cursor=pointer]
+    - generic [ref=e651]:
+      - button "🔍+" [ref=e652] [cursor=pointer]
+      - button "🔍-" [ref=e653] [cursor=pointer]
+      - button "⊞" [ref=e654] [cursor=pointer]
+      - button "▦" [ref=e655] [cursor=pointer]
+  - generic [ref=e656]:
+    - button "▶" [ref=e658] [cursor=pointer]
+    - generic [ref=e659]:
+      - generic [ref=e661]: Loading...
+      - generic [ref=e662]:
+        - generic [ref=e663]:
+          - button "消息" [ref=e664] [cursor=pointer]
+          - button "DRC" [ref=e665] [cursor=pointer]
+          - button "ERC" [ref=e666] [cursor=pointer]
+          - button "BOM" [ref=e667] [cursor=pointer]
+        - generic [ref=e723]:
+          - generic [ref=e724]: BOM 物料清单
+          - generic [ref=e725]: 点击菜单「工具 → 导出BOM」导出物料清单
+    - button "◀" [ref=e672] [cursor=pointer]
+  - generic [ref=e674]:
+    - generic [ref=e675] [cursor=pointer]:
+      - generic [ref=e676]:
+        - generic [ref=e677]: 🤖
+        - generic [ref=e678]: AI 助手
+        - generic "未连接 KiCad (Canvas 模式)" [ref=e679]: ○
+      - button "▶" [ref=e680]
+    - generic [ref=e681]:
+      - generic [ref=e682]: 📊
+      - generic: 无项目上下文
+      - generic [ref=e683]: 新对话
+  - generic [ref=e684] [cursor=pointer]: ⚡ 快速创建设计

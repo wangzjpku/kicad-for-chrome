@@ -275,7 +275,7 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
         if (clipboard?.type === 'footprints') {
           const { addFootprint } = usePCBStore.getState();
           const newIds: string[] = [];
-          clipboard.data.forEach((fp: any, idx: number) => {
+          (clipboard.data as Footprint[]).forEach((fp, idx: number) => {
             const newId = `FP${Date.now()}_${idx}`;
             newIds.push(newId);
             addFootprint({
@@ -290,7 +290,7 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
         } else if (clipboard?.type === 'components') {
           const { addComponent } = useSchematicStore.getState();
           const newIds: string[] = [];
-          clipboard.data.forEach((comp: any, idx: number) => {
+          (clipboard.data as SchematicComponent[]).forEach((comp, idx: number) => {
             const newId = `comp-${Date.now()}_${idx}`;
             newIds.push(newId);
             addComponent({
@@ -369,7 +369,6 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
           try {
             setActiveBottomTab('drc');
             const result = await drcApi.runDRC(currentProject.id);
-            console.log('DRC Result:', result);
             addMessage(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
             alert(`DRC检查完成: ${result.data?.errorCount || 0} 错误, ${result.data?.warningCount || 0} 警告`);
           } catch (e) {
@@ -409,8 +408,18 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
         }
         break;
       case 'dxf':
-        addMessage('导出DXF功能开发中...');
-        alert('导出DXF功能开发中');
+        if (currentProject) {
+          try {
+            addMessage('正在导出DXF...');
+            await exportApi.exportDXF(currentProject.id);
+            addMessage('DXF导出成功');
+            alert('DXF导出成功！');
+          } catch (e) {
+            console.error('DXF export failed:', e);
+            addMessage('DXF导出失败');
+            alert('DXF导出失败：' + (e instanceof Error ? e.message : '未知错误'));
+          }
+        }
         break;
       case 'manual':
         addMessage('打开使用手册...');
@@ -566,6 +575,15 @@ const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
         }}>
           <ProjectList onOpenProject={handleOpenProject} />
         </div>
+
+        {/* 认证对话框 - 项目列表页面也需要 */}
+        {showAuthDialog && (
+          <AuthDialog
+            isOpen={true}
+            onClose={() => setShowAuthDialog(false)}
+            onSuccess={() => setShowAuthDialog(false)}
+          />
+        )}
       </div>
     );
   }

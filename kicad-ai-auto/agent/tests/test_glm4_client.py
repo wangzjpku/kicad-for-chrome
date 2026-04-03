@@ -19,8 +19,8 @@ class TestGLM4ClientInit:
 
     def test_init_with_api_key(self):
         """测试使用API Key初始化"""
-        client = GLM4Client(api_key="test_api_key_123")
-        assert client.api_key == "test_api_key_123"
+        client = GLM4Client(api_key="TEST_KEY_FOR_UNIT_TEST_ONLY")
+        assert client.api_key == "TEST_KEY_FOR_UNIT_TEST_ONLY"
         assert client.model == "glm-4"
 
     def test_init_with_env_var(self):

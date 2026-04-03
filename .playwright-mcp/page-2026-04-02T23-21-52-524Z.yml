@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e181]:
+      - button "文件" [active] [ref=e182] [cursor=pointer]
+      - generic [ref=e244]:
+        - generic [ref=e245] [cursor=pointer]:
+          - generic [ref=e246]: 新建项目
+          - generic [ref=e247]: Ctrl+N
+        - generic [ref=e248] [cursor=pointer]:
+          - generic [ref=e249]: 打开项目
+          - generic [ref=e250]: Ctrl+O
+        - generic [ref=e252] [cursor=pointer]:
+          - generic [ref=e253]: 保存
+          - generic [ref=e254]: Ctrl+S
+        - generic [ref=e256] [cursor=pointer]: 另存为...
+    - button "编辑" [ref=e184] [cursor=pointer]
+    - button "视图" [ref=e186] [cursor=pointer]
+    - button "放置" [ref=e188] [cursor=pointer]
+    - button "工具" [ref=e190] [cursor=pointer]
+    - button "帮助" [ref=e192] [cursor=pointer]
+    - button "← 返回项目列表" [ref=e193] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e194]:
+      - button "⚡ 原理图" [ref=e195] [cursor=pointer]
+      - button "🔲 PCB" [ref=e196] [cursor=pointer]
+    - generic [ref=e197]:
+      - button "↖" [ref=e198] [cursor=pointer]
+      - button "✥" [ref=e199] [cursor=pointer]
+      - button "↻" [ref=e200] [cursor=pointer]
+      - button "⇆" [ref=e201] [cursor=pointer]
+    - generic [ref=e203]:
+      - button "□" [ref=e204] [cursor=pointer]
+      - button "⬡" [ref=e205] [cursor=pointer]
+      - button "◎" [ref=e206] [cursor=pointer]
+      - button "▣" [ref=e207] [cursor=pointer]
+      - button "A" [ref=e208] [cursor=pointer]
+    - generic [ref=e210]:
+      - button "🔍+" [ref=e211] [cursor=pointer]
+      - button "🔍-" [ref=e212] [cursor=pointer]
+      - button "⊞" [ref=e213] [cursor=pointer]
+      - button "▦" [ref=e214] [cursor=pointer]
+  - generic [ref=e215]:
+    - button "▶" [ref=e217] [cursor=pointer]
+    - generic [ref=e218]:
+      - generic [ref=e220]: Loading...
+      - generic [ref=e221]:
+        - generic [ref=e222]:
+          - button "消息" [ref=e223] [cursor=pointer]
+          - button "DRC" [ref=e224] [cursor=pointer]
+          - button "ERC" [ref=e225] [cursor=pointer]
+          - button "BOM" [ref=e226] [cursor=pointer]
+        - generic [ref=e227]:
+          - generic [ref=e228]: "[20:25:00] 系统就绪"
+          - generic [ref=e229]: "[20:25:01] 等待 KiCad 连接..."
+    - button "◀" [ref=e231] [cursor=pointer]
+  - generic [ref=e233]:
+    - generic [ref=e234] [cursor=pointer]:
+      - generic [ref=e235]:
+        - generic [ref=e236]: 🤖
+        - generic [ref=e237]: AI 助手
+        - generic "未连接 KiCad (Canvas 模式)" [ref=e238]: ○
+      - button "▶" [ref=e239]
+    - generic [ref=e240]:
+      - generic [ref=e241]: 📊
+      - generic: 无项目上下文
+      - generic [ref=e242]: 新对话
+  - generic [ref=e243] [cursor=pointer]: ⚡ 快速创建设计

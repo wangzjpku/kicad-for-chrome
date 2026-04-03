@@ -34,9 +34,12 @@ import TrackRenderer from '../canvas/TrackRenderer';
 import ViaRenderer from '../canvas/ViaRenderer';
 import NetRenderer from '../canvas/NetRenderer';
 import ZoneRenderer from '../canvas/ZoneRenderer';
+import SuggestionOverlay, { SuggestionMarkers, Suggestion } from '../canvas/SuggestionOverlay';
 
 import { useAutoSave } from '../hooks/useAutoSave';
-import { DRCReport } from '../types';
+import { useRoutingProgress } from '../hooks/useRoutingProgress';
+import { DRCReport, Pad, Footprint, CopperPourResult, DiffPairResult, Point2D, AutoLayoutResult } from '../types';
+import { PadInfo } from '../services/api';
 import { MM_TO_PX } from '../data/samplePCB';
 
 const GRID_SIZE = 10;
@@ -57,7 +60,7 @@ const PCBEditor: React.FC = () => {
 
   // Phase 6: Fanout dialog state
   const [showFanoutDialog, setShowFanoutDialog] = useState(false);
-  const [fanoutTarget, setFanoutTarget] = useState<{ id: string; reference: string; pads: any[] } | null>(null);
+  const [fanoutTarget, setFanoutTarget] = useState<{ id: string; reference: string; pads: PadInfo[] } | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Phase 7B/7C: Auto layout & copper pour state
@@ -69,17 +72,19 @@ const PCBEditor: React.FC = () => {
     width: number; height: number; color: string;
   }> | null>(null);
   const [layoutScore, setLayoutScore] = useState<number | null>(null);
-  const [copperPourResult, setCopperPourResult] = useState<any>(null);
+  const [copperPourResult, setCopperPourResult] = useState<CopperPourResult | null>(null);
 
   // Phase 10B: Diff pair dialog & DRC heatmap state
   const [showDiffPairDialog, setShowDiffPairDialog] = useState(false);
-  const [diffPairResult, setDiffPairResult] = useState<any>(null);
+  const [diffPairResult, setDiffPairResult] = useState<DiffPairResult | null>(null);
   const [showDRCHeatmap, setShowDRCHeatmap] = useState(false);
 
-  // Phase 10B: Diff pair & DRC heatmap state
-  const [showDiffPairDialog, setShowDiffPairDialog] = useState(false);
-  const [diffPairResult, setDiffPairResult] = useState<any>(null);
-  const [showDRCHeatmap, setShowDRCHeatmap] = useState(false);
+  // Phase 10C: AI suggestion overlay state
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Phase 10B-1: Routing progress hook
+  const routingProgress = useRoutingProgress();
 
   // 自动调整画布尺寸 - 严格跟随实际容器尺寸
   useEffect(() => {
@@ -104,7 +109,6 @@ const PCBEditor: React.FC = () => {
 
       if (newWidth < MIN_WIDTH || newHeight < MIN_HEIGHT) {
         if (import.meta.env.DEV) {
-          console.log(`[PCBEditor] Container too small (${newWidth}x${newHeight}), using last valid size`);
         }
         useWidth = lastValidSizeRef.current.width;
         useHeight = lastValidSizeRef.current.height;
@@ -154,7 +158,6 @@ const PCBEditor: React.FC = () => {
 
           if (newWidth < MIN_WIDTH || newHeight < MIN_HEIGHT) {
             if (import.meta.env.DEV) {
-              console.log(`[PCBEditor] Observer: Container too small (${newWidth}x${newHeight}), using last valid size`);
             }
             useWidth = lastValidSizeRef.current.width;
             useHeight = lastValidSizeRef.current.height;
@@ -246,7 +249,6 @@ const PCBEditor: React.FC = () => {
 
   // 自适应缩放和平移值 - 让PCB内容填满画布
   useEffect(() => {
-    console.log('[PCBEditor] Auto-fit PCB effect:', { containerSize, hasPcbData: !!pcbData });
 
     if (pcbData && viewMode === '2d' && containerSize.width > 0 && containerSize.height > 0) {
       // 计算PCB板的外接矩形
@@ -277,7 +279,6 @@ const PCBEditor: React.FC = () => {
 
       // 防止 NaN 值：如果PCB没有内容，使用默认尺寸
       if (!isFinite(boardWidthPx) || boardWidthPx <= 0 || !isFinite(boardHeightPx) || boardHeightPx <= 0) {
-        console.log('[PCBEditor] No PCB content, using default view');
         setZoom(1);
         setPan({ x: containerSize.width / 2, y: containerSize.height / 2 });
         return;
@@ -297,7 +298,6 @@ const PCBEditor: React.FC = () => {
       const panX = containerSize.width / 2 - centerX;
       const panY = containerSize.height / 2 - centerY;
 
-      console.log('[PCBEditor] Auto-fit settings:', { optimalZoom, panX, panY, boardWidthPx, boardHeightPx });
 
       setZoom(optimalZoom);
       setPan({ x: panX, y: panY });
@@ -551,7 +551,6 @@ const PCBEditor: React.FC = () => {
             schematicData={editorSchematicData}
             projectSpec={{ name: projectId || '未命名项目' }}
             onModifySchematic={(modifications) => {
-              console.log('AI modifications received:', modifications);
             }}
             defaultExpanded={true}
             projectId={projectId || undefined}
@@ -633,12 +632,12 @@ const PCBEditor: React.FC = () => {
                   setFanoutTarget({
                     id: fp.id,
                     reference: fp.reference,
-                    pads: fp.pads.map(p => ({
+                    pads: (fp.pads || []).map((p): PadInfo => ({
                       pad_number: p.number || p.id,
                       x: fp.position.x + (p.position?.x || 0),
                       y: fp.position.y + (p.position?.y || 0),
                       net: p.netId || '',
-                      type: 'thru_hole',
+                      type: p.type,
                     })),
                   });
                   setShowFanoutDialog(true);
@@ -678,7 +677,7 @@ const PCBEditor: React.FC = () => {
                     // Update footprint positions in store
                     const store = usePCBStore.getState();
                     if (store.pcbData?.footprints) {
-                      store.pcbData.footprints.forEach((fp: any) => {
+                      store.pcbData.footprints.forEach((fp: Footprint) => {
                         const newPos = result.positions[fp.reference];
                         if (newPos) {
                           fp.position = { x: newPos.x, y: newPos.y };
@@ -771,17 +770,61 @@ const PCBEditor: React.FC = () => {
             </button>
           )}
 
+          {/* Phase 10B-1: Routing progress bar */}
+          {routingProgress.isRouting && (
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 28,
+              background: 'rgba(0,0,0,0.85)',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 12px',
+              gap: 8,
+              zIndex: 40,
+            }}>
+              <div style={{
+                flex: 1,
+                height: 4,
+                background: '#333',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${routingProgress.progress}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #4a9eff, #00e676)',
+                  borderRadius: 2,
+                  transition: 'width 0.3s ease',
+                }} />
+              </div>
+              <span style={{ color: '#aaa', fontSize: 10, whiteSpace: 'nowrap' }}>
+                {routingProgress.progress.toFixed(0)}% — {routingProgress.routedNets}/{routingProgress.totalNets} nets
+              </span>
+              {routingProgress.currentNet && (
+                <span style={{ color: '#4a9eff', fontSize: 10, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  [{routingProgress.currentNet}]
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Phase 10C-1: AI Suggestion overlay */}
+          <SuggestionOverlay
+            suggestions={suggestions}
+            onAccept={(s) => {
+              setSuggestions((prev) => prev.filter((x) => x.id !== s.id));
+            }}
+            onDismiss={(id) => setSuggestions((prev) => prev.filter((x) => x.id !== id))}
+            onDismissAll={() => setSuggestions([])}
+            visible={showSuggestions}
+          />
+
           {(() => {
             const shouldRender = viewMode === '2d' && pcbData && containerSize.width > 0 && containerSize.height > 0;
             if (shouldRender) {
-              console.log('[PCBEditor] ===== STAGE RENDER =====', {
-                width: containerSize.width,
-                height: containerSize.height,
-                zoom,
-                pan,
-                footprints: pcbData.footprints.length,
-                tracks: pcbData.tracks.length
-              });
             }
             return shouldRender;
           })() && (
@@ -859,6 +902,8 @@ const PCBEditor: React.FC = () => {
             >
               {renderDRCHeatmap()}
               {renderDRCMarkers()}
+              {/* Phase 10C: Suggestion markers on canvas */}
+              <SuggestionMarkers suggestions={suggestions} />
             </Layer>
 
             {/* 布线工具层 */}
@@ -870,17 +915,17 @@ const PCBEditor: React.FC = () => {
           {viewMode === '3d' && (() => {
             // Convert pcbStore data to PCBViewer3D format
             const real3DData = {
-              boardOutline: pcbData.boardOutline ? [[
-                [0, 0, 0], [pcbData.boardOutline.width || 100, 0, 0],
-                [pcbData.boardOutline.width || 100, pcbData.boardOutline.height || 80, 0],
-                [0, pcbData.boardOutline.height || 80, 0],
+              boardOutline: pcbData.boardWidth && pcbData.boardHeight ? [[
+                [0, 0, 0], [pcbData.boardWidth, 0, 0],
+                [pcbData.boardWidth, pcbData.boardHeight, 0],
+                [0, pcbData.boardHeight, 0],
               ]] : undefined,
-              footprints: (pcbData.footprints || []).map((fp: any) => ({
+              footprints: (pcbData.footprints || []).map((fp: Footprint) => ({
                 id: fp.id,
                 position: [
                   (fp.position?.x || 0) * 10,
                   (fp.position?.y || 0) * 10,
-                  fp.position?.z || 0,
+                  0, // Point2D doesn't have z, default to 0
                 ] as [number, number, number],
                 rotation: [0, 0, ((fp.rotation || 0) * Math.PI) / 180] as [number, number, number],
                 size: [5, 5, 2] as [number, number, number],
@@ -955,7 +1000,6 @@ const PCBEditor: React.FC = () => {
           componentReference={fanoutTarget.reference}
           pads={fanoutTarget.pads}
           onApply={(vias, traces) => {
-            console.log('Fanout applied:', { vias, traces });
             setShowFanoutDialog(false);
             setFanoutTarget(null);
           }}
@@ -967,7 +1011,6 @@ const PCBEditor: React.FC = () => {
         <CopperPourDialog
           onClose={() => setShowCopperPourDialog(false)}
           onApply={(result) => {
-            console.log('Copper pour applied:', result);
             setCopperPourResult(result);
             setShowCopperPourDialog(false);
           }}
@@ -979,7 +1022,6 @@ const PCBEditor: React.FC = () => {
         <DiffPairDialog
           onClose={() => setShowDiffPairDialog(false)}
           onApply={(result) => {
-            console.log('Diff pair routed:', result);
             setDiffPairResult(result);
             // Add routed tracks to PCB data
             if (result.success && result.pos_points && result.neg_points) {
@@ -990,7 +1032,7 @@ const PCBEditor: React.FC = () => {
                   type: 'track' as const,
                   layer: 'F.Cu',
                   width: 0.15,
-                  points: result.pos_points.map((p: any) => ({ x: p.x, y: p.y })),
+                  points: result.pos_points.map((p: { x: number; y: number }) => ({ x: p.x, y: p.y })),
                   netId: 'DIFF_P',
                 },
                 {
@@ -998,7 +1040,7 @@ const PCBEditor: React.FC = () => {
                   type: 'track' as const,
                   layer: 'F.Cu',
                   width: 0.15,
-                  points: result.neg_points.map((p: any) => ({ x: p.x, y: p.y })),
+                  points: result.neg_points.map((p: { x: number; y: number }) => ({ x: p.x, y: p.y })),
                   netId: 'DIFF_N',
                 },
               ];

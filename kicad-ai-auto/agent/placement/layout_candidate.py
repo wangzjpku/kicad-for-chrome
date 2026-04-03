@@ -15,6 +15,7 @@ from typing import List, Dict, Tuple, Optional
 from enum import Enum
 
 from placement.smart_placement_engine import SmartPlacementEngine, Component
+from placement.layout_scorer import LayoutScorer, LayoutScoringInput
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class LayoutCandidateGenerator:
     def __init__(self, board_width=100.0, board_height=80.0):
         self.board_width = board_width
         self.board_height = board_height
+        self._scorer = LayoutScorer()
 
     def generate_candidates(
         self,
@@ -90,27 +92,20 @@ class LayoutCandidateGenerator:
         )
         result = engine.place(components)
 
-        wire_len = self._estimate_wire_length(result.positions, net_connections)
-        util = self._calc_utilization(result.positions, components, engine)
-        thermal = self._calc_thermal_score(result.positions, components, engine)
-        routing = self._calc_routing_score(wire_len, len(components))
-
-        overall = (
-            util * 0.40 +       # Area efficiency weighted high
-            routing * 0.35 +
-            thermal * 0.15 +
-            (100 - result.score) * 0.10  # Invert overlap penalty
+        scores = self._scorer.quick_score(
+            engine.board_width, engine.board_height,
+            components, result.positions, net_connections,
         )
 
         return LayoutCandidate(
             strategy=LayoutStrategy.COMPACT,
             positions=result.positions,
-            board_utilization=util,
-            estimated_wire_length=wire_len,
-            thermal_score=thermal,
-            routing_score=routing,
-            overall_score=max(0, min(100, overall)),
-            description=f"Compact: {util:.0f}% utilization, {wire_len:.0f}mm wire, tight 0.5mm spacing",
+            board_utilization=scores["area_score"],
+            estimated_wire_length=self._estimate_wire_length(result.positions, net_connections),
+            thermal_score=scores["thermal_score"],
+            routing_score=scores["wire_length_score"],
+            overall_score=scores["total_score"],
+            description=f"Compact: {scores['area_score']:.0f}% area, {scores['wire_length_score']:.0f} wire, {scores['grade']} grade",
         )
 
     def _generate_balanced(
@@ -127,27 +122,20 @@ class LayoutCandidateGenerator:
         )
         result = engine.place(components)
 
-        wire_len = self._estimate_wire_length(result.positions, net_connections)
-        util = self._calc_utilization(result.positions, components, engine)
-        thermal = self._calc_thermal_score(result.positions, components, engine)
-        routing = self._calc_routing_score(wire_len, len(components))
-
-        overall = (
-            util * 0.25 +
-            routing * 0.35 +
-            thermal * 0.25 +
-            result.score * 0.15
+        scores = self._scorer.quick_score(
+            engine.board_width, engine.board_height,
+            components, result.positions, net_connections,
         )
 
         return LayoutCandidate(
             strategy=LayoutStrategy.BALANCED,
             positions=result.positions,
-            board_utilization=util,
-            estimated_wire_length=wire_len,
-            thermal_score=thermal,
-            routing_score=routing,
-            overall_score=max(0, min(100, overall)),
-            description=f"Balanced: {util:.0f}% utilization, {wire_len:.0f}mm wire, 2mm spacing",
+            board_utilization=scores["area_score"],
+            estimated_wire_length=self._estimate_wire_length(result.positions, net_connections),
+            thermal_score=scores["thermal_score"],
+            routing_score=scores["wire_length_score"],
+            overall_score=scores["total_score"],
+            description=f"Balanced: {scores['area_score']:.0f}% area, {scores['wire_length_score']:.0f} wire, {scores['grade']} grade",
         )
 
     def _generate_thermal(
@@ -169,27 +157,20 @@ class LayoutCandidateGenerator:
             result.positions, components, engine
         )
 
-        wire_len = self._estimate_wire_length(positions, net_connections)
-        util = self._calc_utilization(positions, components, engine)
-        thermal = self._calc_thermal_score(positions, components, engine)
-        routing = self._calc_routing_score(wire_len, len(components))
-
-        overall = (
-            util * 0.15 +
-            routing * 0.25 +
-            thermal * 0.45 +
-            result.score * 0.15
+        scores = self._scorer.quick_score(
+            engine.board_width, engine.board_height,
+            components, positions, net_connections,
         )
 
         return LayoutCandidate(
             strategy=LayoutStrategy.THERMAL,
             positions=positions,
-            board_utilization=util,
-            estimated_wire_length=wire_len,
-            thermal_score=thermal,
-            routing_score=routing,
-            overall_score=max(0, min(100, overall)),
-            description=f"Thermal: {util:.0f}% utilization, {wire_len:.0f}mm wire, 3mm spacing, hot parts spread",
+            board_utilization=scores["area_score"],
+            estimated_wire_length=self._estimate_wire_length(positions, net_connections),
+            thermal_score=scores["thermal_score"],
+            routing_score=scores["wire_length_score"],
+            overall_score=scores["total_score"],
+            description=f"Thermal: {scores['area_score']:.0f}% area, {scores['thermal_score']:.0f} thermal, {scores['grade']} grade",
         )
 
     def _spread_hot_components(

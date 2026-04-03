@@ -69,6 +69,7 @@ class SpiceSimulator:
         # 常见路径
         common_paths = [
             "ngspice",
+            os.environ.get("NGSPICE_PATH", ""),
             "C:\\ngspice\\bin\\ngspice.exe",
             "C:\\Program Files\\ngspice\\bin\\ngspice.exe",
             "/usr/bin/ngspice",
@@ -76,6 +77,8 @@ class SpiceSimulator:
         ]
 
         for path in common_paths:
+            if not path:
+                continue
             try:
                 result = subprocess.run(
                     [path, "-v"],
@@ -86,7 +89,7 @@ class SpiceSimulator:
                 if result.returncode == 0:
                     logger.info(f"Found ngspice at: {path}")
                     return path
-            except:
+            except (subprocess.SubprocessError, FileNotFoundError, OSError, TimeoutError):
                 pass
 
         logger.warning("ngspice not found, simulation will be mocked")
@@ -139,7 +142,7 @@ class SpiceSimulator:
             # 删除临时文件
             try:
                 os.unlink(netlist_file)
-            except:
+            except OSError:
                 pass
 
             if result["success"]:
@@ -177,7 +180,7 @@ class SpiceSimulator:
                 timeout=5
             )
             return True
-        except:
+        except (subprocess.SubprocessError, FileNotFoundError, OSError, TimeoutError):
             return False
 
     def _generate_netlist(

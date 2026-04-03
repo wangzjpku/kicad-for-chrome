@@ -191,6 +191,9 @@ class TestErrorHandlingMiddleware:
         request.method = "POST"
         request.url = Mock()
         request.url.__str__ = Mock(return_value="http://test/api/project")
+        # 关键修复: 创建可序列化的 state 对象
+        request.state = Mock()
+        request.state.request_id = "test-req-12345"  # 使用字符串而非Mock对象
         return request
 
     @pytest.mark.asyncio

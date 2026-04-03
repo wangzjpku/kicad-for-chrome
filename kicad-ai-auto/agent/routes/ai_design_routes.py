@@ -33,7 +33,7 @@ class DesignRequest(BaseModel):
     generator_version: str = "v2"
     max_iterations: int = 3
     auto_fix: bool = True
-    validate: bool = True
+    enable_validation: bool = True
     use_template: bool = True  # Phase 7D: 启用模板优先匹配
 
 
@@ -58,7 +58,7 @@ class GenerateAndValidateRequest(BaseModel):
     json_data: Dict[str, Any]
     output_path: str
     generator_version: str = "v2"
-    validate: bool = True
+    enable_validation: bool = True
     auto_fix: bool = False
     max_fix_iterations: int = 2
 
@@ -361,7 +361,7 @@ async def design_circuit(request: DesignRequest):
         config = LoopConfig(
             max_iterations=request.max_iterations,
             auto_fix=request.auto_fix,
-            validate_after_generate=request.validate,
+            validate_after_generate=request.enable_validation,
         )
 
         # 创建简化的设计器
@@ -416,7 +416,7 @@ async def generate_and_validate(request: GenerateAndValidateRequest):
         # 验证
         erc_result = None
         fix_result = None
-        if request.validate:
+        if request.enable_validation:
             erc_result = validate_schematic(request.output_path)
 
             # 自动修复（如果需要且启用）

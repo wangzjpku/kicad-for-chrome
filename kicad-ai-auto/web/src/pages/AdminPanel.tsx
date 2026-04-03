@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 const THEME = {
   bg: { primary: '#1a1a2e', secondary: '#16213e', card: '#0f3460', dark: '#0a0a15' },
   text: { primary: '#eaeaea', secondary: '#a0a0a0', muted: '#606060' },
@@ -97,7 +99,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
   const loadUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/users');
+      const res = await fetch(API_BASE + '/api/admin/users');
       const data = await res.json();
       setUsers(data || []);
       const totalTokens = (data || []).reduce((sum: number, u: User) => sum + (u.token_balance || 0), 0);
@@ -109,7 +111,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
   const loadProjects = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/projects');
+      const res = await fetch(API_BASE + '/api/v1/projects');
       const data = await res.json();
       setProjects(data || []);
       setStats(s => ({ ...s, totalProjects: (data || []).length }));
@@ -122,20 +124,20 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
     const checks: HealthStatus = { backend: false, kicad: false, ai: false, database: false };
     try {
       // Check backend
-      const backendRes = await fetch('http://localhost:8000/api/health');
+      const backendRes = await fetch(API_BASE + '/api/health');
       checks.backend = backendRes.ok;
 
       // Check KiCad
-      const kicadRes = await fetch('http://localhost:8000/api/kicad-ipc/status');
+      const kicadRes = await fetch(API_BASE + '/api/kicad-ipc/status');
       const kicadData = await kicadRes.json();
       checks.kicad = kicadData.connected || false;
 
       // Check AI
-      const aiRes = await fetch('http://localhost:8000/api/v1/ai/health');
+      const aiRes = await fetch(API_BASE + '/api/v1/ai/health');
       checks.ai = aiRes.ok;
 
       // Check database (via projects API)
-      const dbRes = await fetch('http://localhost:8000/api/v1/projects');
+      const dbRes = await fetch(API_BASE + '/api/v1/projects');
       checks.database = dbRes.ok;
     } catch (e) {
       console.error('Health check failed:', e);
@@ -145,7 +147,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
   const loadTokenLogs = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/token/logs');
+      const res = await fetch(API_BASE + '/api/token/logs');
       const data = await res.json();
       setLogs(data || []);
       const totalConsumed = (data || []).reduce((sum: number, l: TokenLog) => sum + (l.token_count || 0), 0);
@@ -158,7 +160,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('确定要删除这个项目吗？此操作不可恢复！')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/projects/${projectId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/v1/projects/${projectId}`, { method: 'DELETE' });
       if (res.ok) {
         showMessage('success', '项目删除成功');
         loadProjects();
@@ -174,7 +176,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
     if (!confirm('⚠️ 确定要清空所有项目吗？此操作不可恢复！')) return;
     if (!confirm('再次确认：所有项目数据将被永久删除！')) return;
     try {
-      const res = await fetch('http://localhost:8000/api/v1/projects/clear-all', { method: 'DELETE' });
+      const res = await fetch(API_BASE + '/api/v1/projects/clear-all', { method: 'DELETE' });
       if (res.ok) {
         showMessage('success', '所有项目已清空');
         loadProjects();
@@ -189,7 +191,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
   const handleDeleteUser = async (userId: number) => {
     if (!confirm('确定要删除这个用户吗？')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/user/delete/${userId}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/admin/user/delete/${userId}`, { method: 'POST' });
       if (res.ok) {
         showMessage('success', '用户删除成功');
         loadUsers();
@@ -203,7 +205,7 @@ export default function AdminPanel({ onClose }: { onClose?: () => void }) {
 
   const handleTokenTopup = async (userId: number, amount: number) => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/user/token', {
+      const res = await fetch(API_BASE + '/api/admin/user/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, amount })
@@ -602,7 +604,7 @@ function SystemView({ health, onRefresh }: { health: HealthStatus; onRefresh: ()
     for (const api of apis) {
       const start = Date.now();
       try {
-        const res = await fetch(`http://localhost:8000${api.path}`, { method: api.method });
+        const res = await fetch(`${API_BASE}${api.path}`, { method: api.method });
         results.push({ ...api, status: res.status, response_time: Date.now() - start });
       } catch {
         results.push({ ...api, status: 0, response_time: Date.now() - start });
@@ -677,7 +679,7 @@ function CacheView({ onClearCache, onRestart }: { onClearCache: () => void; onRe
           <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
           <h4 style={{ margin: '0 0 12px' }}>导出日志</h4>
           <p style={{ color: THEME.text.secondary, marginBottom: 16 }}>导出系统日志用于分析</p>
-          <button onClick={() => window.open('http://localhost:8000/api/token/logs')} style={{ backgroundColor: THEME.accent.success, border: 'none', color: '#fff', padding: '10px 24px', borderRadius: 6, cursor: 'pointer' }}>
+          <button onClick={() => window.open(API_BASE + '/api/token/logs')} style={{ backgroundColor: THEME.accent.success, border: 'none', color: '#fff', padding: '10px 24px', borderRadius: 6, cursor: 'pointer' }}>
             下载日志
           </button>
         </div>
@@ -685,7 +687,7 @@ function CacheView({ onClearCache, onRestart }: { onClearCache: () => void; onRe
           <div style={{ fontSize: 48, marginBottom: 16 }}>📖</div>
           <h4 style={{ margin: '0 0 12px' }}>API文档</h4>
           <p style={{ color: THEME.text.secondary, marginBottom: 16 }}>查看完整的API文档</p>
-          <button onClick={() => window.open('http://localhost:8000/docs')} style={{ backgroundColor: '#a78bfa', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: 6, cursor: 'pointer' }}>
+          <button onClick={() => window.open(API_BASE + '/docs')} style={{ backgroundColor: '#a78bfa', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: 6, cursor: 'pointer' }}>
             打开Swagger
           </button>
         </div>
@@ -712,7 +714,7 @@ function PCBSettingsView() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/settings/pcb', {
+      const res = await fetch(API_BASE + '/api/admin/settings/pcb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
@@ -830,7 +832,7 @@ function AISettingsView() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/settings/ai', {
+      const res = await fetch(API_BASE + '/api/admin/settings/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
@@ -848,7 +850,7 @@ function AISettingsView() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/ai/health');
+      const res = await fetch(API_BASE + '/api/v1/ai/health');
       const data = await res.json();
       setTestResult(data.status === 'ok' ? '✓ API 连接正常' : '✗ 连接失败');
     } catch (e) {
@@ -944,7 +946,7 @@ function ManufacturingSettingsView() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/settings/manufacturing', {
+      const res = await fetch(API_BASE + '/api/admin/settings/manufacturing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
@@ -960,7 +962,7 @@ function ManufacturingSettingsView() {
 
   const handleEstimate = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/settings/manufacturing/estimate', {
+      const res = await fetch(API_BASE + '/api/admin/settings/manufacturing/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),

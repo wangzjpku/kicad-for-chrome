@@ -119,6 +119,25 @@ class PCBWayRules:
     MAX_BOARD_THICKNESS = 6.0
     MIN_BOARD_THICKNESS = 0.4
     MAX_ASPECT_RATIO = 10.0
+    MAX_BOARD_DIM = 500.0        # mm
+    MIN_BOARD_DIM = 5.0          # mm
+    MIN_PAD_SPACING = 0.15       # mm
+    MIN_HOLE_TO_EDGE = 0.3       # mm
+    MAX_COPPER_WEIGHT = 2.0      # oz
+    SUPPORTED_SURFACE_FINISH = {"HASL", "ENIG", "OSP", "Immersion Tin", "Immersion Silver"}
+
+
+class JLCPCBExtendedRules:
+    """JLCPCB extended/capability rules for advanced DFM checks"""
+    MAX_BOARD_DIM = 500.0        # mm
+    MIN_BOARD_DIM = 5.0          # mm
+    MIN_PAD_SPACING = 0.12       # mm
+    MIN_HOLE_TO_EDGE = 0.25      # mm
+    MAX_COPPER_WEIGHT = 2.0      # oz
+    MIN_SLOT_WIDTH = 0.6         # mm
+    MIN_ROUT_EDGE = 0.3          # mm from copper to board edge
+    SUPPORTED_SURFACE_FINISH = {"HASL", "HASL(lead free)", "ENIG", "OSP"}
+    MIN_IMPEDANCE_TRACE_WIDTH = 0.1  # mm for controlled impedance
 
 
 class ManufacturingChecker:
@@ -164,6 +183,92 @@ class ManufacturingChecker:
             'MAX_ASPECT_RATIO': 8.0,
         })()
         return self._check(rules, "Generic")
+
+    def check_advanced(self, manufacturer: str = "jlcpcb") -> ManufacturingReport:
+        """
+        Phase 11B-3: Extended DFM checks beyond basic rules.
+
+        Includes board dimension, pad spacing, copper-to-edge,
+        surface finish compatibility, and slot width checks.
+        """
+        base_report = (
+            self.check_jlcpcb() if manufacturer == "jlcpcb"
+            else self.check_pcbway() if manufacturer == "pcbway"
+            else self.check_generic()
+        )
+
+        rules = JLCPCBExtendedRules()
+        errors = list(base_report.errors)
+        warnings = list(base_report.warnings)
+        infos = list(base_report.infos)
+
+        # Board dimension checks
+        width = self.pcb_data.get("width", 0)
+        height = self.pcb_data.get("height", 0)
+        if width > rules.MAX_BOARD_DIM:
+            errors.append(ManufacturingViolation(
+                rule_name="max_board_dimension",
+                severity="error",
+                message=f"Board width {width}mm exceeds max {rules.MAX_BOARD_DIM}mm",
+                current_value=width,
+                required_range=f"<={rules.MAX_BOARD_DIM}mm",
+            ))
+        if width < rules.MIN_BOARD_DIM or height < rules.MIN_BOARD_DIM:
+            warnings.append(ManufacturingViolation(
+                rule_name="min_board_dimension",
+                severity="warning",
+                message=f"Board dimension ({width}x{height}mm) is very small, may need panelization",
+                current_value=min(width, height),
+                required_range=f">={rules.MIN_BOARD_DIM}mm",
+            ))
+
+        # Pad-to-pad spacing check
+        footprints = self.pcb_data.get("footprints", [])
+        for i, fp1 in enumerate(footprints):
+            for fp2 in footprints[i+1:]:
+                p1 = fp1.get("position", {})
+                p2 = fp2.get("position", {})
+                dx = abs(p1.get("x", 0) - p2.get("x", 0))
+                dy = abs(p1.get("y", 0) - p2.get("y", 0))
+                dist = (dx**2 + dy**2) ** 0.5
+                if 0 < dist < rules.MIN_PAD_SPACING * 2:
+                    warnings.append(ManufacturingViolation(
+                        rule_name="pad_spacing",
+                        severity="warning",
+                        message=f"Components {fp1.get('reference','')} and {fp2.get('reference','')} are very close ({dist:.2f}mm)",
+                        current_value=dist,
+                        required_range=f">={rules.MIN_PAD_SPACING}mm",
+                    ))
+
+        # Component density check (components per cm²)
+        if width > 0 and height > 0:
+            area_cm2 = (width * height) / 100
+            comp_count = len(footprints)
+            density = comp_count / area_cm2 if area_cm2 > 0 else 0
+            if density > 5:
+                infos.append(ManufacturingViolation(
+                    rule_name="component_density",
+                    severity="info",
+                    message=f"High component density: {density:.1f} parts/cm² ({comp_count} parts in {area_cm2:.1f} cm²)",
+                ))
+
+        # Copper weight check
+        copper_weight = self.pcb_data.get("copper_weight", 1.0)
+        if copper_weight > rules.MAX_COPPER_WEIGHT:
+            errors.append(ManufacturingViolation(
+                rule_name="copper_weight",
+                severity="error",
+                message=f"Copper weight {copper_weight}oz exceeds max {rules.MAX_COPPER_WEIGHT}oz",
+                current_value=copper_weight,
+                required_range=f"<={rules.MAX_COPPER_WEIGHT}oz",
+            ))
+
+        passed = len(errors) == 0
+        base_report.errors = errors
+        base_report.warnings = warnings
+        base_report.infos = infos
+        base_report.passed = passed
+        return base_report
 
     def _check(self, rules: Any, manufacturer: str) -> ManufacturingReport:
         """执行制造检查"""

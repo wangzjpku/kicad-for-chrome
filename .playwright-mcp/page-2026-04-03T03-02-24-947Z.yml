@@ -1,0 +1,34 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 智
+      - generic [ref=e7]:
+        - generic [ref=e8]: 智板工具
+        - generic [ref=e9]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e11]: "后端服务: ● 已连接"
+      - generic [ref=e12]:
+        - generic "点击刷新" [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: "Token:"
+          - generic [ref=e15]: "1000"
+          - text: "0"
+        - generic [ref=e16]:
+          - generic [ref=e17]: 🤖
+          - generic [ref=e18]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 👤
+          - generic [ref=e22]: testuser
+          - generic [ref=e23]: ▼
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - heading "Projects" [level=1] [ref=e27]
+      - textbox "搜索项目..." [ref=e28]
+      - button "+ New Project" [active] [ref=e29] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e30] [cursor=pointer]
+    - generic [ref=e33]:
+      - heading "Create New Project" [level=3] [ref=e34]
+      - textbox "Project name" [ref=e35]
+      - generic [ref=e36]:
+        - button "Create" [ref=e37] [cursor=pointer]
+        - button "Cancel" [ref=e38] [cursor=pointer]
+    - generic [ref=e32]: No projects yet. Create your first project!

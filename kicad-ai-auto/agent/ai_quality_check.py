@@ -54,9 +54,6 @@ class QualityCheckResult:
     # 替代方案
     alternatives: List[str] = field(default_factory=list)
 
-    def __post_init__(self):
-        pass
-
 
 @dataclass
 class DesignQualityReport:
@@ -82,9 +79,6 @@ class DesignQualityReport:
 
     # 建议
     recommendations: List[str] = field(default_factory=list)
-
-    def __post_init__(self):
-        pass
 
 
 class AIGenerationQualityChecker:

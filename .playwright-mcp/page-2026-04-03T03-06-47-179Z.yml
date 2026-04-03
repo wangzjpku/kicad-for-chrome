@@ -1,0 +1,246 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e102]:
+      - generic [ref=e103]: 智
+      - generic [ref=e104]:
+        - generic [ref=e105]: 智板工具
+        - generic [ref=e106]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e107]: "后端服务: ● 已连接"
+      - generic [ref=e108]:
+        - generic "点击刷新" [ref=e109] [cursor=pointer]:
+          - generic [ref=e110]: "Token:"
+          - generic [ref=e111]: "1000"
+          - text: "0"
+        - generic [ref=e112]:
+          - generic [ref=e113]: 🤖
+          - generic [ref=e114]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]: 👤
+          - generic [ref=e118]: testuser
+          - generic [ref=e119]: ▼
+  - generic [ref=e120]:
+    - generic [ref=e121]:
+      - heading "Projects" [level=1] [ref=e122]
+      - textbox "搜索项目..." [ref=e123]
+      - button "+ New Project" [ref=e124] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e125] [cursor=pointer]
+    - generic [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]: "1"
+        - generic [ref=e130]: v1.0
+      - generic [ref=e131]:
+        - heading "测试PCB项目" [level=3] [ref=e132] [cursor=pointer]
+        - paragraph [ref=e133]: Created from 智板工具
+        - paragraph [ref=e134]: "Updated: 2026/4/3"
+      - generic [ref=e135]:
+        - button "Open" [ref=e136] [cursor=pointer]
+        - button "Delete" [ref=e137] [cursor=pointer]
+    - generic [ref=e139]:
+      - generic [ref=e140]:
+        - heading "🤖 AI 智能创建项目" [level=2] [ref=e141]
+        - button "×" [ref=e142] [cursor=pointer]
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: "1"
+          - generic [ref=e146]: 输入需求
+        - generic [ref=e148]:
+          - generic [ref=e149]: "2"
+          - generic [ref=e150]: 明确细节
+        - generic [ref=e152]:
+          - generic [ref=e153]: "3"
+          - generic [ref=e154]: 原理图确认
+        - generic [ref=e156]:
+          - generic [ref=e157]: "4"
+          - generic [ref=e158]: PCB参数
+        - generic [ref=e160]:
+          - generic [ref=e161]: "5"
+          - generic [ref=e162]: PCB确认
+        - generic [ref=e164]:
+          - generic [ref=e165]: "6"
+          - generic [ref=e166]: 编辑确认
+        - generic [ref=e168]:
+          - generic [ref=e169]: "7"
+          - generic [ref=e170]: 生成项目
+        - generic [ref=e172]:
+          - generic [ref=e173]: "8"
+          - generic [ref=e174]: 最终确认
+      - generic [ref=e330]:
+        - generic [ref=e331]:
+          - generic [ref=e332]:
+            - heading "📐 原理图预览" [level=3] [ref=e333]
+            - generic [ref=e334]:
+              - button "➖" [ref=e335] [cursor=pointer]
+              - generic [ref=e336]: 100%
+              - button "➕" [ref=e337] [cursor=pointer]
+              - button "🔄" [ref=e338] [cursor=pointer]
+          - generic [ref=e339]:
+            - paragraph [ref=e340]: "器件数量: 10"
+            - paragraph [ref=e341]: "导线数量: 0"
+            - paragraph [ref=e342]: "网络数量: 2"
+          - img [ref=e344]:
+            - generic [ref=e346]:
+              - generic [ref=e348]: U2
+              - generic [ref=e349]: Unknown
+            - generic [ref=e350]:
+              - generic [ref=e352]: U4
+              - generic [ref=e353]: Unknown
+            - generic [ref=e354]:
+              - generic [ref=e356]: R1
+              - generic [ref=e357]: Unknown
+            - generic [ref=e358]:
+              - generic [ref=e360]: R3
+              - generic [ref=e361]: Unknown
+            - generic [ref=e362]:
+              - generic [ref=e364]: R5
+              - generic [ref=e365]: Unknown
+            - generic [ref=e366]:
+              - generic [ref=e368]: R6
+              - generic [ref=e369]: Unknown
+            - generic [ref=e370]:
+              - generic [ref=e372]: R7
+              - generic [ref=e373]: Unknown
+            - generic [ref=e374]:
+              - generic [ref=e376]: R8
+              - generic [ref=e377]: Unknown
+            - generic [ref=e378]:
+              - generic [ref=e380]: R9
+              - generic [ref=e381]: Unknown
+            - generic [ref=e382]:
+              - generic [ref=e384]: R10
+              - generic [ref=e385]: Unknown
+        - generic [ref=e386]:
+          - heading "📋 器件清单 (8 个器件)" [level=3] [ref=e387]
+          - table [ref=e388]:
+            - rowgroup [ref=e389]:
+              - row "器件 型号 KiCad封装 数量" [ref=e390]:
+                - columnheader "器件" [ref=e391]
+                - columnheader "型号" [ref=e392]
+                - columnheader "KiCad封装" [ref=e393]
+                - columnheader "数量" [ref=e394]
+            - rowgroup [ref=e395]:
+              - row "微控制器 STM32F103C8T6 LQFP-48 1" [ref=e396]:
+                - cell "微控制器" [ref=e397]
+                - cell "STM32F103C8T6" [ref=e398]
+                - cell "LQFP-48" [ref=e399]
+                - cell "1" [ref=e400]
+              - row "LED 通用发光二极管 直插式3mm或0805贴片 1" [ref=e401]:
+                - cell "LED" [ref=e402]
+                - cell "通用发光二极管" [ref=e403]
+                - cell "直插式3mm或0805贴片" [ref=e404]
+                - cell "1" [ref=e405]
+              - row "限流电阻 330Ω ±5% 直插式1/4W或0805贴片 1" [ref=e406]:
+                - cell "限流电阻" [ref=e407]
+                - cell "330Ω ±5%" [ref=e408]
+                - cell "直插式1/4W或0805贴片" [ref=e409]
+                - cell "1" [ref=e410]
+              - row "调试/编程接口 SWD接口（4针） 直排针 2.54mm间距 1" [ref=e411]:
+                - cell "调试/编程接口" [ref=e412]
+                - cell "SWD接口（4针）" [ref=e413]
+                - cell "直排针 2.54mm间距" [ref=e414]
+                - cell "1" [ref=e415]
+              - row "电源滤波电容 100nF陶瓷电容 0805贴片或直插式 2" [ref=e416]:
+                - cell "电源滤波电容" [ref=e417]
+                - cell "100nF陶瓷电容" [ref=e418]
+                - cell "0805贴片或直插式" [ref=e419]
+                - cell "2" [ref=e420]
+              - row "电源接口 Micro USB或DC插座 根据选择型号 1" [ref=e421]:
+                - cell "电源接口" [ref=e422]
+                - cell "Micro USB或DC插座" [ref=e423]
+                - cell "根据选择型号" [ref=e424]
+                - cell "1" [ref=e425]
+              - row "稳压芯片 AMS1117-3.3 SOT-223 1" [ref=e426]:
+                - cell "稳压芯片" [ref=e427]
+                - cell "AMS1117-3.3" [ref=e428]
+                - cell "SOT-223" [ref=e429]
+                - cell "1" [ref=e430]
+              - row "电解电容 10μF 16V 直插式或贴片 2" [ref=e431]:
+                - cell "电解电容" [ref=e432]
+                - cell "10μF 16V" [ref=e433]
+                - cell "直插式或贴片" [ref=e434]
+                - cell "2" [ref=e435]
+        - button "✏️ 进入编辑模式" [ref=e437] [cursor=pointer]
+        - generic [ref=e438]:
+          - heading "📦 项目方案" [level=3] [ref=e439]
+          - generic [ref=e440]:
+            - generic:
+              - heading [level=4]
+            - paragraph [ref=e441]: 基于STM32F103C8T6微控制器的简单LED闪烁电路，通过编程控制GPIO引脚输出高低电平，实现LED的周期性亮灭。适用于嵌入式入门学习、原型验证和基础指示灯应用。
+            - heading "技术参数" [level=5] [ref=e442]
+            - table [ref=e443]:
+              - rowgroup [ref=e444]:
+                - row "参数名 数值 单位" [ref=e445]:
+                  - columnheader "参数名" [ref=e446]
+                  - columnheader "数值" [ref=e447]
+                  - columnheader "单位" [ref=e448]
+              - rowgroup [ref=e449]:
+                - 'row "mcu {''core'': ''ARM Cortex-M3'', ''frequency'': ''72 MHz'', ''flash'': ''64 KB'', ''sram'': ''20 KB'', ''gpio_voltage'': ''3.3V''}" [ref=e450]':
+                  - cell "mcu" [ref=e451]
+                  - 'cell "{''core'': ''ARM Cortex-M3'', ''frequency'': ''72 MHz'', ''flash'': ''64 KB'', ''sram'': ''20 KB'', ''gpio_voltage'': ''3.3V''}" [ref=e452]'
+                  - cell [ref=e453]
+                - 'row "led_circuit {''led_forward_voltage'': ''约2.0V (典型值，视LED颜色而定)'', ''led_current'': ''约10 mA (使用330Ω电阻时，计算值: (3.3V-2.0V)/330Ω ≈ 3.9mA)'', ''control_pin'': ''PA0 (或其他任意GPIO，可配置)''}" [ref=e454]':
+                  - cell "led_circuit" [ref=e455]
+                  - 'cell "{''led_forward_voltage'': ''约2.0V (典型值，视LED颜色而定)'', ''led_current'': ''约10 mA (使用330Ω电阻时，计算值: (3.3V-2.0V)/330Ω ≈ 3.9mA)'', ''control_pin'': ''PA0 (或其他任意GPIO，可配置)''}" [ref=e456]'
+                  - cell [ref=e457]
+                - 'row "power_supply {''input_voltage'': ''5V DC (通过USB或外部电源)'', ''regulated_voltage'': ''3.3V'', ''maximum_current'': ''800 mA (AMS1117极限)''}" [ref=e458]':
+                  - cell "power_supply" [ref=e459]
+                  - 'cell "{''input_voltage'': ''5V DC (通过USB或外部电源)'', ''regulated_voltage'': ''3.3V'', ''maximum_current'': ''800 mA (AMS1117极限)''}" [ref=e460]'
+                  - cell [ref=e461]
+                - 'row "programming_interface {''type'': ''Serial Wire Debug (SWD)'', ''pins'': ''SWDIO, SWCLK, GND, 3.3V''}" [ref=e462]':
+                  - cell "programming_interface" [ref=e463]
+                  - 'cell "{''type'': ''Serial Wire Debug (SWD)'', ''pins'': ''SWDIO, SWCLK, GND, 3.3V''}" [ref=e464]'
+                  - cell [ref=e465]
+            - heading "📋 器件清单 (8 个器件)" [level=5] [ref=e466]
+            - table [ref=e467]:
+              - rowgroup [ref=e468]:
+                - row "器件 型号 封装 数量" [ref=e469]:
+                  - columnheader "器件" [ref=e470]
+                  - columnheader "型号" [ref=e471]
+                  - columnheader "封装" [ref=e472]
+                  - columnheader "数量" [ref=e473]
+              - rowgroup [ref=e474]:
+                - row "微控制器 STM32F103C8T6 LQFP-48 1" [ref=e475]:
+                  - cell "微控制器" [ref=e476]
+                  - cell "STM32F103C8T6" [ref=e477]
+                  - cell "LQFP-48" [ref=e478]
+                  - cell "1" [ref=e479]
+                - row "LED 通用发光二极管 直插式3mm或0805贴片 1" [ref=e480]:
+                  - cell "LED" [ref=e481]
+                  - cell "通用发光二极管" [ref=e482]
+                  - cell "直插式3mm或0805贴片" [ref=e483]
+                  - cell "1" [ref=e484]
+                - row "限流电阻 330Ω ±5% 直插式1/4W或0805贴片 1" [ref=e485]:
+                  - cell "限流电阻" [ref=e486]
+                  - cell "330Ω ±5%" [ref=e487]
+                  - cell "直插式1/4W或0805贴片" [ref=e488]
+                  - cell "1" [ref=e489]
+                - row "调试/编程接口 SWD接口（4针） 直排针 2.54mm间距 1" [ref=e490]:
+                  - cell "调试/编程接口" [ref=e491]
+                  - cell "SWD接口（4针）" [ref=e492]
+                  - cell "直排针 2.54mm间距" [ref=e493]
+                  - cell "1" [ref=e494]
+                - row "电源滤波电容 100nF陶瓷电容 0805贴片或直插式 2" [ref=e495]:
+                  - cell "电源滤波电容" [ref=e496]
+                  - cell "100nF陶瓷电容" [ref=e497]
+                  - cell "0805贴片或直插式" [ref=e498]
+                  - cell "2" [ref=e499]
+                - row "电源接口 Micro USB或DC插座 根据选择型号 1" [ref=e500]:
+                  - cell "电源接口" [ref=e501]
+                  - cell "Micro USB或DC插座" [ref=e502]
+                  - cell "根据选择型号" [ref=e503]
+                  - cell "1" [ref=e504]
+                - row "稳压芯片 AMS1117-3.3 SOT-223 1" [ref=e505]:
+                  - cell "稳压芯片" [ref=e506]
+                  - cell "AMS1117-3.3" [ref=e507]
+                  - cell "SOT-223" [ref=e508]
+                  - cell "1" [ref=e509]
+                - row "电解电容 10μF 16V 直插式或贴片 2" [ref=e510]:
+                  - cell "电解电容" [ref=e511]
+                  - cell "10μF 16V" [ref=e512]
+                  - cell "直插式或贴片" [ref=e513]
+                  - cell "2" [ref=e514]
+      - generic [ref=e189]:
+        - button "返回修改" [ref=e515] [cursor=pointer]
+        - button "放弃" [ref=e516] [cursor=pointer]
+        - button "✏️ 编辑方案" [ref=e517] [cursor=pointer]
+        - button "确认原理图，下一步" [ref=e518] [cursor=pointer]

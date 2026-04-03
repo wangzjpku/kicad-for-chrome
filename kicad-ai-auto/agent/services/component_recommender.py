@@ -185,21 +185,21 @@ class ComponentRecommender:
             "symbol": "Device:R",
             "footprint": "Resistor_SMD:R_0805",
             "description": "0805 SMD Resistor",
-            "jlcpcb_part": "CXXXXX",
+            "jlcpcb_part": "C21190",
             "price": 0.001
         },
         {
             "symbol": "Device:C",
             "footprint": "Capacitor_SMD:C_0805",
             "description": "0805 SMD Capacitor",
-            "jlcpcb_part": "CXXXXX",
+            "jlcpcb_part": "C45783",
             "price": 0.001
         },
         {
             "symbol": "Device:LED",
             "footprint": "LED_SMD:LED_0805",
             "description": "0805 SMD LED",
-            "jlcpcb_part": "CXXXXX",
+            "jlcpcb_part": "C2293",
             "price": 0.01
         },
     ]

@@ -63,7 +63,7 @@ export const RoutingQualityPanel: React.FC<RoutingQualityPanelProps> = ({
   const scoreQuality = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await phase6Api.scoreRoutingQuality({
+      const result = await (phase6Api as any).scoreRoutingQuality({
         total_nets: routeInput.totalNets,
         routed_nets: routeInput.routedNets,
         drc_violations: routeInput.drcViolations,

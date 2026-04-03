@@ -14,6 +14,7 @@ import {
   Point2D
 } from '../types';
 import apiClient, { schematicApi } from '../services/api';
+import { storeLogger as log } from '../utils/logger';
 
 interface HistoryState {
   components: SchematicComponent[];
@@ -118,14 +119,12 @@ export const useSchematicStore = create<SchematicStoreState>()(
 
       // 加载原理图数据
       loadSchematicData: async (projectId: string) => {
-        console.log('[SchematicStore] loadSchematicData called with projectId:', projectId);
         try {
           const axiosResponse = await apiClient.get(`/projects/${projectId}/schematic`);
           // axios 返回的响应在 data 属性中
           const response = axiosResponse.data;
           // 兼容后端返回的两种格式: { success: true, data: {...} } 或直接 {...}
           const data = response.data || response;
-          console.log('[SchematicStore] Load schematic response:', data);
           if (data && typeof data === 'object') {
             // 后端直接返回数据，没有 success 包装器
             // 转换元件数据格式：后端返回 name, model -> 前端需要 reference, value
@@ -180,7 +179,6 @@ export const useSchematicStore = create<SchematicStoreState>()(
                   const dy = positions[i].y - positions[j].y;
                   const distance = Math.sqrt(dx * dx + dy * dy);
                   if (distance < MIN_DISTANCE) {
-                    console.log(`[SchematicStore] Components too close: ${distance.toFixed(1)}mm, need auto-layout`);
                     return true;
                   }
                 }
@@ -201,7 +199,6 @@ export const useSchematicStore = create<SchematicStoreState>()(
                 const row = Math.floor(idx / GRID_COLS);
                 posX = START_X + col * GRID_SPACING_X;
                 posY = START_Y + row * GRID_SPACING_Y;
-                console.log(`[SchematicStore] Auto-layout for ${comp.name || comp.id}: row=${row}, col=${col}, pos=(${posX}, ${posY})`);
               }
 
               return {
@@ -233,9 +230,6 @@ export const useSchematicStore = create<SchematicStoreState>()(
             });
 
             const rawPositions = backendComponents.map((c, i) => ({ id: c.id || `comp-${i}`, name: c.name, pos: c.position, ref: c.reference }));
-            console.log('[SchematicStore] Component positions (raw from backend):', rawPositions);
-            console.log('[SchematicStore] Needs auto-layout:', needsAutoLayout);
-            console.log('[SchematicStore] Component positions (after transform/auto-layout):', components.map(c => ({ id: c.id, ref: c.reference, pos: c.position })));
 
             // 暴露到 window 用于调试
             if (typeof window !== 'undefined') {
@@ -253,13 +247,12 @@ export const useSchematicStore = create<SchematicStoreState>()(
               powerSymbols: data.powerSymbols || [],
               sheets: data.sheets || [{ id: 'sheet1', name: 'Sheet1', components: [], wires: [] }]
             };
-            console.log('[SchematicStore] Schematic loaded, components:', schematicData.components.length);
             set({ schematicData });
           }
         } catch (error) {
           // 忽略请求被取消的错误（快速切换页面时发生）
           if (error instanceof Error && error.name !== 'CanceledError') {
-            console.error('Failed to load schematic data:', error);
+            log.error('Failed to load schematic data', { error: String(error) });
           }
         }
       },
@@ -268,13 +261,13 @@ export const useSchematicStore = create<SchematicStoreState>()(
       saveSchematicData: async () => {
         const { schematicData, projectId } = get();
         if (!schematicData || !projectId) {
-          console.warn('[SchematicStore] saveSchematicData: no data or projectId');
+          log.warn('saveSchematicData: no data or projectId');
           return;
         }
 
         // 防止空数据覆盖后端生成的数据
         if (!schematicData.components || schematicData.components.length === 0) {
-          console.warn('[SchematicStore] No components to save, skipping');
+          log.warn('No components to save, skipping');
           return;
         }
 
@@ -284,14 +277,13 @@ export const useSchematicStore = create<SchematicStoreState>()(
           const response = await schematicApi.saveSchematic(projectId, schematicData);
           if (response.success) {
             set({ isSaving: false, lastSaved: new Date() });
-            console.log('[SchematicStore] Schematic saved successfully');
           } else {
             set({ isSaving: false });
-            console.error('[SchematicStore] Failed to save schematic:', response);
+            log.error('Failed to save schematic', { response: String(response) });
           }
-        } catch (error) {
+        } catch (error: unknown) {
           set({ isSaving: false });
-          console.error('[SchematicStore] Failed to save schematic:', error);
+          log.error('Failed to save schematic', { error: String(error) });
         }
       },
 

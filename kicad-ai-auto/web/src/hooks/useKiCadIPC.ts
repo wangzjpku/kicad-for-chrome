@@ -47,7 +47,6 @@ export function useKiCadIPC() {
     const ws = new WebSocket(`${wsUrl}/api/kicad-ipc/ws`);
 
     ws.onopen = () => {
-      console.log('KiCad WebSocket connected');
       setWsConnected(true);
       setError(null);
 
@@ -70,7 +69,6 @@ export function useKiCadIPC() {
 
           case 'action_result':
           case 'creation_result':
-            console.log('Action result:', message.data);
             break;
 
           case 'error':
@@ -88,12 +86,10 @@ export function useKiCadIPC() {
     };
 
     ws.onclose = () => {
-      console.log('KiCad WebSocket disconnected');
       setWsConnected(false);
 
       // 自动重连
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('Attempting to reconnect...');
         connectWebSocket();
       }, 3000);
     };

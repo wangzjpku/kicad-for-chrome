@@ -1,5 +1,5 @@
 {
-  "12f76307-9781-4e95-9593-53e835f7373b": {
+  "ae112e6f-2dc9-4245-be99-413e928b80a7": {
     "components": [
       {
         "id": "R1",
@@ -9,7 +9,7 @@
       }
     ]
   },
-  "47a0b913-0b2e-4e80-9d72-a83081d5a231": {
+  "251f66b0-c3f7-4181-a282-4ef86ebb8073": {
     "components": [
       {
         "id": "R1",
@@ -19,7 +19,7 @@
       }
     ]
   },
-  "d16f5c91-1ddb-4207-a4d5-7ebb48725350": {
+  "9d6f66f2-619e-40d3-b562-86034ab7b607": {
     "components": [
       {
         "id": "R1",
@@ -29,7 +29,7 @@
       }
     ]
   },
-  "267811dc-1c45-4dff-822c-f02fb58fc04e": {
+  "c71cede2-4520-4b33-8e73-fba238de8f55": {
     "components": [
       {
         "id": "R1",
@@ -39,7 +39,7 @@
       }
     ]
   },
-  "49910b1f-aae6-4ad6-9e57-c6895a4b00e4": {
+  "1082da24-1984-4546-8ee8-27971213fbcc": {
     "components": [
       {
         "id": "R1",
@@ -49,7 +49,7 @@
       }
     ]
   },
-  "8ce754f6-4185-48cb-8fc9-de0d79d7797e": {
+  "2f915ad8-5896-4928-8736-9f277b3c1b3b": {
     "components": [
       {
         "id": "R1",
@@ -59,7 +59,7 @@
       }
     ]
   },
-  "903dbcff-2c98-4ee9-b1e6-e460c0c69eea": {
+  "1ec22181-2038-4d2f-a6a5-e6f86af5ac6c": {
     "components": [
       {
         "id": "R1",
@@ -69,7 +69,7 @@
       }
     ]
   },
-  "baeaa2a3-b148-4ca1-8822-2541c770f651": {
+  "7b5058a8-4e18-4a4d-84ec-3042c2657f8f": {
     "components": [
       {
         "id": "R1",
@@ -79,7 +79,7 @@
       }
     ]
   },
-  "f7731e51-4043-46dc-85bf-57a611be64c5": {
+  "21e1a5bb-e8f4-4673-ac71-6a8741221e21": {
     "components": [
       {
         "id": "R1",
@@ -89,7 +89,7 @@
       }
     ]
   },
-  "5c0530c2-d4a6-4033-827f-6a31a2b8ed6b": {
+  "6a4a3293-0c3c-4f5a-8aac-4e74ccf9df0c": {
     "components": [
       {
         "id": "R1",
@@ -99,11 +99,11 @@
       }
     ]
   },
-  "de4c2045-7004-4271-beb9-ebe32600e62e": {
+  "e086157d-28d3-45d1-9106-d168b88bb3bb": {
     "components": [
       {
         "id": "comp-1",
-        "name": "稳压芯片",
+        "name": "Unknown",
         "model": "AMS1117-3.3",
         "position": {
           "x": 150,
@@ -112,8 +112,8 @@
         "pins": [
           {
             "number": "1",
-            "name": "GND",
-            "type": "power_in",
+            "name": "P1",
+            "type": "passive",
             "position": {
               "x": -50,
               "y": -30
@@ -122,18 +122,8 @@
           },
           {
             "number": "2",
-            "name": "VOUT",
-            "type": "power_out",
-            "position": {
-              "x": -50,
-              "y": -10
-            },
-            "direction": "left"
-          },
-          {
-            "number": "3",
-            "name": "VIN",
-            "type": "power_in",
+            "name": "P2",
+            "type": "passive",
             "position": {
               "x": 50,
               "y": -30
@@ -145,12 +135,12 @@
         "symbol_library": "Regulator_Linear:AMS1117-3.3",
         "symbol_name": "",
         "reference": "U2",
-        "category": "power"
+        "category": null
       },
       {
         "id": "comp-2",
-        "name": "WiFi模块",
-        "model": "ESP32-WROOM",
+        "name": "Unknown",
+        "model": "STM32F103C8T6",
         "position": {
           "x": 250,
           "y": 300
@@ -158,8 +148,8 @@
         "pins": [
           {
             "number": "1",
-            "name": "GND",
-            "type": "power_in",
+            "name": "P1",
+            "type": "passive",
             "position": {
               "x": -50,
               "y": -30
@@ -168,395 +158,25 @@
           },
           {
             "number": "2",
-            "name": "VDD",
-            "type": "power_in",
-            "position": {
-              "x": -50,
-              "y": -10
-            },
-            "direction": "left"
-          },
-          {
-            "number": "3",
-            "name": "EN",
-            "type": "input",
-            "position": {
-              "x": -50,
-              "y": 10
-            },
-            "direction": "left"
-          },
-          {
-            "number": "4",
-            "name": "SENSOR_VP",
-            "type": "input",
-            "position": {
-              "x": -50,
-              "y": 30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "5",
-            "name": "SENSOR_VN",
-            "type": "input",
-            "position": {
-              "x": -50,
-              "y": 50
-            },
-            "direction": "left"
-          },
-          {
-            "number": "6",
-            "name": "IO34",
-            "type": "input",
-            "position": {
-              "x": -50,
-              "y": 70
-            },
-            "direction": "left"
-          },
-          {
-            "number": "7",
-            "name": "IO35",
-            "type": "input",
-            "position": {
-              "x": -50,
-              "y": 90
-            },
-            "direction": "left"
-          },
-          {
-            "number": "8",
-            "name": "IO32",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 110
-            },
-            "direction": "left"
-          },
-          {
-            "number": "9",
-            "name": "IO33",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 130
-            },
-            "direction": "left"
-          },
-          {
-            "number": "10",
-            "name": "IO25",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 150
-            },
-            "direction": "left"
-          },
-          {
-            "number": "11",
-            "name": "IO26",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 170
-            },
-            "direction": "left"
-          },
-          {
-            "number": "12",
-            "name": "IO27",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 190
-            },
-            "direction": "left"
-          },
-          {
-            "number": "13",
-            "name": "IO14",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 210
-            },
-            "direction": "left"
-          },
-          {
-            "number": "14",
-            "name": "IO12",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 230
-            },
-            "direction": "left"
-          },
-          {
-            "number": "15",
-            "name": "GND",
+            "name": "P2",
             "type": "passive",
-            "position": {
-              "x": -50,
-              "y": 250
-            },
-            "direction": "left"
-          },
-          {
-            "number": "16",
-            "name": "IO13",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 270
-            },
-            "direction": "left"
-          },
-          {
-            "number": "17",
-            "name": "SHD/SD2",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 290
-            },
-            "direction": "left"
-          },
-          {
-            "number": "18",
-            "name": "SWP/SD3",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 310
-            },
-            "direction": "left"
-          },
-          {
-            "number": "19",
-            "name": "SCS/CMD",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 330
-            },
-            "direction": "left"
-          },
-          {
-            "number": "20",
-            "name": "SCK/CLK",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 350
-            },
-            "direction": "left"
-          },
-          {
-            "number": "21",
-            "name": "SDO/SD0",
-            "type": "bidirectional",
             "position": {
               "x": 50,
               "y": -30
             },
             "direction": "right"
-          },
-          {
-            "number": "22",
-            "name": "SDI/SD1",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": -10
-            },
-            "direction": "right"
-          },
-          {
-            "number": "23",
-            "name": "IO15",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 10
-            },
-            "direction": "right"
-          },
-          {
-            "number": "24",
-            "name": "IO2",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 30
-            },
-            "direction": "right"
-          },
-          {
-            "number": "25",
-            "name": "IO0",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 50
-            },
-            "direction": "right"
-          },
-          {
-            "number": "26",
-            "name": "IO4",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 70
-            },
-            "direction": "right"
-          },
-          {
-            "number": "27",
-            "name": "IO16",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 90
-            },
-            "direction": "right"
-          },
-          {
-            "number": "28",
-            "name": "IO17",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 110
-            },
-            "direction": "right"
-          },
-          {
-            "number": "29",
-            "name": "IO5",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 130
-            },
-            "direction": "right"
-          },
-          {
-            "number": "30",
-            "name": "IO18",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 150
-            },
-            "direction": "right"
-          },
-          {
-            "number": "31",
-            "name": "IO19",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 170
-            },
-            "direction": "right"
-          },
-          {
-            "number": "32",
-            "name": "NC",
-            "type": "unspecified",
-            "position": {
-              "x": 50,
-              "y": 190
-            },
-            "direction": "right"
-          },
-          {
-            "number": "33",
-            "name": "IO21",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 210
-            },
-            "direction": "right"
-          },
-          {
-            "number": "34",
-            "name": "RXD0/IO3",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 230
-            },
-            "direction": "right"
-          },
-          {
-            "number": "35",
-            "name": "TXD0/IO1",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 250
-            },
-            "direction": "right"
-          },
-          {
-            "number": "36",
-            "name": "IO22",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 270
-            },
-            "direction": "right"
-          },
-          {
-            "number": "37",
-            "name": "IO23",
-            "type": "bidirectional",
-            "position": {
-              "x": 50,
-              "y": 290
-            },
-            "direction": "right"
-          },
-          {
-            "number": "38",
-            "name": "GND",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": 310
-            },
-            "direction": "right"
-          },
-          {
-            "number": "39",
-            "name": "GND",
-            "type": "power_in",
-            "position": {
-              "x": 50,
-              "y": 330
-            },
-            "direction": "right"
           }
         ],
         "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
-        "symbol_library": "RF_Module:ESP32-WROOM-32",
+        "symbol_library": "MCU_ST_STM32F1:STM32F103C8Tx",
         "symbol_name": "",
         "reference": "U4",
-        "category": "mcu"
+        "category": null
       },
       {
         "id": "comp-3",
-        "name": "USB接口",
-        "model": "Micro-USB",
+        "name": "Unknown",
+        "model": "Micro USB或DC插座",
         "position": {
           "x": 700,
           "y": 300
@@ -564,8 +184,8 @@
         "pins": [
           {
             "number": "1",
-            "name": "VBUS",
-            "type": "power_out",
+            "name": "P1",
+            "type": "passive",
             "position": {
               "x": -50,
               "y": -30
@@ -574,65 +194,25 @@
           },
           {
             "number": "2",
-            "name": "D-",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": -10
-            },
-            "direction": "left"
-          },
-          {
-            "number": "3",
-            "name": "D+",
-            "type": "bidirectional",
-            "position": {
-              "x": -50,
-              "y": 10
-            },
-            "direction": "left"
-          },
-          {
-            "number": "4",
-            "name": "ID",
+            "name": "P2",
             "type": "passive",
             "position": {
               "x": 50,
               "y": -30
             },
             "direction": "right"
-          },
-          {
-            "number": "5",
-            "name": "GND",
-            "type": "power_out",
-            "position": {
-              "x": 50,
-              "y": -10
-            },
-            "direction": "right"
-          },
-          {
-            "number": "SH",
-            "name": "Shield",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": 10
-            },
-            "direction": "right"
           }
         ],
         "footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001",
-        "symbol_library": "Connector:Conn_01x02_Pin",
+        "symbol_library": "Device:R",
         "symbol_name": "",
-        "reference": "J1",
-        "category": "interface"
+        "reference": "R1",
+        "category": null
       },
       {
         "id": "comp-4",
-        "name": "电容",
-        "model": "10uF 25V",
+        "name": "Unknown",
+        "model": "100nF陶瓷电容",
         "position": {
           "x": 150,
           "y": 500
@@ -640,7 +220,7 @@
         "pins": [
           {
             "number": "1",
-            "name": "+",
+            "name": "P1",
             "type": "passive",
             "position": {
               "x": -50,
@@ -650,7 +230,7 @@
           },
           {
             "number": "2",
-            "name": "-",
+            "name": "P2",
             "type": "passive",
             "position": {
               "x": 50,
@@ -660,15 +240,15 @@
           }
         ],
         "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
+        "symbol_library": "Device:R",
         "symbol_name": "",
-        "reference": "C1",
-        "category": "passive"
+        "reference": "R3",
+        "category": null
       },
       {
         "id": "comp-5",
-        "name": "电容",
-        "model": "10uF 25V",
+        "name": "Unknown",
+        "model": "100nF陶瓷电容",
         "position": {
           "x": 350,
           "y": 500
@@ -676,7 +256,7 @@
         "pins": [
           {
             "number": "1",
-            "name": "+",
+            "name": "P1",
             "type": "passive",
             "position": {
               "x": -50,
@@ -686,7 +266,7 @@
           },
           {
             "number": "2",
-            "name": "-",
+            "name": "P2",
             "type": "passive",
             "position": {
               "x": 50,
@@ -696,231 +276,15 @@
           }
         ],
         "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
+        "symbol_library": "Device:R",
         "symbol_name": "",
-        "reference": "C2",
-        "category": "passive"
+        "reference": "R5",
+        "category": null
       },
       {
         "id": "comp-6",
-        "name": "电容",
-        "model": "100nF 50V",
-        "position": {
-          "x": 500,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "C3",
-        "category": "passive"
-      },
-      {
-        "id": "comp-7",
-        "name": "电容",
-        "model": "100nF 50V",
-        "position": {
-          "x": 700,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "C4",
-        "category": "passive"
-      },
-      {
-        "id": "comp-8",
-        "name": "电容",
-        "model": "100nF 50V",
-        "position": {
-          "x": 850,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "C5",
-        "category": "passive"
-      },
-      {
-        "id": "comp-9",
-        "name": "电容",
-        "model": "100nF 50V",
-        "position": {
-          "x": 1050,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Capacitor_SMD:C_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "C6",
-        "category": "passive"
-      },
-      {
-        "id": "comp-10",
-        "name": "电阻",
-        "model": "10kΩ 5%",
-        "position": {
-          "x": 1250,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Resistor_SMD:R_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "R8",
-        "category": "passive"
-      },
-      {
-        "id": "comp-11",
-        "name": "电阻",
-        "model": "10kΩ 5%",
-        "position": {
-          "x": 1400,
-          "y": 500
-        },
-        "pins": [
-          {
-            "number": "1",
-            "name": "1",
-            "type": "passive",
-            "position": {
-              "x": -50,
-              "y": -30
-            },
-            "direction": "left"
-          },
-          {
-            "number": "2",
-            "name": "2",
-            "type": "passive",
-            "position": {
-              "x": 50,
-              "y": -30
-            },
-            "direction": "right"
-          }
-        ],
-        "footprint": "Resistor_SMD:R_0805_2012Metric",
-        "symbol_library": "Device",
-        "symbol_name": "",
-        "reference": "R10",
-        "category": "passive"
-      },
-      {
-        "id": "comp-12",
-        "name": "LED",
-        "model": "0603 Red",
+        "name": "Unknown",
+        "model": "SWD接口（4针）",
         "position": {
           "x": 150,
           "y": 400
@@ -928,7 +292,7 @@
         "pins": [
           {
             "number": "1",
-            "name": "A",
+            "name": "P1",
             "type": "passive",
             "position": {
               "x": -50,
@@ -938,7 +302,7 @@
           },
           {
             "number": "2",
-            "name": "K",
+            "name": "P2",
             "type": "passive",
             "position": {
               "x": 50,
@@ -947,16 +311,16 @@
             "direction": "right"
           }
         ],
-        "footprint": "Resistor_SMD:R_0603_1608Metric",
-        "symbol_library": "Device",
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "symbol_library": "Device:R",
         "symbol_name": "",
-        "reference": "D2",
-        "category": "led"
+        "reference": "R6",
+        "category": null
       },
       {
-        "id": "comp-13",
-        "name": "按键",
-        "model": "6x6x5",
+        "id": "comp-7",
+        "name": "Unknown",
+        "model": "通用发光二极管",
         "position": {
           "x": 350,
           "y": 400
@@ -983,1633 +347,122 @@
             "direction": "right"
           }
         ],
-        "footprint": "Resistor_SMD:R_0603_1608Metric",
-        "symbol_library": "Switch:SW_Push",
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
         "symbol_name": "",
-        "reference": "SW1",
-        "category": "other"
+        "reference": "R7",
+        "category": null
+      },
+      {
+        "id": "comp-8",
+        "name": "Unknown",
+        "model": "330Ω ±5%",
+        "position": {
+          "x": 500,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R8",
+        "category": null
+      },
+      {
+        "id": "comp-9",
+        "name": "Unknown",
+        "model": "10μF 16V",
+        "position": {
+          "x": 700,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R9",
+        "category": null
+      },
+      {
+        "id": "comp-10",
+        "name": "Unknown",
+        "model": "10μF 16V",
+        "position": {
+          "x": 850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R10",
+        "category": null
       }
     ],
-    "wires": [
-      {
-        "id": "wire-84",
-        "points": [
-          {
-            "x": 100,
-            "y": 70
-          },
-          {
-            "x": 100,
-            "y": 1380
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-85",
-        "points": [
-          {
-            "x": 250,
-            "y": 70
-          },
-          {
-            "x": 100,
-            "y": 90
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-86",
-        "points": [
-          {
-            "x": 250,
-            "y": 70
-          },
-          {
-            "x": 200,
-            "y": 70
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-87",
-        "points": [
-          {
-            "x": 200,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 1600
-          },
-          {
-            "x": 100,
-            "y": 1600
-          },
-          {
-            "x": 100,
-            "y": 1400
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-88",
-        "points": [
-          {
-            "x": 250,
-            "y": 50
-          },
-          {
-            "x": 250,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-89",
-        "points": [
-          {
-            "x": 300,
-            "y": 650
-          },
-          {
-            "x": 300,
-            "y": 2000
-          },
-          {
-            "x": 100,
-            "y": 2000
-          },
-          {
-            "x": 100,
-            "y": 1400
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-90",
-        "points": [
-          {
-            "x": 250,
-            "y": 50
-          },
-          {
-            "x": 900,
-            "y": 50
-          },
-          {
-            "x": 900,
-            "y": 250
-          },
-          {
-            "x": 650,
-            "y": 250
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-91",
-        "points": [
-          {
-            "x": 200,
-            "y": 450
-          },
-          {
-            "x": 200,
-            "y": 1800
-          },
-          {
-            "x": 100,
-            "y": 1800
-          },
-          {
-            "x": 100,
-            "y": 1400
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-92",
-        "points": [
-          {
-            "x": 400,
-            "y": 450
-          },
-          {
-            "x": 400,
-            "y": 1800
-          },
-          {
-            "x": 100,
-            "y": 1800
-          },
-          {
-            "x": 100,
-            "y": 1400
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-93",
-        "points": [
-          {
-            "x": 100,
-            "y": 370
-          },
-          {
-            "x": 100,
-            "y": 1380
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-94",
-        "points": [
-          {
-            "x": 200,
-            "y": 350
-          },
-          {
-            "x": 200,
-            "y": 1700
-          },
-          {
-            "x": 100,
-            "y": 1700
-          },
-          {
-            "x": 100,
-            "y": 1400
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-95",
-        "points": [
-          {
-            "x": 100,
-            "y": 90
-          },
-          {
-            "x": 100,
-            "y": 470
-          }
-        ],
-        "net": "VOUT_U2_C1"
-      },
-      {
-        "id": "wire-96",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 300,
-            "y": 500
-          },
-          {
-            "x": 300,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C2"
-      },
-      {
-        "id": "wire-97",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 450,
-            "y": 500
-          },
-          {
-            "x": 450,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C3"
-      },
-      {
-        "id": "wire-98",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 700,
-            "y": 100
-          },
-          {
-            "x": 700,
-            "y": 450
-          },
-          {
-            "x": 650,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C4"
-      },
-      {
-        "id": "wire-99",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 900,
-            "y": 100
-          },
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 800,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C5"
-      },
-      {
-        "id": "wire-100",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1100,
-            "y": 100
-          },
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1000,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C6"
-      },
-      {
-        "id": "wire-101",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1300,
-            "y": 100
-          },
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1200,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_R8"
-      },
-      {
-        "id": "wire-102",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1400,
-            "y": 100
-          },
-          {
-            "x": 1400,
-            "y": 450
-          },
-          {
-            "x": 1350,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_R10"
-      },
-      {
-        "id": "wire-103",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 200,
-            "y": 500
-          },
-          {
-            "x": 200,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-104",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 400,
-            "y": 500
-          },
-          {
-            "x": 400,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-105",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 600,
-            "y": 50
-          },
-          {
-            "x": 600,
-            "y": 450
-          },
-          {
-            "x": 550,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-106",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 800,
-            "y": 50
-          },
-          {
-            "x": 800,
-            "y": 450
-          },
-          {
-            "x": 750,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-107",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 1000,
-            "y": 50
-          },
-          {
-            "x": 1000,
-            "y": 450
-          },
-          {
-            "x": 900,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-108",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 1200,
-            "y": 50
-          },
-          {
-            "x": 1200,
-            "y": 450
-          },
-          {
-            "x": 1100,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-109",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 1400,
-            "y": 50
-          },
-          {
-            "x": 1400,
-            "y": 450
-          },
-          {
-            "x": 1300,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-110",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 1500,
-            "y": 50
-          },
-          {
-            "x": 1500,
-            "y": 450
-          },
-          {
-            "x": 1450,
-            "y": 450
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-111",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 100,
-            "y": 400
-          },
-          {
-            "x": 200,
-            "y": 400
-          },
-          {
-            "x": 200,
-            "y": 350
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-112",
-        "points": [
-          {
-            "x": 100,
-            "y": 50
-          },
-          {
-            "x": 100,
-            "y": 400
-          },
-          {
-            "x": 400,
-            "y": 400
-          },
-          {
-            "x": 400,
-            "y": 350
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-113",
-        "points": [
-          {
-            "x": 100,
-            "y": 90
-          },
-          {
-            "x": 200,
-            "y": 70
-          }
-        ],
-        "net": "VOUT_U2_U2"
-      },
-      {
-        "id": "wire-114",
-        "points": [
-          {
-            "x": 100,
-            "y": 90
-          },
-          {
-            "x": 100,
-            "y": 470
-          }
-        ],
-        "net": "VOUT_U2_C1"
-      },
-      {
-        "id": "wire-115",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 300,
-            "y": 500
-          },
-          {
-            "x": 300,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C2"
-      },
-      {
-        "id": "wire-116",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 500
-          },
-          {
-            "x": 450,
-            "y": 500
-          },
-          {
-            "x": 450,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C3"
-      },
-      {
-        "id": "wire-117",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 700,
-            "y": 100
-          },
-          {
-            "x": 700,
-            "y": 450
-          },
-          {
-            "x": 650,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C4"
-      },
-      {
-        "id": "wire-118",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 900,
-            "y": 100
-          },
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 800,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C5"
-      },
-      {
-        "id": "wire-119",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1100,
-            "y": 100
-          },
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1000,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_C6"
-      },
-      {
-        "id": "wire-120",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1300,
-            "y": 100
-          },
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1200,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_R8"
-      },
-      {
-        "id": "wire-121",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 1400,
-            "y": 100
-          },
-          {
-            "x": 1400,
-            "y": 450
-          },
-          {
-            "x": 1350,
-            "y": 450
-          }
-        ],
-        "net": "VOUT_U2_R10"
-      },
-      {
-        "id": "wire-122",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VOUT_U2_U4"
-      },
-      {
-        "id": "wire-123",
-        "points": [
-          {
-            "x": 100,
-            "y": 100
-          },
-          {
-            "x": 100,
-            "y": 400
-          },
-          {
-            "x": 300,
-            "y": 400
-          },
-          {
-            "x": 300,
-            "y": 350
-          }
-        ],
-        "net": "VOUT_U2_SW1"
-      },
-      {
-        "id": "wire-124",
-        "points": [
-          {
-            "x": 200,
-            "y": 70
-          },
-          {
-            "x": 200,
-            "y": 290
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-125",
-        "points": [
-          {
-            "x": 100,
-            "y": 450
-          },
-          {
-            "x": 100,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-126",
-        "points": [
-          {
-            "x": 200,
-            "y": 470
-          },
-          {
-            "x": 200,
-            "y": 270
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-127",
-        "points": [
-          {
-            "x": 200,
-            "y": 470
-          },
-          {
-            "x": 200,
-            "y": 270
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-128",
-        "points": [
-          {
-            "x": 300,
-            "y": 450
-          },
-          {
-            "x": 300,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-129",
-        "points": [
-          {
-            "x": 400,
-            "y": 450
-          },
-          {
-            "x": 400,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-130",
-        "points": [
-          {
-            "x": 400,
-            "y": 450
-          },
-          {
-            "x": 400,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 700
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-131",
-        "points": [
-          {
-            "x": 450,
-            "y": 450
-          },
-          {
-            "x": 600,
-            "y": 450
-          },
-          {
-            "x": 600,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-132",
-        "points": [
-          {
-            "x": 550,
-            "y": 450
-          },
-          {
-            "x": 700,
-            "y": 450
-          },
-          {
-            "x": 700,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-133",
-        "points": [
-          {
-            "x": 550,
-            "y": 450
-          },
-          {
-            "x": 700,
-            "y": 450
-          },
-          {
-            "x": 700,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-134",
-        "points": [
-          {
-            "x": 650,
-            "y": 450
-          },
-          {
-            "x": 800,
-            "y": 450
-          },
-          {
-            "x": 800,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-135",
-        "points": [
-          {
-            "x": 750,
-            "y": 450
-          },
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 900,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-136",
-        "points": [
-          {
-            "x": 750,
-            "y": 450
-          },
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 900,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-137",
-        "points": [
-          {
-            "x": 800,
-            "y": 450
-          },
-          {
-            "x": 1000,
-            "y": 450
-          },
-          {
-            "x": 1000,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-138",
-        "points": [
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1100,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-139",
-        "points": [
-          {
-            "x": 900,
-            "y": 450
-          },
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1100,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-140",
-        "points": [
-          {
-            "x": 1000,
-            "y": 450
-          },
-          {
-            "x": 1200,
-            "y": 450
-          },
-          {
-            "x": 1200,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-141",
-        "points": [
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1300,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-142",
-        "points": [
-          {
-            "x": 1100,
-            "y": 450
-          },
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1300,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-143",
-        "points": [
-          {
-            "x": 1200,
-            "y": 450
-          },
-          {
-            "x": 1400,
-            "y": 450
-          },
-          {
-            "x": 1400,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-144",
-        "points": [
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-145",
-        "points": [
-          {
-            "x": 1300,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-146",
-        "points": [
-          {
-            "x": 1350,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 450
-          },
-          {
-            "x": 1500,
-            "y": 300
-          },
-          {
-            "x": 200,
-            "y": 300
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-147",
-        "points": [
-          {
-            "x": 1450,
-            "y": 450
-          },
-          {
-            "x": 1600,
-            "y": 450
-          },
-          {
-            "x": 1600,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-148",
-        "points": [
-          {
-            "x": 1450,
-            "y": 450
-          },
-          {
-            "x": 1600,
-            "y": 450
-          },
-          {
-            "x": 1600,
-            "y": 250
-          },
-          {
-            "x": 200,
-            "y": 250
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-149",
-        "points": [
-          {
-            "x": 200,
-            "y": 270
-          },
-          {
-            "x": 200,
-            "y": 370
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-150",
-        "points": [
-          {
-            "x": 200,
-            "y": 250
-          },
-          {
-            "x": 600,
-            "y": 250
-          },
-          {
-            "x": 600,
-            "y": 350
-          },
-          {
-            "x": 400,
-            "y": 350
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-151",
-        "points": [
-          {
-            "x": 200,
-            "y": 300
-          },
-          {
-            "x": 100,
-            "y": 350
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-152",
-        "points": [
-          {
-            "x": 200,
-            "y": 300
-          },
-          {
-            "x": 300,
-            "y": 350
-          }
-        ],
-        "net": "VCC"
-      },
-      {
-        "id": "wire-153",
-        "points": [
-          {
-            "x": 200,
-            "y": 270
-          },
-          {
-            "x": 200,
-            "y": 370
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-154",
-        "points": [
-          {
-            "x": 200,
-            "y": 250
-          },
-          {
-            "x": 600,
-            "y": 250
-          },
-          {
-            "x": 600,
-            "y": 350
-          },
-          {
-            "x": 400,
-            "y": 350
-          }
-        ],
-        "net": "GND"
-      },
-      {
-        "id": "wire-155",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 100,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C1"
-      },
-      {
-        "id": "wire-156",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 300,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C2"
-      },
-      {
-        "id": "wire-157",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 450,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C3"
-      },
-      {
-        "id": "wire-158",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 650,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C4"
-      },
-      {
-        "id": "wire-159",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 800,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C5"
-      },
-      {
-        "id": "wire-160",
-        "points": [
-          {
-            "x": 1300,
-            "y": 470
-          },
-          {
-            "x": 1000,
-            "y": 470
-          }
-        ],
-        "net": "RC_R8_C6"
-      },
-      {
-        "id": "wire-161",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 100,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C1"
-      },
-      {
-        "id": "wire-162",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 300,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C2"
-      },
-      {
-        "id": "wire-163",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 450,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C3"
-      },
-      {
-        "id": "wire-164",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 650,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C4"
-      },
-      {
-        "id": "wire-165",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 800,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C5"
-      },
-      {
-        "id": "wire-166",
-        "points": [
-          {
-            "x": 1450,
-            "y": 470
-          },
-          {
-            "x": 1000,
-            "y": 470
-          }
-        ],
-        "net": "RC_R10_C6"
-      }
-    ],
+    "wires": [],
     "nets": [
       {
         "id": "net-1",
@@ -2618,107 +471,15 @@
       {
         "id": "net-2",
         "name": "GND"
-      },
-      {
-        "id": "net-3",
-        "name": "VOUT_U2_C1"
-      },
-      {
-        "id": "net-4",
-        "name": "VOUT_U2_C2"
-      },
-      {
-        "id": "net-5",
-        "name": "VOUT_U2_C3"
-      },
-      {
-        "id": "net-6",
-        "name": "VOUT_U2_C4"
-      },
-      {
-        "id": "net-7",
-        "name": "VOUT_U2_C5"
-      },
-      {
-        "id": "net-8",
-        "name": "VOUT_U2_C6"
-      },
-      {
-        "id": "net-9",
-        "name": "VOUT_U2_R8"
-      },
-      {
-        "id": "net-10",
-        "name": "VOUT_U2_R10"
-      },
-      {
-        "id": "net-11",
-        "name": "VOUT_U2_U2"
-      },
-      {
-        "id": "net-12",
-        "name": "VOUT_U2_U4"
-      },
-      {
-        "id": "net-13",
-        "name": "VOUT_U2_SW1"
-      },
-      {
-        "id": "net-14",
-        "name": "RC_R8_C1"
-      },
-      {
-        "id": "net-15",
-        "name": "RC_R8_C2"
-      },
-      {
-        "id": "net-16",
-        "name": "RC_R8_C3"
-      },
-      {
-        "id": "net-17",
-        "name": "RC_R8_C4"
-      },
-      {
-        "id": "net-18",
-        "name": "RC_R8_C5"
-      },
-      {
-        "id": "net-19",
-        "name": "RC_R8_C6"
-      },
-      {
-        "id": "net-20",
-        "name": "RC_R10_C1"
-      },
-      {
-        "id": "net-21",
-        "name": "RC_R10_C2"
-      },
-      {
-        "id": "net-22",
-        "name": "RC_R10_C3"
-      },
-      {
-        "id": "net-23",
-        "name": "RC_R10_C4"
-      },
-      {
-        "id": "net-24",
-        "name": "RC_R10_C5"
-      },
-      {
-        "id": "net-25",
-        "name": "RC_R10_C6"
       }
     ],
     "netLabels": [],
     "powerSymbols": [
       {
-        "id": "power-2",
+        "id": "power-vcc",
         "netName": "VCC",
         "position": {
-          "x": 250,
+          "x": 100,
           "y": 50
         },
         "type": "vcc"
@@ -2728,7 +489,7 @@
         "netName": "GND",
         "position": {
           "x": 100,
-          "y": 1400
+          "y": 820
         },
         "type": "gnd"
       }

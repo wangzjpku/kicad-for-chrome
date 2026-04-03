@@ -42,7 +42,6 @@ const FootprintRenderer: React.FC<FootprintRendererProps> = ({ footprint }) => {
       e.evt.stopPropagation(); // 阻止DOM事件冒泡到 Stage
     }
     e.cancelBubble = true; // 阻止Konva事件冒泡
-    console.log('[FootprintRenderer] Clicked:', id, reference);
     toggleSelection(id);
   }, [id, toggleSelection, reference]);
 

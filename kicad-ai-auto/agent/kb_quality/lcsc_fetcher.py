@@ -42,7 +42,14 @@ class LcscFetcher:
     LCSC API 元件数据获取器。
 
     使用方法:
-        fetcher = LcscFetcher(api_key="YOUR_KEY")
+        # 方式1: 使用环境变量 LCSC_API_KEY
+        import os
+        os.environ["LCSC_API_KEY"] = "<your-api-key>"
+        fetcher = LcscFetcher()
+
+        # 方式2: 直接传入API Key
+        fetcher = LcscFetcher(api_key=os.environ.get("LCSC_API_KEY"))
+
         chip = fetcher.fetch_component("C204471")
         print(chip.datasheet_url)
 

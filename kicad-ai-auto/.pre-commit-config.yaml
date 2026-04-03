@@ -1,0 +1,57 @@
+# Pre-commit Configuration
+#
+# Phase 3.5: Pre-commit hooks for code quality enforcement
+# Runs on every commit to ensure code quality
+
+repos:
+  - repo: local
+    rev: 1
+    hooks:
+      - id: ruff
+        name: Ruff (Python Linter)
+        entry: ruff check .
+        language: system
+        files: 'kicad-ai-auto/agent/**/*.py'
+        exclude: >
+          (?x)v?$
+          ^kicad-ai-auto/agent/venv/
+          ^kicad-ai-auto/agent/.pytest_cache/
+
+      - id: eslint
+        name: ESLint (TypeScript Linter)
+        entry: npx eslint@8.57.0 .
+        language: system
+        files: 'kicad-ai-auto/web/src/**/*.ts'
+        'kicad-ai-auto/web/src/**/*.tsx'
+        exclude: >
+          (?x)^kicad-ai-auto/web/node_modules/
+          (?x)^kicad-ai-auto/web/dist/
+
+      - id: mypy
+        name: MyPy (Type Checker)
+        entry: mypy kicad-ai-auto/agent
+        language: system
+        files: 'kicad-ai-auto/agent/**/*.py'
+        exclude: >
+          (?x)^kicad-ai-auto/agent/venv/
+
+      - id: prettier
+        name: Prettier (Code Formatter)
+        entry: prettier --check .
+        language: system
+        files: >-
+          'kicad-ai-auto/agent/**/*.py'
+          'kicad-ai-auto/web/src/**/*.{ts,tsx,css,json}'
+
+# CI Configuration
+ci:
+  autofix_commit_msg: |
+    [ci] auto-fix: Fixed linting issues
+  autofix_prs:
+    - ruff --fix
+    - prettier --write
+
+# Default settings
+default_stages:
+  - commit
+  - push

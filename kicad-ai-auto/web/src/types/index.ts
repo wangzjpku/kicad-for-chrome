@@ -100,6 +100,7 @@ export interface Track extends PCBElement {
   width: number;
   points: Point2D[];
   netId?: string;
+  net?: string;  // Network name (alternative to netId)
 }
 
 export interface Via extends PCBElement {
@@ -296,6 +297,9 @@ export interface PCBData {
   nets: Net[];
   netclasses: NetClass[];
   designRules: DesignRules;
+  // Compatibility properties for legacy API access
+  board?: { width?: number; height?: number };
+  layerCount?: number;
 }
 
 // ==================== 库类型 ====================
@@ -437,4 +441,52 @@ export interface SchematicData {
   labels: Label[];
   powerSymbols: PowerSymbol[];
   nets: Net[];
+}
+
+// ==================== Phase 7C/9 特殊类型 ====================
+
+/** 铜皮铺铜结果 (Phase 7C) */
+export interface CopperPourResult {
+  success: boolean;
+  results: Array<{
+    net: string;
+    layer: string;
+    zone: boolean;
+    stitching_vias: number;
+  }>;
+  total_zones: number;
+  drc_check?: {
+    passed: boolean | null;
+    total_violations: number;
+    copper_violations: number;
+    violations: Array<{ rule: string; message: string }>;
+  };
+}
+
+/** 差分对布线结果 (Phase 9) */
+export interface DiffPairResult {
+  success: boolean;
+  pos_points: Array<{ x: number; y: number }>;
+  neg_points: Array<{ x: number; y: number }>;
+  pos_length: number;
+  neg_length: number;
+  length_mismatch: number;
+  impedance: number;
+  target_impedance: number;
+}
+
+/** 自动布局结果 (Phase 7B) */
+export interface AutoLayoutResult {
+  success: boolean;
+  zones?: Array<{
+    name: string;
+    group: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color: string;
+  }>;
+  score?: number;
+  positions?: Record<string, { x: number; y: number; rotation?: number }>;
 }

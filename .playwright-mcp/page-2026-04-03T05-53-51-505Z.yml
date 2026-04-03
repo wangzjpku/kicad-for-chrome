@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 智
+      - generic [ref=e7]:
+        - generic [ref=e8]: 智板工具
+        - generic [ref=e9]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e11]: "后端服务: ● 已连接"
+      - generic [ref=e12]:
+        - generic "点击刷新" [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: "Token:"
+          - generic [ref=e15]: "1000"
+          - text: "0"
+        - generic [ref=e16]:
+          - generic [ref=e17]: 🤖
+          - generic [ref=e18]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 👤
+          - generic [ref=e22]: testuser
+          - generic [ref=e23]: ▼
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - heading "Projects" [level=1] [ref=e27]
+      - textbox "搜索项目..." [ref=e28]
+      - button "+ New Project" [active] [ref=e29] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e30] [cursor=pointer]
+    - generic [ref=e54]:
+      - heading "Create New Project" [level=3] [ref=e55]
+      - textbox "Project name" [ref=e56]
+      - generic [ref=e57]:
+        - button "Create" [ref=e58] [cursor=pointer]
+        - button "Cancel" [ref=e59] [cursor=pointer]
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]: "1"
+          - generic [ref=e35]: v1.0
+        - generic [ref=e36]:
+          - heading "AI生成项目" [level=3] [ref=e37] [cursor=pointer]
+          - paragraph [ref=e38]: 基于STM32F103C8T6微控制器的简单LED闪烁电路，通过编程控制GPIO引脚输出高低电平，实现LED的周期性亮灭。适用于嵌入式入门学习、原型验证和基础指示灯应用。
+          - paragraph [ref=e39]: "Updated: 2026/4/3"
+        - generic [ref=e40]:
+          - button "Open" [ref=e41] [cursor=pointer]
+          - button "Delete" [ref=e42] [cursor=pointer]
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]: "2"
+          - generic [ref=e46]: v1.0
+        - generic [ref=e47]:
+          - heading "测试PCB项目" [level=3] [ref=e48] [cursor=pointer]
+          - paragraph [ref=e49]: Created from 智板工具
+          - paragraph [ref=e50]: "Updated: 2026/4/3"
+        - generic [ref=e51]:
+          - button "Open" [ref=e52] [cursor=pointer]
+          - button "Delete" [ref=e53] [cursor=pointer]

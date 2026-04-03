@@ -307,8 +307,11 @@ def get_kimi_client() -> KimiClient:
     """获取 Kimi 客户端单例"""
     global _kimi_client
     if _kimi_client is None:
-        # 使用用户提供的 API Key
-        _kimi_client = KimiClient(api_key="sk-kimi-POTrHLS6t3mBaMpV7w7XJf2R6WOUh3Odw5Smb7xcsU4VaeOqqD3fFEHl6iGvKpBl")
+        import os
+        api_key = os.environ.get("KIMI_API_KEY", "")
+        if not api_key:
+            logger.warning("KIMI_API_KEY not set. Kimi AI features will be disabled.")
+        _kimi_client = KimiClient(api_key=api_key)
     return _kimi_client
 
 

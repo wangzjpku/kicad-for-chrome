@@ -187,7 +187,10 @@ class RalphLoopTester:
 
 def main():
     # 项目目录
-    demo_dir = "E:/0-007-MyAIOS/projects/1-kicad-for-chrome/kicad-source/demos"
+    demo_dir = os.environ.get(
+        "KICAD_DEMOS_PATH",
+        "E:/0-007-MyAIOS/projects/1-kicad-for-chrome/kicad-source/demos"
+    )
 
     # 创建测试器
     tester = RalphLoopTester(demo_dir)

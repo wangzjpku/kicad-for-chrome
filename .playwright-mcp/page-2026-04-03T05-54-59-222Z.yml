@@ -1,0 +1,85 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "文件" [ref=e61] [cursor=pointer]
+    - button "编辑" [ref=e63] [cursor=pointer]
+    - button "视图" [ref=e65] [cursor=pointer]
+    - button "放置" [ref=e67] [cursor=pointer]
+    - button "工具" [ref=e69] [cursor=pointer]
+    - button "帮助" [ref=e71] [cursor=pointer]
+    - button "← 返回项目列表" [ref=e72] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e73]:
+      - button "⚡ 原理图" [ref=e74] [cursor=pointer]
+      - button "🔲 PCB" [ref=e75] [cursor=pointer]
+    - generic [ref=e76]:
+      - button "↖" [ref=e77] [cursor=pointer]
+      - button "✥" [ref=e78] [cursor=pointer]
+      - button "↻" [ref=e79] [cursor=pointer]
+      - button "⇆" [ref=e80] [cursor=pointer]
+    - generic [ref=e82]:
+      - button "□" [ref=e83] [cursor=pointer]
+      - button "⬡" [ref=e84] [cursor=pointer]
+      - button "◎" [ref=e85] [cursor=pointer]
+      - button "▣" [ref=e86] [cursor=pointer]
+      - button "A" [ref=e87] [cursor=pointer]
+    - generic [ref=e89]:
+      - button "🔍+" [ref=e90] [cursor=pointer]
+      - button "🔍-" [ref=e91] [cursor=pointer]
+      - button "⊞" [ref=e92] [cursor=pointer]
+      - button "▦" [ref=e93] [cursor=pointer]
+  - generic [ref=e94]:
+    - button "▶" [ref=e96] [cursor=pointer]
+    - generic [ref=e97]:
+      - generic [ref=e99]:
+        - button "🤖 AI助手" [ref=e100] [cursor=pointer]
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - generic [ref=e103]:
+              - button "↖" [ref=e104] [cursor=pointer]:
+                - generic [ref=e105]: ↖
+              - button "✥" [ref=e106] [cursor=pointer]:
+                - generic [ref=e107]: ✥
+              - button "╱" [ref=e108] [cursor=pointer]:
+                - generic [ref=e109]: ╱
+              - button "□" [ref=e110] [cursor=pointer]:
+                - generic [ref=e111]: □
+              - button "+" [ref=e112] [cursor=pointer]
+            - generic [ref=e113]:
+              - button "2D" [ref=e114] [cursor=pointer]
+              - button "3D" [ref=e115] [cursor=pointer]
+          - generic [ref=e116]:
+            - generic [ref=e117]: "Zoom: 82% | Grid: 1mm (snap)"
+            - button "扇出" [disabled] [ref=e118]
+            - button "Auto Layout" [ref=e119] [cursor=pointer]
+            - button "Copper Pour" [ref=e120] [cursor=pointer]
+            - button "Diff Pair" [ref=e121] [cursor=pointer]
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - button "properties" [ref=e128] [cursor=pointer]
+              - button "layers" [ref=e129] [cursor=pointer]
+              - button "drc" [ref=e130] [cursor=pointer]
+              - button "quality" [ref=e131] [cursor=pointer]
+              - button "export" [ref=e132] [cursor=pointer]
+            - generic [ref=e134]: 请选择一个元素查看属性
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - button "消息" [ref=e137] [cursor=pointer]
+          - button "DRC" [ref=e138] [cursor=pointer]
+          - button "ERC" [ref=e139] [cursor=pointer]
+          - button "BOM" [ref=e140] [cursor=pointer]
+        - generic [ref=e141]:
+          - generic [ref=e142]: "[20:25:00] 系统就绪"
+          - generic [ref=e143]: "[20:25:01] 等待 KiCad 连接..."
+    - button "◀" [ref=e145] [cursor=pointer]
+  - generic [ref=e147]:
+    - generic [ref=e148] [cursor=pointer]:
+      - generic [ref=e149]:
+        - generic [ref=e150]: 🤖
+        - generic [ref=e151]: AI 助手
+        - generic "未连接 KiCad (Canvas 模式)" [ref=e152]: ○
+      - button "▶" [ref=e153]
+    - generic [ref=e154]:
+      - generic [ref=e155]: 📊
+      - generic: 无项目上下文
+      - generic [ref=e156]: 新对话
+  - generic [ref=e157] [cursor=pointer]: ⚡ 快速创建设计

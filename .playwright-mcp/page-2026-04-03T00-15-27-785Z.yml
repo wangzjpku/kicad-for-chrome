@@ -1,0 +1,28 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 智
+      - generic [ref=e7]:
+        - generic [ref=e8]: 智板工具
+        - generic [ref=e9]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e11]: "后端服务: ● 已连接"
+      - button "登录 / 注册" [active] [ref=e13] [cursor=pointer]
+  - generic [ref=e15]:
+    - text: 请先登录后查看项目
+    - button "Retry" [ref=e16] [cursor=pointer]
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "登录" [level=2] [ref=e20]
+      - paragraph [ref=e21]: 登录到 DeepEDA
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 邮箱
+        - textbox "请输入邮箱" [ref=e25]
+      - generic [ref=e26]:
+        - generic [ref=e27]: 密码
+        - textbox "请输入密码" [ref=e28]
+      - button "登录" [ref=e29] [cursor=pointer]
+    - generic [ref=e30]: 还没有账号？立即注册
+    - button "×" [ref=e31] [cursor=pointer]
+    - generic [ref=e32]: 🎁 新用户注册即送 1000 Token

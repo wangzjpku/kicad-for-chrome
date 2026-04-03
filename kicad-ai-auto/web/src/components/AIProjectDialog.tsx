@@ -389,14 +389,12 @@ interface UploadedFile {
         setClarificationData(data);
         setStep('clarifying');
       } else {
-        console.log('Clarify API not available, falling back to direct analyze...');
         await directAnalyze();
       }
 
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.log('Clarify API error, falling back to direct analyze:', errorMessage);
       // 如果是超时或网络错误，回退到 directAnalyze
       const errorName = err instanceof Error ? err.name : '';
       if (errorName === 'AbortError' || errorName === 'TypeError') {
@@ -423,9 +421,9 @@ interface UploadedFile {
   const directAnalyze = async () => {
     setProgress('正在生成方案...');
 
-    // 创建超时控制器 (60秒超时)
+    // 创建超时控制器 (120秒超时 - AI分析可能需要更长时间)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       // 获取认证token
@@ -490,7 +488,7 @@ interface UploadedFile {
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error('AI 分析超时，请稍后重试');
+        throw new Error('AI 分析超时 (120秒)，请检查网络连接或稍后重试');
       }
       throw err;
     }
@@ -502,9 +500,9 @@ interface UploadedFile {
     setError(null);
     setProgress('正在生成原理图方案...');
 
-    // 创建超时控制器 (60秒超时)
+    // 创建超时控制器 (120秒超时 - AI分析可能需要更长时间)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       // 获取认证token
@@ -559,7 +557,6 @@ interface UploadedFile {
             const height = parseInt(sizeMatch[2], 10);
             if (width > 0 && height > 0) {
               setPcbParams(prev => ({ ...prev, width, height }));
-              console.log('[AIProjectDialog] PCB尺寸从AI提取:', width, 'x', height);
             }
           }
         }
@@ -574,7 +571,7 @@ interface UploadedFile {
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {
-        setError('AI 分析超时，请稍后重试');
+        setError('AI 分析超时 (120秒)，请检查网络连接或稍后重试。如果问题持续，请联系管理员检查后端 AI 服务配置。');
       } else {
         const errorMessage = err instanceof Error ? err.message : '生成方案出错';
         setError(errorMessage);
@@ -734,7 +731,6 @@ interface UploadedFile {
           // 自动重命名项目（添加时间戳）
           const timestamp = Date.now();
           requestData.name = `${requestData.name}-${timestamp}`;
-          console.log('Project name conflict, retrying with:', requestData.name);
 
           const retryResponse = await fetch('/api/v1/projects', {
             method: 'POST',
@@ -851,7 +847,7 @@ interface UploadedFile {
     } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {
-        setError('AI 分析超时，请稍后重试');
+        setError('PCB 生成超时 (60秒)，请检查网络连接或稍后重试');
       } else {
         const errorMessage = err instanceof Error ? err.message : '生成PCB方案出错';
         setError(errorMessage);

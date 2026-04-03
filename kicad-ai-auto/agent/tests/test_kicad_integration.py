@@ -45,9 +45,10 @@ class TestKiCadConfig:
         from config import load_config
 
         config = load_config()
-        assert "kicad" in config
-        assert "ai" in config
-        assert "app" in config
+        # AppConfig is a dataclass with attributes, not a dict
+        assert hasattr(config, "kicad") and config.kicad is not None
+        assert hasattr(config, "ai") and config.ai is not None
+        assert hasattr(config, "server") and config.server is not None
 
 
 class TestKiCadIPCManager:

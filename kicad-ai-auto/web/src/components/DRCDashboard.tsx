@@ -1,10 +1,11 @@
 /**
- * * DRC Dashboard - Phase 7A
- * * Unified design rule check dashboard combining DRC, Safety, SI, and EMI analysis
- * */
+ * DRC Dashboard - Phase 7A
+ * Unified design rule check dashboard combining DRC, Safety, SI, and EMI analysis
+ */
 
 import React, { useState, useCallback } from 'react';
 import { drcApi } from '../services/api';
+import { PCBData, DRCItem } from '../types';
 
 interface Tab {
   id: string;
@@ -13,17 +14,201 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'drc', label: 'DRC 规则', icon: '🔍' },
-  { id: 'safety', label: '安全规则', icon: '🛡️' },
-  { id: 'si', label: 'SI 分析', icon: '📈' },
-  { id: 'emi', label: 'EMI 分析', icon: '📡' },
+  { id: 'drc', label: 'DRC', icon: '🔍' },
+  { id: 'safety', label: 'Safety', icon: '🛡️' },
+  { id: 'si', label: 'SI', icon: '📈' },
+  { id: 'emi', label: 'EMI', icon: '📡' },
 ];
+
+/** DRC violation item */
+interface DRCViolation {
+  code?: string;
+  rule_type?: string;
+  message: string;
+  severity?: 'error' | 'warning' | 'info';
+  type?: 'error' | 'warning' | 'info';
+  x?: number;
+  y?: number;
+  expected?: number | string;
+  actual?: number | string;
+  distance?: number;
+  net1?: string;
+  net2?: string;
+  component?: string;
+}
+
+/** DRC result data */
+interface DRCResultData {
+  passed?: boolean;
+  success?: boolean;
+  error_count?: number;
+  errorCount?: number;
+  warning_count?: number;
+  warningCount?: number;
+  violations?: DRCViolation[];
+  errors?: DRCViolation[];
+  warnings?: DRCViolation[];
+  statistics?: {
+    total_checks?: number;
+    passed_checks?: number;
+    failed_checks?: number;
+    components_checked?: number;
+    tracks_checked?: number;
+    vias_checked?: number;
+    duration_ms?: number;
+    [key: string]: number | undefined;
+  };
+  [key: string]: unknown;
+}
 
 interface DRCDashboardProps {
   projectId: string;
-  pcbData?: any;
+  pcbData?: PCBData;
   onViolationClick?: (x: number, y: number) => void;
 }
+
+/* ========== Violation Card ========== */
+
+function ViolationCard({ v, onViolationClick }: { v: DRCViolation; onViolationClick?: (x: number, y: number) => void }) {
+  const isError = v.type === 'error' || v.severity === 'error';
+  const isWarning = v.type === 'warning' || v.severity === 'warning';
+
+  return (
+    <div
+      onClick={() => {
+        if (v.x != null && v.y != null && onViolationClick) {
+          onViolationClick(v.x, v.y);
+        }
+      }}
+      style={{
+        padding: '8px 12px',
+        backgroundColor: isError ? '#ff444408' : '#ffaa0008',
+        borderLeft: `3px solid ${isError ? '#ff4444' : isWarning ? '#ffaa00' : '#444'}`,
+        borderRadius: '6px',
+        cursor: v.x != null && v.y != null && onViolationClick ? 'pointer' : 'default',
+      }}
+    >
+      <div style={{ fontSize: '11px', fontWeight: 600, color: isError ? '#ff6666' : isWarning ? '#ffaa00' : '#aaa' }}>
+        {v.code || v.rule_type || 'DRC'}
+      </div>
+      <div style={{ fontSize: '12px', color: '#e0e0e0', lineHeight: 1.4, marginBottom: '4px' }}>
+        {v.message}
+      </div>
+      {v.expected != null && v.actual != null && (
+        <div style={{ fontSize: '10px', color: '#888' }}>
+          Expected: {v.expected} | Actual: {v.actual}
+        </div>
+      )}
+      {v.distance != null && (
+        <div style={{ fontSize: '10px', color: '#888' }}>
+          Distance: {v.distance} mm
+        </div>
+      )}
+      {(v.net1 || v.net2) && (
+        <div style={{ fontSize: '10px', color: '#888' }}>
+          Nets: {v.net1 || '-'} ↔ {v.net2 || '-'}
+        </div>
+      )}
+      {v.component && (
+        <div style={{ fontSize: '10px', color: '#888' }}>
+          Component: {v.component}
+        </div>
+      )}
+      {v.x != null && v.y != null && (
+        <div style={{ fontSize: '10px', color: '#666' }}>
+          @ ({Number(v.x).toFixed(2)}, {Number(v.y).toFixed(2)})
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ========== Result Panel ========== */
+
+function ResultPanel({
+  data,
+  onViolationClick,
+}: {
+  data: DRCResultData;
+  type: string;
+  onViolationClick?: (x: number, y: number) => void;
+}) {
+  const violations: DRCViolation[] = (data?.violations || data?.errors || data?.warnings || []) as DRCViolation[];
+  const isPassed = data?.passed ?? data?.success ?? false;
+  const errorCount = data?.error_count ?? data?.errorCount ?? 0;
+  const warningCount = data?.warning_count ?? data?.warningCount ?? 0;
+  const stats = data?.statistics;
+
+  if (isPassed && errorCount === 0 && warningCount === 0) {
+    return (
+      <div style={{
+        padding: '24px',
+        backgroundColor: '#4caf5010',
+        border: '1px solid #4caf5030',
+        borderRadius: '10px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '32px', marginBottom: '8px' }}>✓</div>
+        <div style={{ color: '#4caf50', fontWeight: 600, fontSize: '14px' }}>
+          All checks passed!
+        </div>
+        {stats && (
+          <div style={{ color: '#888', fontSize: '11px', marginTop: '8px' }}>
+            {stats.components_checked || 0} components, {stats.tracks_checked || 0} tracks, {stats.vias_checked || 0} vias
+            {typeof stats.duration_ms === 'number' && (
+              <span> | {stats.duration_ms.toFixed(0)}ms</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Error/Warning Summary */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        {errorCount > 0 && (
+          <div style={{
+            flex: 1,
+            padding: '10px',
+            backgroundColor: '#ff444410',
+            border: '1px solid #ff444440',
+            borderRadius: '8px',
+            textAlign: 'center',
+          }}>
+            <div style={{ color: '#ff4444', fontSize: '20px', fontWeight: 700 }}>{errorCount}</div>
+            <div style={{ color: '#ff6666', fontSize: '10px' }}>Errors</div>
+          </div>
+        )}
+        {warningCount > 0 && (
+          <div style={{
+            flex: 1,
+            padding: '10px',
+            backgroundColor: '#ffaa0010',
+            border: '1px solid #ffaa0040',
+            borderRadius: '8px',
+            textAlign: 'center',
+          }}>
+            <div style={{ color: '#ffaa00', fontSize: '20px', fontWeight: 700 }}>{warningCount}</div>
+            <div style={{ color: '#ffcc44', fontSize: '10px' }}>Warnings</div>
+          </div>
+        )}
+      </div>
+
+      {/* Violation List */}
+      {violations.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {violations.slice(0, 50).map((v, i) => (
+            <ViolationCard key={i} v={v} onViolationClick={onViolationClick} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ========== Main Dashboard Component ========== */
 
 const DRCDashboard: React.FC<DRCDashboardProps> = ({
   projectId,
@@ -31,7 +216,7 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
   onViolationClick,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('drc');
-  const [results, setResults] = useState<Record<string, any>>({});
+  const [results, setResults] = useState<Record<string, DRCResultData>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,8 +240,9 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
           break;
       }
       setResults((prev) => ({ ...prev, [type]: result }));
-    } catch (err: any) {
-      setError(err?.message || 'Check failed');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Check failed';
+      setError(errorMessage);
     } finally {
       setLoading(null);
     }
@@ -70,7 +256,7 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
 
   const currentResult = results[activeTab];
 
-  const getPassedInfo = (data: any) => {
+  const getPassedInfo = (data: DRCResultData | undefined) => {
     if (!data) return { passed: false, errors: 0, warnings: 0 };
     return {
       passed: data.passed ?? data.success ?? false,
@@ -132,10 +318,7 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
       </div>
 
       {/* Tab Bar */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '1px solid #333',
-      }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #333' }}>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const tabResult = results[tab.id];
@@ -203,7 +386,7 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
           </div>
         )}
 
-        {error && activeTab !== 'drc' && (
+        {error && (
           <div style={{
             padding: '12px',
             backgroundColor: '#ff444415',
@@ -217,7 +400,7 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
         )}
 
         {currentResult && loading !== activeTab && (
-          _renderResult(currentResult, activeTab, onViolationClick)
+          <ResultPanel data={currentResult} type={activeTab} onViolationClick={onViolationClick} />
         )}
 
         {!currentResult && loading !== activeTab && (
@@ -237,138 +420,6 @@ const DRCDashboard: React.FC<DRCDashboardProps> = ({
         }
       `}</style>
     </div>
-  );
-};
-
-function _renderResult(
-  data: any,
-  type: string,
-  onViolationClick?: (x: number, y: number) => void,
-) {
-  const violations = data?.violations || data?.errors || data?.warnings || [];
-  const isPassed = data?.passed ?? data?.success ?? false;
-
-  const errorCount = data?.error_count ?? data?.errorCount ?? 0;
-  const warningCount = data?.warning_count ?? data?.warningCount ?? 0;
-  const stats = data?.statistics || data?.duration_ms;
-
- null;
-
-  if (isPassed && errorCount === 0 && warningCount === 0) {
-    return (
-      <div style={{
-        padding: '24px',
-        backgroundColor: '#4caf5010',
-        border: '1px solid #4caf5030',
-        borderRadius: '10px',
-        textAlign: 'center',
-      }}>
-        <div style={{ fontSize: '32px', marginBottom: '8px' }}>✓</div>
-        <div style={{ color: '#4caf50', fontWeight: 600, fontSize: '14px' }}>
-          All checks passed!
-        </div>
-        {stats && (
-          <div style={{ color: '#888', fontSize: '11px', marginTop: '8px' }}>
-            {stats.components_checked || 0} components, {stats.tracks_checked || 0} tracks,
-stats.vias_checked || 0} vias
- {' | '}
-            {typeof stats.duration_ms === 'number' && (
-              <span> | {stats.duration_ms.toFixed(0)}ms</span>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* Summary */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        marginBottom: '12px',
-      }}>
-        {errorCount > 0 && (
-          <div style={{
-            flex: 1,
-            padding: '10px',
-            backgroundColor: '#ff444410',
-            border: '1px solid #ff444440',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}>
-            <div style={{ color: '#ff4444', fontSize: '20px', fontWeight: 700 }}>{errorCount}</div>
-            <div style={{ color: '#ff6666', fontSize: '10px' }}>Errors</div>
-          </div>
-        )}
-        {warningCount > 0 && (
-          <div style={{
-            flex: 1,
-            padding: '10px',
-            backgroundColor: '#ffaa0010',
-            border: '1px solid #ffaa0040',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}>
-            <div style={{ color: '#ffaa00', fontSize: '20px', fontWeight: 700 }}>{warningCount}</div>
-            <div style={{ color: '#ffcc44', fontSize: '10px' }}>Warnings</div>
-          </div>
-        )}
-      </div>
-
-      {/* Violation List */}
-      {violations.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {violations.slice(0, 50).map((v: any, i: number) => {
-            const vError = v.type === 'error' || v.severity === '3error' || v.severity === 'error';
-            const isWarning = v.type === 'warning' || v.severity === '3warning' || v.severity === 'warning';
- || v.severity === 'info';
-            return (
-              <div
-                key={i}
-                onClick={() => {
-                  if (v.x != null && v.y != null) onViolationClick?.(v.x, v.y);
- ! undefined}
-                style={{
-                  padding: '10px 12px',
-                  backgroundColor: isWarning ? '#ffaa0008' : '#ff444408',
-                  borderLeft: `2px solid ${isError ? '#ff4444' : isWarning ? '#ffaa00' : '#333`,
-                  borderRadius: '6px',
-                  cursor: onViolationClick ? 'pointer' : 'default',
-                }}
-              >
-                <div style={{ fontSize: '11px', fontWeight: 600, color: isWarning ? '#ffaa00' : '#ff4444' }}>
-                  {v.code || v.rule_type || 'DRC'}
-                </div>
-                <div style={{ fontSize: '12px', color: '#e0e0e0', lineHeight: 1.4, marginBottom: '4px' }}>
-                  {v.message}
-                </div>
-                {(v.expected && v.actual) && (
-                  <div style={{ fontSize: '10px', color: '#888' }}>
-                    Expected: {v.expected} | actual: {v.actual}
- | {v.distance && <span style={{ color: '#888' }}> dist: {v.distance} mm</span>
-                  {(v.net1 || v.net2) && (
-                  <div style={{ fontSize: '10px', color: '#888' }}>
-                    {v.net1} {v.net2} → `net1')} → {v.net2}
- : {' - '}
-              {v.component && (
-                  <div style={{ fontSize: '10px', color: '#888' }}>
-                    {v.component}
- </div>
-              {v.x != null && v.y != null && (
-                  <div style={{ fontSize: '10px', color: '#666' }}>
-                  @ ({v.x}, v.y})
- : </div>
-            </div>
-          ))}
-        )}
-      )}
-    );
-  }
-
-  );
-  }
   );
 };
 

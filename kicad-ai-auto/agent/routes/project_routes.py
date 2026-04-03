@@ -1795,6 +1795,278 @@ async def export_drill(project_id: str):
     return {"files": [f"{project_id}-drill.xln"]}
 
 
+@router.post("/{project_id}/export/dxf")
+async def export_dxf(project_id: str):
+    """导出 DXF 文件 - 生成AutoCAD兼容的DXF格式"""
+    import os
+
+    async with _projects_lock:
+        if project_id not in _projects:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+    logger.info(f"Starting DXF export for project: {project_id}")
+
+    output_dir = os.environ.get("OUTPUT_DIR", os.path.join(os.getcwd(), "output"))
+    os.makedirs(output_dir, exist_ok=True)
+
+    async with _pcb_data_lock:
+        pcb_info = _pcb_data.get(project_id, {})
+        footprints = pcb_info.get("footprints", [])
+        board_width = pcb_info.get("boardWidth", 80)
+        board_height = pcb_info.get("boardHeight", 60)
+
+    if not footprints:
+        async with _schematic_data_lock:
+            schematic = _schematic_data.get(project_id, {})
+        components = schematic.get("components", [])
+        if components:
+            for i, comp in enumerate(components):
+                fp = {
+                    "reference": comp.get("reference", f"U{i + 1}"),
+                    "value": comp.get("model", ""),
+                    "footprint": comp.get("package", "R_0805"),
+                    "position": comp.get("position", {"x": 50, "y": 50}),
+                }
+                footprints.append(fp)
+
+    if not footprints:
+        raise HTTPException(status_code=400, detail="No PCB data available for export")
+
+    try:
+        # DXF 文件头
+        dxf_content = """0
+SECTION
+2
+HEADER
+9
+$ACADVER
+1
+AC1009
+9
+$INSBASE
+10
+0.0
+20
+0.0
+30
+0.0
+0
+ENDSEC
+0
+SECTION
+2
+TABLES
+0
+TABLE
+2
+LAYER
+70
+1
+0
+LAYER
+2
+0
+70
+0
+62
+7
+6
+CONTINUOUS
+0
+ENDTAB
+0
+TABLE
+2
+STYLE
+70
+1
+0
+STYLE
+2
+STANDARD
+70
+0
+40
+0.0
+41
+1.0
+50
+0.0
+71
+0
+42
+2.5
+3
+txt
+4
+
+0
+ENDTAB
+0
+ENDSEC
+0
+SECTION
+2
+BLOCKS
+0
+ENDSEC
+0
+SECTION
+2
+ENTITIES
+"""
+
+        # 添加板框轮廓 (矩形)
+        # 底边
+        dxf_content += f"""0
+LINE
+8
+0
+10
+0.0
+20
+0.0
+30
+0.0
+11
+{board_width}.0
+21
+0.0
+31
+0.0
+"""
+        # 右边
+        dxf_content += f"""0
+LINE
+8
+0
+10
+{board_width}.0
+20
+0.0
+30
+0.0
+11
+{board_width}.0
+21
+{board_height}.0
+31
+0.0
+"""
+        # 顶边
+        dxf_content += f"""0
+LINE
+8
+0
+10
+{board_width}.0
+20
+{board_height}.0
+30
+0.0
+11
+0.0
+21
+{board_height}.0
+31
+0.0
+"""
+        # 左边
+        dxf_content += f"""0
+LINE
+8
+0
+10
+0.0
+20
+{board_height}.0
+30
+0.0
+11
+0.0
+21
+0.0
+31
+0.0
+"""
+
+        # 添加元件位置标记 (小矩形)
+        for fp in footprints:
+            pos = fp.get("position", {"x": 0, "y": 0})
+            x = pos.get("x", 0) / 10  # 转换为mm
+            y = pos.get("y", 0) / 10
+            ref = fp.get("reference", "?")
+
+            # 元件边框 (2mm x 2mm)
+            size = 1.0
+            dxf_content += f"""0
+LWPOLYLINE
+8
+COMPONENTS
+90
+4
+70
+1
+10
+{x - size}
+20
+{y - size}
+10
+{x + size}
+20
+{y - size}
+10
+{x + size}
+20
+{y + size}
+10
+{x - size}
+20
+{y + size}
+"""
+            # 添加元件标签
+            dxf_content += f"""0
+TEXT
+8
+LABELS
+10
+{x}
+20
+{y + 3}
+30
+0.0
+40
+2.0
+1
+{ref}
+"""
+
+        # DXF 文件尾
+        dxf_content += """0
+ENDSEC
+0
+EOF
+"""
+
+        output_file = os.path.join(output_dir, f"{project_id}.dxf")
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(dxf_content)
+
+        logger.info(f"DXF export completed: {os.path.basename(output_file)}")
+
+        return {
+            "success": True,
+            "data": {"files": [os.path.basename(output_file)], "output_dir": output_dir},
+        }
+
+    except Exception as e:
+        logger.error(f"Error in DXF export: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+    raise HTTPException(status_code=500, detail="DXF export failed")
+
+
 @router.post("/{project_id}/export/bom")
 async def export_bom(project_id: str):
     """导出 BOM"""

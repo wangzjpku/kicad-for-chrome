@@ -123,7 +123,6 @@ export function useHttpPolling() {
           break
         case 'command':
           // 命令通过其他 API 处理
-          console.log('Command:', message.command)
           break
       }
     } catch (error) {

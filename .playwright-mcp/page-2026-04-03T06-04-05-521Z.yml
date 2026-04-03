@@ -1,0 +1,94 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "文件" [ref=e289] [cursor=pointer]
+    - button "编辑" [ref=e291] [cursor=pointer]
+    - button "视图" [ref=e293] [cursor=pointer]
+    - button "放置" [ref=e295] [cursor=pointer]
+    - generic [ref=e296]:
+      - button "工具" [active] [ref=e297] [cursor=pointer]
+      - generic [ref=e387]:
+        - generic [ref=e388] [cursor=pointer]:
+          - generic [ref=e389]: 设计规则检查
+          - generic [ref=e390]: F5
+        - generic [ref=e392] [cursor=pointer]: 重新灌铜
+        - generic [ref=e395] [cursor=pointer]: 导出Gerber...
+        - generic [ref=e397] [cursor=pointer]: 导出BOM...
+        - generic [ref=e399] [cursor=pointer]: 导出DXF...
+    - button "帮助" [ref=e299] [cursor=pointer]
+    - button "← 返回项目列表" [ref=e300] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e301]:
+      - button "⚡ 原理图" [ref=e302] [cursor=pointer]
+      - button "🔲 PCB" [ref=e303] [cursor=pointer]
+    - generic [ref=e304]:
+      - button "↖" [ref=e305] [cursor=pointer]
+      - button "✥" [ref=e306] [cursor=pointer]
+      - button "↻" [ref=e307] [cursor=pointer]
+      - button "⇆" [ref=e308] [cursor=pointer]
+    - generic [ref=e310]:
+      - button "□" [ref=e311] [cursor=pointer]
+      - button "⬡" [ref=e312] [cursor=pointer]
+      - button "◎" [ref=e313] [cursor=pointer]
+      - button "▣" [ref=e314] [cursor=pointer]
+      - button "A" [ref=e315] [cursor=pointer]
+    - generic [ref=e317]:
+      - button "🔍+" [ref=e318] [cursor=pointer]
+      - button "🔍-" [ref=e319] [cursor=pointer]
+      - button "⊞" [ref=e320] [cursor=pointer]
+      - button "▦" [ref=e321] [cursor=pointer]
+  - generic [ref=e322]:
+    - button "▶" [ref=e324] [cursor=pointer]
+    - generic [ref=e325]:
+      - generic [ref=e327]:
+        - button "🤖 AI助手" [ref=e328] [cursor=pointer]
+        - generic [ref=e329]:
+          - generic [ref=e330]:
+            - generic [ref=e331]:
+              - button "↖" [ref=e332] [cursor=pointer]:
+                - generic [ref=e333]: ↖
+              - button "✥" [ref=e334] [cursor=pointer]:
+                - generic [ref=e335]: ✥
+              - button "╱" [ref=e336] [cursor=pointer]:
+                - generic [ref=e337]: ╱
+              - button "□" [ref=e338] [cursor=pointer]:
+                - generic [ref=e339]: □
+              - button "+" [ref=e340] [cursor=pointer]
+            - generic [ref=e341]:
+              - button "2D" [ref=e342] [cursor=pointer]
+              - button "3D" [ref=e343] [cursor=pointer]
+          - generic [ref=e344]:
+            - generic [ref=e345]: "Zoom: 65% | Grid: 1mm (snap)"
+            - button "扇出" [disabled] [ref=e346]
+            - button "Auto Layout" [ref=e347] [cursor=pointer]
+            - button "Copper Pour" [ref=e348] [cursor=pointer]
+            - button "Diff Pair" [ref=e349] [cursor=pointer]
+          - generic [ref=e354]:
+            - generic [ref=e355]:
+              - button "properties" [ref=e356] [cursor=pointer]
+              - button "layers" [ref=e357] [cursor=pointer]
+              - button "drc" [ref=e358] [cursor=pointer]
+              - button "quality" [ref=e359] [cursor=pointer]
+              - button "export" [ref=e360] [cursor=pointer]
+            - generic [ref=e362]: 请选择一个元素查看属性
+      - generic [ref=e363]:
+        - generic [ref=e364]:
+          - button "消息" [ref=e365] [cursor=pointer]
+          - button "DRC" [ref=e366] [cursor=pointer]
+          - button "ERC" [ref=e367] [cursor=pointer]
+          - button "BOM" [ref=e368] [cursor=pointer]
+        - generic [ref=e370]:
+          - generic [ref=e371]: BOM 物料清单
+          - generic [ref=e372]: 点击菜单「工具 → 导出BOM」导出物料清单
+    - button "◀" [ref=e374] [cursor=pointer]
+  - generic [ref=e376]:
+    - generic [ref=e377] [cursor=pointer]:
+      - generic [ref=e378]:
+        - generic [ref=e379]: 🤖
+        - generic [ref=e380]: AI 助手
+        - generic "未连接 KiCad (Canvas 模式)" [ref=e381]: ○
+      - button "▶" [ref=e382]
+    - generic [ref=e383]:
+      - generic [ref=e384]: 📊
+      - generic: 无项目上下文
+      - generic [ref=e385]: 新对话
+  - generic [ref=e386] [cursor=pointer]: ⚡ 快速创建设计

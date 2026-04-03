@@ -1,0 +1,68 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "文件" [ref=e630] [cursor=pointer]
+    - button "编辑" [ref=e632] [cursor=pointer]
+    - button "视图" [ref=e634] [cursor=pointer]
+    - button "放置" [ref=e636] [cursor=pointer]
+    - button "工具" [ref=e638] [cursor=pointer]
+    - button "帮助" [ref=e640] [cursor=pointer]
+    - button "← 返回项目列表" [ref=e641] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e642]:
+      - button "⚡ 原理图" [active] [ref=e643] [cursor=pointer]
+      - button "🔲 PCB" [ref=e644] [cursor=pointer]
+    - generic [ref=e645]:
+      - button "↖" [ref=e646] [cursor=pointer]
+      - button "✥" [ref=e647] [cursor=pointer]
+      - button "↻" [ref=e648] [cursor=pointer]
+      - button "⇆" [ref=e649] [cursor=pointer]
+    - generic [ref=e651]:
+      - button "□" [ref=e652] [cursor=pointer]
+      - button "⬡" [ref=e653] [cursor=pointer]
+      - button "◎" [ref=e654] [cursor=pointer]
+      - button "▣" [ref=e655] [cursor=pointer]
+      - button "A" [ref=e656] [cursor=pointer]
+    - generic [ref=e658]:
+      - button "🔍+" [ref=e659] [cursor=pointer]
+      - button "🔍-" [ref=e660] [cursor=pointer]
+      - button "⊞" [ref=e661] [cursor=pointer]
+      - button "▦" [ref=e693] [cursor=pointer]
+  - generic [ref=e663]:
+    - button "▶" [ref=e665] [cursor=pointer]
+    - generic [ref=e666]:
+      - generic [ref=e700]:
+        - generic [ref=e701]: 100%
+        - generic [ref=e702]: "|"
+        - generic [ref=e703]: 0 元件
+        - generic [ref=e704]: "|"
+        - generic [ref=e705]: 0 导线
+        - generic [ref=e706]: "|"
+        - generic [ref=e707]:
+          - button "↶" [disabled] [ref=e708]
+          - button "↷" [disabled] [ref=e709]
+        - button "🔍 适应" [ref=e710] [cursor=pointer]
+        - button "调试" [ref=e711] [cursor=pointer]
+        - button "符号搜索" [ref=e712] [cursor=pointer]
+        - button "批量放置" [ref=e713] [cursor=pointer]
+      - generic [ref=e669]:
+        - generic [ref=e670]:
+          - button "消息" [ref=e671] [cursor=pointer]
+          - button "DRC" [ref=e672] [cursor=pointer]
+          - button "ERC" [ref=e673] [cursor=pointer]
+          - button "BOM" [ref=e674] [cursor=pointer]
+        - generic [ref=e676]:
+          - generic [ref=e677]: DRC 检查结果
+          - generic [ref=e678]: 点击菜单「工具 → 设计规则检查」运行 DRC
+    - button "◀" [ref=e680] [cursor=pointer]
+  - generic [ref=e682]:
+    - generic [ref=e683] [cursor=pointer]:
+      - generic [ref=e684]:
+        - generic [ref=e685]: 🤖
+        - generic [ref=e686]: AI 助手
+        - generic "未连接 KiCad (Canvas 模式)" [ref=e687]: ○
+      - button "▶" [ref=e688]
+    - generic [ref=e689]:
+      - generic [ref=e690]: 📊
+      - generic: 无项目上下文
+      - generic [ref=e691]: 新对话
+  - generic [ref=e692] [cursor=pointer]: ⚡ 快速创建设计

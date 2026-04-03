@@ -155,7 +155,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   // 避免覆盖从后端加载的真实项目数据
   useEffect(() => {
     if (!pcbData && !storeProjectId) {
-      console.log('[AIChat] Initializing empty PCB data');
       setPCBData({
         id: 'ai-generated',
         projectId: 'ai-project',
@@ -256,10 +255,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     const currentIsPCBMode = currentPcbData !== null;
     const currentIsSchematicMode = currentStoreSchematicData !== null;
 
-    console.log('[AIChat] executeModifications called:', modifications);
-    console.log('[AIChat] isPCBMode:', currentIsPCBMode, 'isSchematicMode:', currentIsSchematicMode);
-    console.log('[AIChat] pcbData:', currentPcbData ? 'loaded' : 'null');
-    console.log('[AIChat] storeSchematicData:', currentStoreSchematicData ? 'loaded' : 'null');
 
     setIsExecuting(true);
     const results: string[] = [];
@@ -319,7 +314,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
                 results.push(`已在 KiCad 中添加元件 ${footprint.reference}`);
               }
 
-              console.log('[AIChat] Calling addFootprint:', footprint);
               addFootprint(footprint);
               results.push(`已添加元件 ${footprint.reference} 到 PCB 画布`);
             } else if (currentIsSchematicMode) {
@@ -481,7 +475,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               break;
             }
 
-            console.log('[AIChat] Available footprints:', currentPcbData.footprints.map(fp => fp.reference));
 
             // 灵活的元件匹配函数
             const findFootprint = (ref: string) => {
@@ -598,7 +591,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               break;
             }
 
-            console.log('[AIChat] 应用模板:', template.name);
 
             // 从模板生成 PCB 数据
             const templateData = generatePCBFromTemplate(template);
@@ -759,7 +751,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
 
     for (const tp of templatePatterns) {
       if (tp.pattern.test(msg)) {
-        console.log('[AIChat] 检测到模板需求:', tp.templateId);
         return [{
           action: 'apply_template',
           id: tp.templateId,
@@ -781,7 +772,6 @@ const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     const isApplyTemplate = preModifications?.[0]?.action === 'apply_template';
     if (preModifications && (currentPcbData || isApplyTemplate)) {
       const mod = preModifications[0];
-      console.log('[AIChat] 前端预处理检测到操作:', mod.action, mod.id || mod.from);
 
       const userMsg: Message = {
         id: `user-${Date.now()}`,

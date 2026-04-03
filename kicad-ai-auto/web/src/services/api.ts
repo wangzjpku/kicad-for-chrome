@@ -81,7 +81,6 @@ apiClient.interceptors.request.use(
   (config) => {
     // 仅在开发/测试模式下记录请求日志，生产环境禁用以防止敏感信息泄露
     if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     }
     // 添加认证token
     const stored = localStorage.getItem('deepeda-auth');
@@ -382,6 +381,11 @@ export const exportApi = {
 
   exportSTEP: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
     const response = await apiClient.post(`/projects/${projectId}/export/step`);
+    return response.data;
+  },
+
+  exportDXF: async (projectId: string): Promise<ApiResponse<ExportResultData>> => {
+    const response = await apiClient.post(`/projects/${projectId}/export/dxf`);
     return response.data;
   },
 };
@@ -1084,6 +1088,7 @@ export interface FullPCBData {
       shape: string;
       position: { x: number; y: number };
       size: { x: number; y: number };
+      netId?: string;
     }>;
   }>;
   tracks: Array<{

@@ -45,6 +45,31 @@ KiCad AI Automation 是一个完整的 AI 驱动的 KiCad PCB 设计自动化解
 - **项目模板**: 预定义项目模板（Arduino Shield、Raspberry Pi Pico 等）
 - **原理图层次化**: 支持层次化原理图设计
 
+### 🔧 Phase 7-8 布线与质量
+- **DRC Dashboard**: 统一的 DRC/Safety/SI/EMI 检查面板
+- **布线引擎**: A* 寻路、多引脚 MST 连接、网络感知路由
+- **质量评分**: 布线密度、可制造性、信号完整性评分
+
+### 📊 Phase 9-10 前端增强
+- **布线可视化**: 走线、过孔、铜箔实时渲染
+- **布线进度**: Web Worker 后台布线，实时进度反馈
+- **视口剔除**: 大型 PCB 高性能渲染
+
+### 🏭 Phase 11 制造生态
+- **BOM Manager**: 元件生命周期、替代料、库存管理
+- **Manufacturing Wizard**: JLCPCB/PCBWay 一键下单
+- **成本估算**: 板材、工艺、数量综合估价
+
+### 🌐 Phase 12 商业化
+- **空间索引**: R-tree 碰撞检测、间距检查
+- **缓存服务**: Redis/内存缓存，API 加速
+- **用户认证**: JWT 登录、角色权限
+- **项目共享**: 分享链接、权限管理
+- **实时协作**: WebSocket 光标同步、变更广播
+- **版本历史**: 快照、回滚、标签
+- **插件生态**: 模板市场、自定义 DRC、SDK 生成
+- **国际化**: en-US/zh-CN/ja-JP 多语言支持
+
 ## 快速开始
 
 ### Windows 本地运行 (推荐)
@@ -149,17 +174,37 @@ kicad-ai-auto/
 │   │   ├── validators.py
 │   │   ├── cross_checker.py
 │   │   └── quality_runner.py
+│   ├── services/           # Phase 12 商业化服务
+│   │   ├── auth_service.py   # JWT 认证
+│   │   ├── sharing_service.py # 项目共享
+│   │   ├── collaboration_service.py # 实时协作
+│   │   ├── version_service.py # 版本历史
+│   │   ├── spatial_index.py  # 空间索引 (R-tree)
+│   │   ├── cache_service.py  # Redis/内存缓存
+│   │   ├── marketplace_service.py # 模板市场
+│   │   ├── custom_drc_service.py # 自定义 DRC
+│   │   ├── sdk_generator.py  # SDK 生成
+│   │   └── i18n_service.py   # 国际化
 │   └── tests/              # 测试
 ├── web/                    # React 前端
 │   ├── src/
 │   │   ├── components/    # UI 组件
-│   │   │   ├── SymbolSearchPanel.tsx  # Phase 6 符号搜索面板
+│   │   │   ├── SymbolSearchPanel.tsx  # Phase 6 符号搜索
 │   │   │   ├── BulkPlacementDialog.tsx  # Phase 6 批量放置
-│   │   │   ├── FanoutDialog.tsx  # Phase 6 扇出对话框
-│   │   │   └── TemplateSelector.tsx  # Phase 6 模板选择器
+│   │   │   ├── FanoutDialog.tsx  # Phase 6 扇出
+│   │   │   ├── DRCDashboard.tsx  # Phase 7 DRC 面板
+│   │   │   ├── RoutingQualityPanel.tsx  # Phase 9 布线质量
+│   │   │   ├── BOMManagerPanel.tsx  # Phase 11 BOM 管理
+│   │   │   └── ManufacturingWizard.tsx  # Phase 11 制造向导
 │   │   ├── pages/         # 页面
-│   │   │   └── AdminPanel.tsx  # 含知识库管理
+│   │   │   └── AdminPanel.tsx  # 管理面板
 │   │   ├── stores/        # 状态管理
+│   │   ├── hooks/         # Phase 12 Hooks
+│   │   │   ├── useI18n.ts     # 国际化
+│   │   │   ├── useRoutingWorker.ts  # 布线 Worker
+│   │   │   └── useVirtualRenderer.ts # 虚拟渲染
+│   │   ├── workers/       # Web Workers
+│   │   │   └── routerWorker.ts  # 布线 Worker
 │   │   └── editors/       # 编辑器
 │   └── package.json
 ├── docker/                # Docker 配置
@@ -229,6 +274,38 @@ kicad-ai-auto/
 - `POST /api/v1/knowledge/lcsc/search` - LCSC 元件搜索
 - `POST /api/v1/knowledge/parse/ad` - 解析 Altium Designer 原理图
 - `POST /api/v1/knowledge/parse/jlc` - 解析嘉立创 EDA 项目
+
+### Phase 7-8 DRC 与布线接口
+
+- `POST /drc/check` - 设计规则检查 (30+ 规则)
+- `POST /drc/si/analyze` - 信号完整性分析
+- `POST /drc/emi/analyze` - EMI 热点分析
+- `GET /drc/emi/visualization` - EMI 可视化数据
+
+### Phase 11 制造接口
+
+- `POST /export/manufacturing-check` - 制造可行性检查 (JLCPCB/PCBWay)
+- `POST /export/cost-estimate` - 成本估算
+- `POST /export/bom` - BOM 导出 (含 LCSC 料号)
+- `POST /export/odb` - ODB++ 制造包导出
+
+### Phase 12 商业化接口
+
+- `POST /api/v1/auth/register` - 用户注册
+- `POST /api/v1/auth/login` - 用户登录
+- `POST /api/v1/auth/refresh` - 刷新 Token
+- `GET /api/v1/auth/me` - 当前用户信息
+- `POST /api/v1/projects/{id}/share` - 共享项目
+- `GET /api/v1/projects/{id}/revisions` - 版本历史
+- `POST /api/v1/projects/{id}/rollback` - 回滚版本
+- `WS /api/v1/collab/{project_id}` - 实时协作 WebSocket
+- `GET /api/v1/spatial/collisions` - 碰撞检测
+- `POST /api/v1/spatial/clearance-check` - 间距检查
+- `GET /api/v1/cache/stats` - 缓存统计
+- `GET /api/v1/ecosystem/templates` - 模板市场
+- `POST /api/v1/ecosystem/drc/run` - 自定义 DRC
+- `GET /api/v1/ecosystem/sdk/python` - Python SDK
+- `GET /api/v1/ecosystem/i18n/translations` - 多语言翻译
 
 完整 API 文档请访问: http://localhost:8000/docs
 

@@ -1,0 +1,24 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 智
+      - generic [ref=e7]:
+        - generic [ref=e8]: 智板工具
+        - generic [ref=e9]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e11]: "后端服务: ● 已连接"
+      - generic [ref=e12]:
+        - generic "点击刷新" [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]: "Token:"
+          - generic [ref=e41]: "1000"
+          - text: "0"
+        - generic [ref=e42]:
+          - generic [ref=e43]: 🤖
+          - generic [ref=e44]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e46] [cursor=pointer]:
+          - generic [ref=e47]: 👤
+          - generic [ref=e48]: testuser
+          - generic [ref=e49]: ▼
+  - generic [ref=e15]:
+    - text: 请先登录后查看项目
+    - button "Retry" [ref=e50] [cursor=pointer]

@@ -34,6 +34,12 @@ interface ReviewResult {
   board_stats: Record<string, number>;
 }
 
+interface LearningStats {
+  total_corrections: number;
+  accepted: number;
+  dismissed: number;
+}
+
 interface DesignReviewPanelProps {
   visible: boolean;
   pcbData?: Record<string, unknown>;
@@ -68,7 +74,7 @@ export default function DesignReviewPanel({
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
-  const [learningStats, setLearningStats] = useState<Record<string, unknown> | null>(null);
+  const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
 
   const runReview = useCallback(async () => {
     if (!pcbData) return;
@@ -221,11 +227,11 @@ export default function DesignReviewPanel({
       </div>
 
       {/* Learning Stats */}
-      {learningStats && (learningStats as any).total_corrections > 0 && (
+      {learningStats && learningStats.total_corrections > 0 && (
         <div className="rp-learning">
           <span className="rp-learning-label">AI 学习</span>
           <span className="rp-learning-stat">
-            {(learningStats as any).total_corrections} 次反馈
+            {learningStats.total_corrections} 次反馈
           </span>
         </div>
       )}

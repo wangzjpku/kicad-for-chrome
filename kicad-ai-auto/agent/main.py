@@ -315,9 +315,9 @@ except ImportError as e:
 try:
     from routes.drc_routes import router as drc_router
 
-    app.include_router(drc_router)
+    app.include_router(drc_router, prefix="/api/v1")
     logger.info("DRC API routes registered")
-except ImportError as e:
+except Exception as e:
     logger.warning(f"DRC routes not available: {e}")
 
 # 多步设计 Agent 路由 (Phase 7E)
@@ -337,6 +337,61 @@ try:
     logger.info("Design Review API routes registered")
 except ImportError as e:
     logger.warning(f"Design Review routes not available: {e}")
+
+# 制造与供应链路由 (Phase 11)
+try:
+    from routes.manufacturing_routes import router as manufacturing_router
+
+    app.include_router(manufacturing_router)
+    logger.info("Manufacturing & Supply Chain API routes registered")
+except Exception as e:
+    logger.warning(f"Manufacturing routes not available: {e}")
+
+
+# 空间索引路由 (Phase 12A-1)
+try:
+    from routes.spatial_routes import router as spatial_router
+
+    app.include_router(spatial_router)
+    logger.info("Spatial Index API routes registered")
+except ImportError as e:
+    logger.warning(f"Spatial routes not available: {e}")
+
+
+# 缓存管理路由 (Phase 12A-3)
+try:
+    from routes.cache_routes import router as cache_router
+
+    app.include_router(cache_router)
+    logger.info("Cache Management API routes registered")
+except ImportError as e:
+    logger.warning(f"Cache routes not available: {e}")
+
+
+# Phase 12B: 协作功能路由
+try:
+    from routes.auth_v2_routes import router as auth_v2_router
+    from routes.sharing_routes import router as sharing_router
+    from routes.collaboration_routes import router as collaboration_router
+    from routes.version_routes import router as version_router
+
+    app.include_router(auth_v2_router)
+    app.include_router(sharing_router)
+    app.include_router(collaboration_router)
+    app.include_router(version_router)
+    logger.info("Phase 12B Collaboration routes registered (auth, sharing, collab, version)")
+except ImportError as e:
+    logger.warning(f"Phase 12B routes not available: {e}")
+
+
+# Phase 12C: 插件生态路由
+try:
+    from routes.ecosystem_routes import router as ecosystem_router
+
+    app.include_router(ecosystem_router)
+    logger.info("Phase 12C Ecosystem routes registered (marketplace, custom DRC, SDK, i18n)")
+except ImportError as e:
+    logger.warning(f"Phase 12C routes not available: {e}")
 
 
 # 别名路由 - 兼容旧版本

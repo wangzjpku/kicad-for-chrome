@@ -59,11 +59,9 @@ const MenuBar: React.FC = () => {
             break;
           case 'n':
             e.preventDefault();
-            console.log('New Project');
             break;
           case 'o':
             e.preventDefault();
-            console.log('Open Project');
             break;
         }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -150,11 +148,11 @@ const MenuBar: React.FC = () => {
         文件
         {activeMenu === 'file' && (
           <div style={dropdownStyle}>
-            <div style={menuItemStyle} onClick={() => { console.log('New'); setActiveMenu(null); }}>
+            <div style={menuItemStyle}>
               <span>新建项目</span>
               <span style={shortcutStyle}>Ctrl+N</span>
             </div>
-            <div style={menuItemStyle} onClick={() => { console.log('Open'); setActiveMenu(null); }}>
+            <div style={menuItemStyle}>
               <span>打开项目</span>
               <span style={shortcutStyle}>Ctrl+O</span>
             </div>
@@ -163,7 +161,7 @@ const MenuBar: React.FC = () => {
               <span>保存</span>
               <span style={shortcutStyle}>Ctrl+S</span>
             </div>
-            <div style={menuItemStyle} onClick={() => { console.log('Save As'); setActiveMenu(null); }}>
+            <div style={menuItemStyle}>
               <span>另存为...</span>
             </div>
           </div>
@@ -243,10 +241,10 @@ const MenuBar: React.FC = () => {
         工具
         {activeMenu === 'tools' && (
           <div style={dropdownStyle}>
-            <div style={menuItemStyle} onClick={() => { console.log('DRC'); setActiveMenu(null); }}>
+            <div style={menuItemStyle}>
               <span>设计规则检查</span>
             </div>
-            <div style={menuItemStyle} onClick={() => { console.log('Refill'); setActiveMenu(null); }}>
+            <div style={menuItemStyle}>
               <span>重新灌铜</span>
             </div>
           </div>

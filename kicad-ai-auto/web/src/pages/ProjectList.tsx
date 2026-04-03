@@ -6,12 +6,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Project } from '../types';
 import { projectApi } from '../services/api';
 import AIProjectDialog from '../components/AIProjectDialog';
+import { useAuthStore } from '../stores/authStore';
 
 interface ProjectListProps {
   onOpenProject?: (project: Project) => void;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
+  const { isAuthenticated } = useAuthStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,11 +26,17 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
 
   // 加载项目列表
   useEffect(() => {
+    // 先检查登录状态，避免未登录时调用 API
+    if (!isAuthenticated) {
+      setError('请先登录后查看项目');
+      setLoading(false);
+      return;
+    }
     if (!isLoadingRef.current) {
       isLoadingRef.current = true;
       loadProjects();
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // 检查URL参数，自动打开指定项目
   useEffect(() => {
@@ -39,10 +47,8 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
       if (projectName && onOpenProject) {
         const targetProject = projects.find(p => p.name === projectName);
         if (targetProject) {
-          console.log('[ProjectList] Auto-opening project from URL:', projectName);
           onOpenProject(targetProject);
         } else {
-          console.log('[ProjectList] Project not found from URL:', projectName);
         }
       }
     }
@@ -98,7 +104,6 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
         description: 'Created from 智板工具',
       });
 
-      console.log('Create response:', response);
 
       // 支持两种格式: { success: true, data: {...} } 或直接 {...}
       let newProject = null;
@@ -212,7 +217,6 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
         />
         <button
           onClick={() => {
-            console.log('+ New Project button clicked, setting showCreateForm to true');
             setShowCreateForm(true);
           }}
           style={{
@@ -229,7 +233,6 @@ const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject }) => {
         </button>
         <button
           onClick={() => {
-            console.log('AI Create button clicked');
             setShowAIDialog(true);
           }}
           style={{

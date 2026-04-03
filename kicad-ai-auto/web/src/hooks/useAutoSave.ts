@@ -34,17 +34,14 @@ export const useAutoSave = ({
     const currentPcbData = pcbDataRef.current;
     const currentData = JSON.stringify(currentPcbData);
     if (currentData === lastSavedDataRef.current) {
-      console.log('[AutoSave] No changes to save');
       return;
     }
 
     isSavingRef.current = true;
-    console.log('[AutoSave] Saving...', new Date().toLocaleTimeString());
 
     try {
       await onSave(currentPcbData);
       lastSavedDataRef.current = currentData;
-      console.log('[AutoSave] Save successful');
     } catch (error) {
       console.error('[AutoSave] Save failed:', error);
     } finally {

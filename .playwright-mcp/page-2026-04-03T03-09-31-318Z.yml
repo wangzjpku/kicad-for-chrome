@@ -1,0 +1,96 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e102]:
+      - generic [ref=e103]: 智
+      - generic [ref=e104]:
+        - generic [ref=e105]: 智板工具
+        - generic [ref=e106]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e107]: "后端服务: ● 已连接"
+      - generic [ref=e108]:
+        - generic "点击刷新" [ref=e109] [cursor=pointer]:
+          - generic [ref=e110]: "Token:"
+          - generic [ref=e111]: "1000"
+          - text: "0"
+        - generic [ref=e112]:
+          - generic [ref=e113]: 🤖
+          - generic [ref=e114]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]: 👤
+          - generic [ref=e118]: testuser
+          - generic [ref=e119]: ▼
+  - generic [ref=e120]:
+    - generic [ref=e121]:
+      - heading "Projects" [level=1] [ref=e122]
+      - textbox "搜索项目..." [ref=e123]
+      - button "+ New Project" [ref=e124] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e125] [cursor=pointer]
+    - generic [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]: "1"
+        - generic [ref=e130]: v1.0
+      - generic [ref=e131]:
+        - heading "测试PCB项目" [level=3] [ref=e132] [cursor=pointer]
+        - paragraph [ref=e133]: Created from 智板工具
+        - paragraph [ref=e134]: "Updated: 2026/4/3"
+      - generic [ref=e135]:
+        - button "Open" [ref=e136] [cursor=pointer]
+        - button "Delete" [ref=e137] [cursor=pointer]
+    - generic [ref=e139]:
+      - generic [ref=e140]:
+        - heading "🤖 AI 智能创建项目" [level=2] [ref=e141]
+        - button "×" [ref=e142] [cursor=pointer]
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: "1"
+          - generic [ref=e146]: 输入需求
+        - generic [ref=e148]:
+          - generic [ref=e149]: "2"
+          - generic [ref=e150]: 明确细节
+        - generic [ref=e152]:
+          - generic [ref=e153]: "3"
+          - generic [ref=e154]: 原理图确认
+        - generic [ref=e156]:
+          - generic [ref=e157]: "4"
+          - generic [ref=e158]: PCB参数
+        - generic [ref=e160]:
+          - generic [ref=e161]: "5"
+          - generic [ref=e162]: PCB确认
+        - generic [ref=e164]:
+          - generic [ref=e165]: "6"
+          - generic [ref=e166]: 编辑确认
+        - generic [ref=e168]:
+          - generic [ref=e169]: "7"
+          - generic [ref=e170]: 生成项目
+        - generic [ref=e172]:
+          - generic [ref=e173]: "8"
+          - generic [ref=e174]: 最终确认
+      - generic [ref=e551]:
+        - generic [ref=e552]:
+          - heading "🔲 PCB 预览" [level=3] [ref=e553]
+          - generic [ref=e554]:
+            - button "➖" [ref=e555] [cursor=pointer]
+            - generic [ref=e556]: 100%
+            - button "➕" [ref=e557] [cursor=pointer]
+            - button "🔄" [ref=e558] [cursor=pointer]
+        - generic [ref=e559]:
+          - paragraph [ref=e560]: "PCB 尺寸: 100 x 80 mm"
+          - paragraph [ref=e561]: "板层: 2 层"
+          - paragraph [ref=e562]: "器件数量: 10"
+          - paragraph [ref=e563]: "网络数量: 2"
+        - img [ref=e565]:
+          - generic [ref=e570]: U2
+          - generic [ref=e573]: U4
+          - generic [ref=e576]: R1
+          - generic [ref=e579]: R3
+          - generic [ref=e582]: R5
+          - generic [ref=e585]: R6
+          - generic [ref=e588]: R7
+          - generic [ref=e591]: R8
+          - generic [ref=e594]: R9
+          - generic [ref=e597]: R10
+      - generic [ref=e189]:
+        - button "返回修改" [ref=e598] [cursor=pointer]
+        - button "放弃" [ref=e599] [cursor=pointer]
+        - button "✏️ 编辑方案" [ref=e600] [cursor=pointer]
+        - button "提交并生成项目" [ref=e601] [cursor=pointer]

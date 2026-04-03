@@ -1,0 +1,71 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e102]:
+      - generic [ref=e103]: 智
+      - generic [ref=e104]:
+        - generic [ref=e105]: 智板工具
+        - generic [ref=e106]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e107]: "后端服务: ● 已连接"
+      - generic [ref=e108]:
+        - generic "点击刷新" [ref=e109] [cursor=pointer]:
+          - generic [ref=e110]: "Token:"
+          - generic [ref=e111]: ...
+          - text: "0"
+        - generic [ref=e112]:
+          - generic [ref=e113]: 🤖
+          - generic [ref=e114]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]: 👤
+          - generic [ref=e118]: testuser
+          - generic [ref=e119]: ▼
+  - generic [ref=e120]:
+    - generic [ref=e121]:
+      - heading "Projects" [level=1] [ref=e122]
+      - textbox "搜索项目..." [ref=e123]
+      - button "+ New Project" [ref=e124] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e125] [cursor=pointer]
+    - generic [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]: "1"
+        - generic [ref=e130]: v1.0
+      - generic [ref=e131]:
+        - heading "测试PCB项目" [level=3] [ref=e132] [cursor=pointer]
+        - paragraph [ref=e133]: Created from 智板工具
+        - paragraph [ref=e134]: "Updated: 2026/4/3"
+      - generic [ref=e135]:
+        - button "Open" [ref=e136] [cursor=pointer]
+        - button "Delete" [ref=e137] [cursor=pointer]
+    - generic [ref=e139]:
+      - generic [ref=e140]:
+        - heading "🤖 AI 智能创建项目" [level=2] [ref=e141]
+        - button "×" [ref=e142] [cursor=pointer]
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: "1"
+          - generic [ref=e146]: 输入需求
+        - generic [ref=e148]:
+          - generic [ref=e149]: "2"
+          - generic [ref=e150]: 明确细节
+        - generic [ref=e152]:
+          - generic [ref=e153]: "3"
+          - generic [ref=e154]: 原理图确认
+        - generic [ref=e156]:
+          - generic [ref=e157]: "4"
+          - generic [ref=e158]: PCB参数
+        - generic [ref=e160]:
+          - generic [ref=e161]: "5"
+          - generic [ref=e162]: PCB确认
+        - generic [ref=e164]:
+          - generic [ref=e165]: "6"
+          - generic [ref=e166]: 编辑确认
+        - generic [ref=e168]:
+          - generic [ref=e169]: "7"
+          - generic [ref=e170]: 生成项目
+        - generic [ref=e172]:
+          - generic [ref=e173]: "8"
+          - generic [ref=e174]: 最终确认
+      - generic [ref=e325]:
+        - paragraph [ref=e327]: 正在生成原理图方案...
+        - paragraph [ref=e328]: 请稍候，AI 正在分析中...
+        - button "取消" [ref=e329] [cursor=pointer]

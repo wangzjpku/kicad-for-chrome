@@ -60,7 +60,7 @@ class ProjectSnapshot:
         if self.schematic_data:
             try:
                 return json.loads(self.schematic_data)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 return None
         return None
 
@@ -69,7 +69,7 @@ class ProjectSnapshot:
         if self.pcb_data:
             try:
                 return json.loads(self.pcb_data)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 return None
         return None
 

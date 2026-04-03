@@ -63,7 +63,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   // Debug: Log when contentLayer changes
   useEffect(() => {
     if (contentLayer) {
-      console.log('[SchematicEditor] Content Layer ref set, _id:', (contentLayer as any)._id, 'children count:', contentLayer.getChildren().length);
     }
   }, [contentLayer]);
   const [showDebug, setShowDebug] = useState(false); // 调试模式
@@ -104,7 +103,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
         // 只有尺寸真正变化时才更新（避免无限循环）
         if (newWidth !== containerSize.width || newHeight !== containerSize.height) {
-          console.log('[SchematicEditor] Size update:', { newWidth, newHeight, prev: containerSize });
           setContainerSize({ width: newWidth, height: newHeight });
         }
       }
@@ -210,7 +208,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   } = useSchematicStore();
 
   // 调试：检查 Stage 尺寸
-  console.log('[SchematicEditor] Stage dimensions:', { width, height, zoom, pan, componentsCount: schematicData?.components?.length || 0 });
 
   // 获取当前选中的元素（在 useSchematicStore 调用之后）
   const selectedComponent = schematicData?.components.find(c => selectedIds.includes(c.id));
@@ -260,7 +257,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
     initialFitDone.current = true;
     fittedProjectId.current = projectId;
 
-    console.log('[SchematicEditor] AutoView running for project:', projectId);
 
     // 延迟一点执行，确保 width/height 已经初始化
     const timer = setTimeout(() => {
@@ -281,7 +277,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
         x: width / 2 - centerX,
         y: height / 2 - centerY
       };
-      console.log('[SchematicEditor] Auto view calculated:', { centerX, centerY, pan: newPan });
       setPan(newPan);
       setZoom(1);
     }, 100);
@@ -291,7 +286,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   // 简化重绘逻辑 - 直接使用 contentLayer ref
   useEffect(() => {
     if (schematicData && stageRef) {
-      console.log('[SchematicEditor] Triggering redraw, contentLayer:', !!contentLayer);
 
       const timers = [
         setTimeout(() => {
@@ -299,7 +293,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
           if (contentLayer) {
             contentLayer.draw();
           }
-          console.log('[SchematicEditor] batchDraw executed');
         }, 100),
         setTimeout(() => {
           stageRef?.batchDraw();
@@ -331,7 +324,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
 
     setPan(newPan);
     setZoom(1);
-    console.log('[SchematicEditor] Auto view applied:', { centerX, centerY, pan: newPan });
   }, [schematicData, width, height, setPan, setZoom]);
 
   // 滚轮缩放
@@ -562,21 +554,9 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       const offsetY = (Math.random() - 0.5) * 100;
       mmX = centerX + offsetX;
       mmY = centerY + offsetY;
-      console.log(`[SchematicEditor] Component ${comp.id} position reset to center:`, { mmX, mmY });
     }
 
     // 调试日志
-    console.log(`[SchematicEditor] Rendering component ${comp.id}:`, {
-      mmPosition: { x: mmX, y: mmY },
-      pxPosition: { x: mmX * MM_TO_PX, y: mmY * MM_TO_PX },
-      pan, zoom,
-      stageCenter: { x: width / 2, y: height / 2 },
-      symbol_library: comp.symbol_library,
-      category: comp.category,
-      value: comp.value,
-      stageWidth: width,
-      stageHeight: height,
-    });
 
     // 拖拽结束处理
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
@@ -737,13 +717,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
   }
 
   // 调试日志：检查数据
-  console.log('[SchematicEditor] Rendering with data:', {
-    componentsCount: (schematicData.components ?? []).length,
-    wiresCount: (schematicData.wires ?? []).length,
-    zoom,
-    pan,
-    canvasSize: { width, height },
-  });
 
   // 额外调试：检查每个元件的渲染参数
   if ((schematicData.components ?? []).length > 0) {
@@ -753,14 +726,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
       // 考虑 Stage 的 pan 偏移
       const stageOffsetX = renderX + pan.x;
       const stageOffsetY = renderY + pan.y;
-      console.log(`[SchematicEditor] Component ${idx}:`, {
-        id: comp.id,
-        originalPos: comp.position,
-        renderPos: { x: renderX, y: renderY },
-        withPan: { x: stageOffsetX, y: stageOffsetY },
-        inViewport: stageOffsetX >= 0 && stageOffsetX <= width && stageOffsetY >= 0 && stageOffsetY <= height,
-        symbol_library: comp.symbol_library,
-      });
     });
   }
 
@@ -803,7 +768,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
             draggable={false}
             ref={(ref) => {
                 if (ref !== stageRef) {
-                  console.log('[SchematicEditor] Stage ref callback called, _id:', (ref as any)?._id);
                   setStageRef(ref);
                 }
               }}
@@ -826,7 +790,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
               ref={(node) => {
                 // 修复：确保 ref 正确设置，避免重复更新
                 if (node && node !== contentLayer) {
-                  console.log('[SchematicEditor] Content Layer ref set, _id:', (node as any)?._id);
                   setContentLayer(node);
                 }
               }}
@@ -1010,7 +973,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
           <SymbolSearchPanel
             onClose={() => setShowSymbolSearch(false)}
             onSymbolSelect={(symbol) => {
-              console.log('Selected symbol:', symbol);
               setShowSymbolSearch(false);
             }}
           />
@@ -1021,7 +983,6 @@ const SchematicEditor: React.FC<SchematicEditorProps> = ({
           <BulkPlacementDialog
             onClose={() => setShowBulkPlacement(false)}
             onApply={(components) => {
-              console.log('Bulk placement components:', components);
               setShowBulkPlacement(false);
             }}
           />

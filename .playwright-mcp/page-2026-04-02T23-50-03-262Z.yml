@@ -1,0 +1,215 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e284]:
+      - generic [ref=e285]: 智
+      - generic [ref=e286]:
+        - generic [ref=e287]: 智板工具
+        - generic [ref=e288]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e289]: "后端服务: ● 已连接"
+      - generic [ref=e290]:
+        - generic "点击刷新" [ref=e291] [cursor=pointer]:
+          - generic [ref=e292]: "Token:"
+          - generic [ref=e293]: "400"
+          - text: "0"
+        - generic [ref=e294]:
+          - generic [ref=e295]: 🤖
+          - generic [ref=e296]: DeepEDA大模型
+        - button "👤 test ▼" [ref=e298] [cursor=pointer]:
+          - generic [ref=e299]: 👤
+          - generic [ref=e300]: test
+          - generic [ref=e301]: ▼
+  - generic [ref=e302]:
+    - generic [ref=e303]:
+      - heading "Projects" [level=1] [ref=e304]
+      - textbox "搜索项目..." [ref=e305]
+      - button "+ New Project" [ref=e306] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e307] [cursor=pointer]
+    - generic [ref=e308]:
+      - generic [ref=e309]:
+        - generic [ref=e310]:
+          - generic [ref=e311]: "1"
+          - generic [ref=e312]: v1.0
+        - generic [ref=e313]:
+          - heading "LED_Driver_Board" [level=3] [ref=e314] [cursor=pointer]
+          - paragraph [ref=e315]: Created from 智板工具
+          - paragraph [ref=e316]: "Updated: 2026/4/3"
+        - generic [ref=e317]:
+          - button "Open" [ref=e318] [cursor=pointer]
+          - button "Delete" [ref=e319] [cursor=pointer]
+      - generic [ref=e320]:
+        - generic [ref=e321]:
+          - generic [ref=e322]: "2"
+          - generic [ref=e323]: v1.0
+        - generic [ref=e324]:
+          - heading "DuplicateTestProject" [level=3] [ref=e325] [cursor=pointer]
+          - paragraph [ref=e326]: Test
+          - paragraph [ref=e327]: "Updated: 2026/4/2"
+        - generic [ref=e328]:
+          - button "Open" [ref=e329] [cursor=pointer]
+          - button "Delete" [ref=e330] [cursor=pointer]
+      - generic [ref=e331]:
+        - generic [ref=e332]:
+          - generic [ref=e333]: "3"
+          - generic [ref=e334]: v1.0
+        - generic [ref=e335]:
+          - heading "PCBTestProject" [level=3] [ref=e336] [cursor=pointer]
+          - paragraph [ref=e337]: Test project for PCB operations
+          - paragraph [ref=e338]: "Updated: 2026/4/2"
+        - generic [ref=e339]:
+          - button "Open" [ref=e340] [cursor=pointer]
+          - button "Delete" [ref=e341] [cursor=pointer]
+      - generic [ref=e342]:
+        - generic [ref=e343]:
+          - generic [ref=e344]: "4"
+          - generic [ref=e345]: v1.0
+        - generic [ref=e346]:
+          - heading "ReadTestProject" [level=3] [ref=e347] [cursor=pointer]
+          - paragraph [ref=e348]: Test project for reading
+          - paragraph [ref=e349]: "Updated: 2026/4/2"
+        - generic [ref=e350]:
+          - button "Open" [ref=e351] [cursor=pointer]
+          - button "Delete" [ref=e352] [cursor=pointer]
+      - generic [ref=e353]:
+        - generic [ref=e354]:
+          - generic [ref=e355]: "5"
+          - generic [ref=e356]: v1.0
+        - generic [ref=e357]:
+          - heading "ConcurrentTestProject_9" [level=3] [ref=e358] [cursor=pointer]
+          - paragraph [ref=e359]: Test project
+          - paragraph [ref=e360]: "Updated: 2026/4/2"
+        - generic [ref=e361]:
+          - button "Open" [ref=e362] [cursor=pointer]
+          - button "Delete" [ref=e363] [cursor=pointer]
+      - generic [ref=e364]:
+        - generic [ref=e365]:
+          - generic [ref=e366]: "6"
+          - generic [ref=e367]: v1.0
+        - generic [ref=e368]:
+          - heading "ConcurrentTestProject_8" [level=3] [ref=e369] [cursor=pointer]
+          - paragraph [ref=e370]: Test project
+          - paragraph [ref=e371]: "Updated: 2026/4/2"
+        - generic [ref=e372]:
+          - button "Open" [ref=e373] [cursor=pointer]
+          - button "Delete" [ref=e374] [cursor=pointer]
+      - generic [ref=e375]:
+        - generic [ref=e376]:
+          - generic [ref=e377]: "7"
+          - generic [ref=e378]: v1.0
+        - generic [ref=e379]:
+          - heading "ConcurrentTestProject_7" [level=3] [ref=e380] [cursor=pointer]
+          - paragraph [ref=e381]: Test project
+          - paragraph [ref=e382]: "Updated: 2026/4/2"
+        - generic [ref=e383]:
+          - button "Open" [ref=e384] [cursor=pointer]
+          - button "Delete" [ref=e385] [cursor=pointer]
+      - generic [ref=e386]:
+        - generic [ref=e387]:
+          - generic [ref=e388]: "8"
+          - generic [ref=e389]: v1.0
+        - generic [ref=e390]:
+          - heading "ConcurrentTestProject_6" [level=3] [ref=e391] [cursor=pointer]
+          - paragraph [ref=e392]: Test project
+          - paragraph [ref=e393]: "Updated: 2026/4/2"
+        - generic [ref=e394]:
+          - button "Open" [ref=e395] [cursor=pointer]
+          - button "Delete" [ref=e396] [cursor=pointer]
+      - generic [ref=e397]:
+        - generic [ref=e398]:
+          - generic [ref=e399]: "9"
+          - generic [ref=e400]: v1.0
+        - generic [ref=e401]:
+          - heading "ConcurrentTestProject_5" [level=3] [ref=e402] [cursor=pointer]
+          - paragraph [ref=e403]: Test project
+          - paragraph [ref=e404]: "Updated: 2026/4/2"
+        - generic [ref=e405]:
+          - button "Open" [ref=e406] [cursor=pointer]
+          - button "Delete" [ref=e407] [cursor=pointer]
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - generic [ref=e410]: "10"
+          - generic [ref=e411]: v1.0
+        - generic [ref=e412]:
+          - heading "ConcurrentTestProject_4" [level=3] [ref=e413] [cursor=pointer]
+          - paragraph [ref=e414]: Test project
+          - paragraph [ref=e415]: "Updated: 2026/4/2"
+        - generic [ref=e416]:
+          - button "Open" [ref=e417] [cursor=pointer]
+          - button "Delete" [ref=e418] [cursor=pointer]
+      - generic [ref=e419]:
+        - generic [ref=e420]:
+          - generic [ref=e421]: "11"
+          - generic [ref=e422]: v1.0
+        - generic [ref=e423]:
+          - heading "ConcurrentTestProject_3" [level=3] [ref=e424] [cursor=pointer]
+          - paragraph [ref=e425]: Test project
+          - paragraph [ref=e426]: "Updated: 2026/4/2"
+        - generic [ref=e427]:
+          - button "Open" [ref=e428] [cursor=pointer]
+          - button "Delete" [ref=e429] [cursor=pointer]
+      - generic [ref=e430]:
+        - generic [ref=e431]:
+          - generic [ref=e432]: "12"
+          - generic [ref=e433]: v1.0
+        - generic [ref=e434]:
+          - heading "ConcurrentTestProject_2" [level=3] [ref=e435] [cursor=pointer]
+          - paragraph [ref=e436]: Test project
+          - paragraph [ref=e437]: "Updated: 2026/4/2"
+        - generic [ref=e438]:
+          - button "Open" [ref=e439] [cursor=pointer]
+          - button "Delete" [ref=e440] [cursor=pointer]
+      - generic [ref=e441]:
+        - generic [ref=e442]:
+          - generic [ref=e443]: "13"
+          - generic [ref=e444]: v1.0
+        - generic [ref=e445]:
+          - heading "ConcurrentTestProject_1" [level=3] [ref=e446] [cursor=pointer]
+          - paragraph [ref=e447]: Test project
+          - paragraph [ref=e448]: "Updated: 2026/4/2"
+        - generic [ref=e449]:
+          - button "Open" [ref=e450] [cursor=pointer]
+          - button "Delete" [ref=e451] [cursor=pointer]
+      - generic [ref=e452]:
+        - generic [ref=e453]:
+          - generic [ref=e454]: "14"
+          - generic [ref=e455]: v1.0
+        - generic [ref=e456]:
+          - heading "ConcurrentTestProject_0" [level=3] [ref=e457] [cursor=pointer]
+          - paragraph [ref=e458]: Test project
+          - paragraph [ref=e459]: "Updated: 2026/4/2"
+        - generic [ref=e460]:
+          - button "Open" [ref=e461] [cursor=pointer]
+          - button "Delete" [ref=e462] [cursor=pointer]
+    - generic [ref=e464]:
+      - generic [ref=e465]:
+        - heading "🤖 AI 智能创建项目" [level=2] [ref=e466]
+        - button "×" [ref=e467] [cursor=pointer]
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - generic [ref=e470]: "1"
+          - generic [ref=e471]: 输入需求
+        - generic [ref=e473]:
+          - generic [ref=e474]: "2"
+          - generic [ref=e475]: 明确细节
+        - generic [ref=e477]:
+          - generic [ref=e478]: "3"
+          - generic [ref=e479]: 原理图确认
+        - generic [ref=e481]:
+          - generic [ref=e482]: "4"
+          - generic [ref=e483]: PCB参数
+        - generic [ref=e485]:
+          - generic [ref=e486]: "5"
+          - generic [ref=e487]: PCB确认
+        - generic [ref=e489]:
+          - generic [ref=e490]: "6"
+          - generic [ref=e491]: 编辑确认
+        - generic [ref=e493]:
+          - generic [ref=e494]: "7"
+          - generic [ref=e495]: 生成项目
+        - generic [ref=e497]:
+          - generic [ref=e498]: "8"
+          - generic [ref=e499]: 最终确认
+      - generic [ref=e625]:
+        - paragraph [ref=e626]: ❌ AI 分析超时，请稍后重试
+        - button "重新开始" [ref=e627] [cursor=pointer]
+      - button "重新开始" [ref=e628] [cursor=pointer]

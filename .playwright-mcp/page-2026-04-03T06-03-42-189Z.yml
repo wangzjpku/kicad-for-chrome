@@ -1,0 +1,61 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e230]:
+      - generic [ref=e231]: 智
+      - generic [ref=e232]:
+        - generic [ref=e233]: 智板工具
+        - generic [ref=e234]: 北京懿建达出品
+    - generic [ref=e10]:
+      - generic [ref=e235]: "后端服务: ● 已连接"
+      - generic [ref=e236]:
+        - generic "点击刷新" [ref=e237] [cursor=pointer]:
+          - generic [ref=e238]: "Token:"
+          - generic [ref=e239]: "1000"
+          - text: "0"
+        - generic [ref=e240]:
+          - generic [ref=e241]: 🤖
+          - generic [ref=e242]: DeepEDA大模型
+        - button "👤 testuser ▼" [ref=e244] [cursor=pointer]:
+          - generic [ref=e245]: 👤
+          - generic [ref=e246]: testuser
+          - generic [ref=e247]: ▼
+  - generic [ref=e248]:
+    - generic [ref=e249]:
+      - heading "Projects" [level=1] [ref=e250]
+      - textbox "搜索项目..." [ref=e251]
+      - button "+ New Project" [ref=e252] [cursor=pointer]
+      - button "🤖 AI 创建" [ref=e253] [cursor=pointer]
+    - generic [ref=e254]:
+      - generic [ref=e255]:
+        - generic [ref=e256]:
+          - generic [ref=e257]: "1"
+          - generic [ref=e258]: v1.0
+        - generic [ref=e259]:
+          - heading "用户测试项目2026" [level=3] [ref=e260] [cursor=pointer]
+          - paragraph [ref=e261]: Created from 智板工具
+          - paragraph [ref=e262]: "Updated: 2026/4/3"
+        - generic [ref=e263]:
+          - button "Open" [ref=e264] [cursor=pointer]
+          - button "Delete" [ref=e265] [cursor=pointer]
+      - generic [ref=e266]:
+        - generic [ref=e267]:
+          - generic [ref=e268]: "2"
+          - generic [ref=e269]: v1.0
+        - generic [ref=e270]:
+          - heading "AI生成项目" [level=3] [ref=e271] [cursor=pointer]
+          - paragraph [ref=e272]: 基于STM32F103C8T6微控制器的简单LED闪烁电路，通过编程控制GPIO引脚输出高低电平，实现LED的周期性亮灭。适用于嵌入式入门学习、原型验证和基础指示灯应用。
+          - paragraph [ref=e273]: "Updated: 2026/4/3"
+        - generic [ref=e274]:
+          - button "Open" [ref=e275] [cursor=pointer]
+          - button "Delete" [ref=e276] [cursor=pointer]
+      - generic [ref=e277]:
+        - generic [ref=e278]:
+          - generic [ref=e279]: "3"
+          - generic [ref=e280]: v1.0
+        - generic [ref=e281]:
+          - heading "测试PCB项目" [level=3] [ref=e282] [cursor=pointer]
+          - paragraph [ref=e283]: Created from 智板工具
+          - paragraph [ref=e284]: "Updated: 2026/4/3"
+        - generic [ref=e285]:
+          - button "Open" [ref=e286] [cursor=pointer]
+          - button "Delete" [ref=e287] [cursor=pointer]

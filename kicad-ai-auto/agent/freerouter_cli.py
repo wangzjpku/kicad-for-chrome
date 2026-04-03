@@ -20,14 +20,16 @@ logger = logging.getLogger(__name__)
 class FreeRouterCLI:
     """FreeRouter 命令行接口"""
 
+    # KiCad installation path from environment or default
+    _KICAD_PATH = os.environ.get("KICAD_PATH", "C:/Program Files/KiCad/9.0")
+
     # 可能的 FreeRouter 路径
     POSSIBLE_PATHS = [
         # 用户目录
         Path.home() / "FreeRouter" / "freerouter.jar",
         Path.home() / ".local" / "share" / "freerouter" / "freerouter.jar",
-        # KiCad 目录
-        Path("C:/Program Files/KiCad/9.0") / "freerouter" / "freerouter.jar",
-        Path("E:/Program Files/KiCad/9.0") / "freerouter" / "freerouter.jar",
+        # KiCad 目录 (from env or default)
+        Path(_KICAD_PATH) / "freerouter" / "freerouter.jar",
         # 项目目录
         Path(__file__).parent.parent / "tools" / "freerouter.jar",
     ]
@@ -49,13 +51,17 @@ class FreeRouterCLI:
 
     def _find_java(self) -> Optional[str]:
         """查找 Java 运行时"""
+        _java_home = os.environ.get("JAVA_HOME", "")
         java_paths = [
             "java",
+            os.path.join(_java_home, "bin", "java.exe") if _java_home else "",
             "C:/Program Files/Java/jre/bin/java.exe",
             "C:/Program Files/Java/jdk/bin/java.exe",
         ]
 
         for java in java_paths:
+            if not java:
+                continue
             try:
                 result = subprocess.run(
                     [java, "-version"],
@@ -412,11 +418,34 @@ class SimpleAutoRouter:
                     failed_nets.append(net.name)
 
             # Phase 8C-3: Auto length-tune diff pairs after routing
-            if routed_count > 0:
+            if routed_count > 0 and len(diff_pair_nets) > 0:
                 try:
                     from routing.length_tuner import LengthTuner
                     tuner = LengthTuner()
-                    logger.info(f"Auto length-tuning {len(diff_pair_nets)} diff pairs")
+                    tuned_count = 0
+                    for dp_net, dp_cls in diff_pair_nets:
+                        # Get routed trace points for this diff pair and tune length
+                        net_pads = [p for p in pads if p["net"] == dp_net.name]
+                        if len(net_pads) >= 2:
+                            start = net_pads[0]["position"]
+                            end = net_pads[1]["position"]
+                            # Estimate trace length from Manhattan distance
+                            est_len = abs(start[0] - end[0]) + abs(start[1] - end[1])
+                            try:
+                                from routing.astar_router import Point
+                                pts = [Point(start[0], start[1]), Point(end[0], end[1])]
+                                tune_result = tuner.tune(
+                                    trace_points=pts,
+                                    target_length=est_len * 1.05,  # 5% margin
+                                    style="serpentine",
+                                    amplitude=2.0,
+                                    pitch=1.0,
+                                )
+                                if tune_result.added_length > 0:
+                                    tuned_count += 1
+                            except Exception as e:
+                                logger.debug(f"FreeRouter import fallback: {e}")
+                    logger.info(f"Auto length-tuned {tuned_count}/{len(diff_pair_nets)} diff pairs")
                 except ImportError:
                     pass
 

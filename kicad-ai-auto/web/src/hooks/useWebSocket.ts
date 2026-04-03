@@ -130,7 +130,6 @@ export function useWebSocket() {
           break
 
         default:
-          console.log('Unknown message type:', data.type)
       }
     },
     [setScreenshot, setTool, setLayer, setCursor, setZoom, addError, addLog]
