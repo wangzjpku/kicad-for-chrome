@@ -78,7 +78,7 @@ async def run_drc(request: DRCRequest):
     logger.info(f"Running DRC for project: {request.project_id}")
 
     # 1. 加载 PCB 数据
-    pcb_data = _load_pcb_data(request.project_id)
+    pcb_data = _load_pcb_data_sync(request.project_id)
 
     if not pcb_data or not pcb_data.get("tracks"):
         # 没有 PCB 数据时返回通过（空板）
@@ -173,8 +173,8 @@ async def run_drc(request: DRCRequest):
     )
 
 
-def _load_pcb_data(project_id: str) -> Optional[Dict]:
-    """Load PCB data for DRC: IPC -> project file -> empty."""
+def _load_pcb_data_sync(project_id: str) -> Optional[Dict]:
+    """Load PCB data for DRC: IPC -> project file -> empty (sync version)."""
     # Priority 1: Try KiCad IPC
     try:
         from kicad_ipc_manager import KiCadIPCManager
@@ -185,28 +185,29 @@ def _load_pcb_data(project_id: str) -> Optional[Dict]:
             if data:
                 logger.info("Loaded PCB data from KiCad IPC")
                 return data
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to load PCB data from IPC: {e}")
 
     # Priority 2: Try project file
     try:
         import json
         from pathlib import Path
-        projects_file = Path(__file__).parent.parent / "agent" / "projects_data.json"
-        if not projects_file.exists():
-            projects_file = Path(__file__).parent.parent / "agent" / "pcb_data.json"
-        if projects_file.exists():
-            with open(projects_file, "r", encoding="utf-8") as f:
-                all_projects = json.load(f)
-            for proj in all_projects if isinstance(proj, dict):
-                if proj.get("id") == project_id or proj.get("name") == project_id:
+        base_dir = Path(__file__).parent.parent  # agent/
+        pcb_file = base_dir / "pcb_data.json"
+        if pcb_file.exists():
+            with open(pcb_file, "r", encoding="utf-8") as f:
+                pcb_data = json.load(f)
+            # pcb_data.json is a dict indexed by project_id
+            if isinstance(pcb_data, dict):
+                proj = pcb_data.get(project_id)
+                if proj and isinstance(proj, dict):
                     from drc.pcb_data_adapter import PCBDataAdapter
                     data = PCBDataAdapter.from_project(proj)
                     if data:
-                        logger.info(f"Loaded PCB data from project file")
+                        logger.info(f"Loaded PCB data from pcb_data.json for {project_id}")
                         return data
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to load PCB data from project file: {e}")
     # No data available
     logger.warning(f"No PCB data available for project: {project_id}")
     return None
@@ -578,9 +579,74 @@ async def get_detailed_rules(
 
 
 async def _load_pcb_data(project_id: str) -> Dict[str, Any]:
-    """从项目加载PCB数据"""
-    # 实际实现应该从文件或数据库加载
-    # 这里返回空字典，由调用者处理
+    """从项目加载PCB数据 — 尝试IPC、项目文件、返回空"""
+
+    # Priority 1: KiCad IPC live data
+    try:
+        from kicad_ipc_manager import KiCadIPCManager
+        ipc = KiCadIPCManager.get_instance()
+        if ipc and ipc.is_connected():
+            board = ipc.get_board()
+            if board:
+                data = {
+                    "board_outline": getattr(board, "outline", []),
+                    "tracks": [],
+                    "footprints": [],
+                    "vias": [],
+                    "nets": [],
+                    "layers": getattr(board, "layers", []),
+                }
+                try:
+                    items = ipc.get_items()
+                    for item in (items or []):
+                        itype = item.get("type", "")
+                        if itype == "track":
+                            data["tracks"].append(item)
+                        elif itype == "footprint":
+                            data["footprints"].append(item)
+                        elif itype == "via":
+                            data["vias"].append(item)
+                except Exception:
+                    pass
+                logger.info(f"Loaded PCB data from IPC: {len(data['tracks'])} tracks, {len(data['footprints'])} footprints")
+                return data
+    except Exception as e:
+        logger.debug(f"IPC data not available: {e}")
+
+    # Priority 2: Project JSON files
+    try:
+        import json
+        from pathlib import Path
+        base_dir = Path(__file__).parent.parent  # agent/
+
+        # Try pcb_data.json first (indexed by project_id)
+        pcb_file = base_dir / "pcb_data.json"
+        if pcb_file.exists():
+            with open(pcb_file, "r", encoding="utf-8") as f:
+                pcb_data = json.load(f)
+            if isinstance(pcb_data, dict):
+                # pcb_data.json structure: {project_id: {footprints, tracks, ...}}
+                pcb = pcb_data.get(project_id)
+                if pcb and isinstance(pcb, dict):
+                    logger.info(f"Loaded PCB data from pcb_data.json for {project_id}")
+                    return pcb
+
+        # Fallback: projects_data.json (may have embedded pcb_data)
+        projects_file = base_dir / "projects_data.json"
+        if projects_file.exists():
+            with open(projects_file, "r", encoding="utf-8") as f:
+                projects = json.load(f)
+            if isinstance(projects, dict):
+                proj = projects.get(project_id)
+                if proj and isinstance(proj, dict):
+                    pcb = proj.get("pcb_data") or proj.get("pcb")
+                    if pcb:
+                        logger.info(f"Loaded PCB data from projects_data.json for {project_id}")
+                        return pcb if isinstance(pcb, dict) else {"raw": pcb}
+    except Exception as e:
+        logger.warning(f"Project file data not available: {e}")
+
+    logger.warning(f"No PCB data available for project: {project_id}")
     return {}
 
 

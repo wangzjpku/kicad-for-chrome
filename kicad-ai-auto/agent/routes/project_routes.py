@@ -1253,6 +1253,7 @@ async def get_pcb_design(project_id: str):
         if project_id not in _pcb_data:
             return {
                 "success": True,
+                "id": f"pcb-{project_id}",
                 "project_id": project_id,
                 "footprints": [],
                 "tracks": [],
@@ -1261,7 +1262,15 @@ async def get_pcb_design(project_id: str):
                 "board": {"width": 0, "height": 0},
             }
 
-        return _pcb_data[project_id]
+        # 确保返回的数据有 id 和 project_id 字段
+        data = _pcb_data[project_id]
+        if isinstance(data, dict):
+            data = {
+                **data,
+                "id": data.get("id") or data.get("projectId") or f"pcb-{project_id}",
+                "project_id": data.get("project_id") or data.get("projectId") or project_id,
+            }
+        return data
 
 
 @router.get("/{project_id}/schematic")
@@ -1276,6 +1285,7 @@ async def get_schematic(project_id: str):
         if project_id not in _schematic_data:
             return {
                 "success": True,
+                "id": f"sch-{project_id}",
                 "project_id": project_id,
                 "symbols": [],
                 "wires": [],
@@ -1283,7 +1293,15 @@ async def get_schematic(project_id: str):
                 "buses": [],
             }
 
-        return _schematic_data[project_id]
+        # 确保返回的数据有 id 和 project_id 字段
+        data = _schematic_data[project_id]
+        if isinstance(data, dict):
+            data = {
+                **data,
+                "id": data.get("id") or f"sch-{project_id}",
+                "project_id": data.get("project_id") or project_id,
+            }
+        return data
 
 
 @router.post("/{project_id}/schematic")

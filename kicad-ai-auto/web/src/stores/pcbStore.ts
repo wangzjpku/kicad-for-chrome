@@ -8,6 +8,7 @@ import { devtools } from 'zustand/middleware';
 import { PCBData, Footprint, Track, Via, Project } from '../types';
 // projectApi 未使用，暂时移除
 import { pcbApi, kicadIpcApi, FullPCBData } from '../services/api';
+import { storeLogger as log } from '../utils/logger';
 
 export type ToolType = 'select' | 'move' | 'route' | 'place_footprint' | 'place_via' | 'rotate' | 'mirror' | 'place_zone' | 'place_text';
 
@@ -118,15 +119,12 @@ export const usePCBStore = create<PCBStoreState>()(
       },
       
       loadPCBData: async (projectId: string) => {
-        console.log('[PCBStore] loadPCBData called with projectId:', projectId);
         set({ isLoading: true, error: null });
         try {
-          // pcbApi.getPCB 返回后端数据
-          // pcbApi.getPCB 返回 ApiResponse<PCBData>，需要从 response 获取 data
+          // pcbApi.getPCB 直接返回后端数据（已在api.ts中unwrap）
           const response = await pcbApi.getPCB(projectId);
-          console.log('[PCBStore] Load PCB response:', response);
-          let pcbData = (response as any).data || response;
-          console.log('[PCBStore] pcbData type:', typeof pcbData, 'has tracks:', pcbData?.tracks?.length);
+          // response 已经是 PCBData，不再需要 .data
+          let pcbData = response;
 
           // 转换 tracks 格式：从 {start, end} 转换为 {points}
           if (pcbData && Array.isArray(pcbData.tracks)) {
@@ -149,28 +147,31 @@ export const usePCBStore = create<PCBStoreState>()(
             };
           }
 
-          if (pcbData && typeof pcbData === 'object' && 'id' in pcbData) {
+          if (pcbData && typeof pcbData === 'object' && ('id' in pcbData || 'project_id' in pcbData || 'projectId' in pcbData || 'footprints' in pcbData)) {
+            // 确保有 id 字段 (支持 project_id 和 projectId 两种命名)
+            const normalizedData = {
+              ...pcbData,
+              id: pcbData.id || pcbData.project_id || pcbData.projectId || projectId,
+              project_id: pcbData.project_id || pcbData.projectId || projectId,
+            };
             set({
-              pcbData: pcbData,
+              pcbData: normalizedData,
               projectId,
               isLoading: false,
-              history: [{ pcbData: pcbData, selectedIds: [] }],
+              history: [{ pcbData: normalizedData, selectedIds: [] }],
               historyIndex: 0,
             });
-            console.log('[PCBStore] PCB data loaded, footprints:', pcbData.footprints?.length, 'tracks:', pcbData.tracks?.length);
           } else {
-            console.error('[PCBStore] Invalid PCB data:', response);
+            log.error('Invalid PCB data', { pcbData, response });
             set({ error: 'Failed to load PCB data', isLoading: false });
           }
         } catch (error: any) {
           // 忽略请求被取消的错误（快速切换页面时发生）
-          console.log('[PCBStore] ===== Catch error =====:', JSON.stringify(error?.message || error));
           if (error instanceof Error && error.name === 'CanceledError') {
-            console.log('[PCBStore] PCB load cancelled (page navigation)');
           } else if (error?.name === 'CanceledError' || (error?.message && error.message.includes('cancel'))) {
-            console.log('[PCBStore] PCB load cancelled');
+            // Request cancelled, don't log as error
           } else {
-            console.error('[PCBStore] Load PCB error:', error);
+            log.error('Load PCB error', { error: String(error) });
           }
           set({ error: null, isLoading: false });
         }
@@ -182,7 +183,7 @@ export const usePCBStore = create<PCBStoreState>()(
 
         // 防止空数据覆盖后端生成的数据
         if (!pcbData.footprints || pcbData.footprints.length === 0) {
-          console.warn('[PCBStore] No footprints to save, skipping');
+          log.warn('No footprints to save, skipping');
           return;
         }
 
@@ -205,28 +206,18 @@ export const usePCBStore = create<PCBStoreState>()(
       isIPCConnected: false,
 
       loadFullPCBData: async () => {
-        console.log("[PCBStore] loadFullPCBData called");
         try {
           const response = await kicadIpcApi.getFullPCB();
-          console.log("[PCBStore] Full PCB response:", response);
           if (response.success && response.connected) {
             set({
               fullPCBData: response,
               isIPCConnected: true
             });
-            console.log("[PCBStore] Full PCB data loaded:", {
-              layers: response.layers?.length,
-              nets: response.nets?.length,
-              footprints: response.footprints?.length,
-              tracks: response.tracks?.length,
-              zones: response.zones?.length
-            });
           } else {
-            console.log("[PCBStore] KiCad not connected or error:", (response as any).message || response.error);
             set({ isIPCConnected: false });
           }
-        } catch (error: any) {
-          console.error("[PCBStore] Failed to load full PCB data:", error);
+        } catch (error: unknown) {
+          log.error('Failed to load full PCB data', { error: String(error) });
           set({ isIPCConnected: false });
         }
       },
@@ -349,11 +340,10 @@ export const usePCBStore = create<PCBStoreState>()(
       addFootprint: (footprint) => {
         const { pcbData } = get();
         if (!pcbData) {
-          console.warn('[PCBStore] addFootprint failed: pcbData is null');
+          log.warn('addFootprint failed: pcbData is null');
           return;
         }
 
-        console.log('[PCBStore] addFootprint called, current footprints:', pcbData.footprints.length);
         get().pushHistory();
         set({
           pcbData: {
@@ -361,7 +351,6 @@ export const usePCBStore = create<PCBStoreState>()(
             footprints: [...pcbData.footprints, footprint]
           }
         });
-        console.log('[PCBStore] addFootprint completed, new footprints:', pcbData.footprints.length + 1);
       },
       
       removeFootprint: (id) => {
