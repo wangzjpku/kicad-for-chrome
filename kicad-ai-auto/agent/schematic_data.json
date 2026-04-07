@@ -494,5 +494,5549 @@
         "type": "gnd"
       }
     ]
+  },
+  "1052eaad-1802-4add-bb57-76b365644fc8": {
+    "components": [
+      {
+        "id": "comp-1",
+        "name": "单片机",
+        "model": "ATtiny85-20PU",
+        "position": {
+          "x": 150,
+          "y": 300
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "PB5",
+            "type": "bidirectional",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "PB3",
+            "type": "bidirectional",
+            "position": {
+              "x": -50,
+              "y": -10
+            },
+            "direction": "left"
+          },
+          {
+            "number": "3",
+            "name": "PB4",
+            "type": "bidirectional",
+            "position": {
+              "x": -50,
+              "y": 10
+            },
+            "direction": "left"
+          },
+          {
+            "number": "4",
+            "name": "GND",
+            "type": "power_in",
+            "position": {
+              "x": -50,
+              "y": 30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "5",
+            "name": "PB0",
+            "type": "bidirectional",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          },
+          {
+            "number": "6",
+            "name": "PB1",
+            "type": "bidirectional",
+            "position": {
+              "x": 50,
+              "y": -10
+            },
+            "direction": "right"
+          },
+          {
+            "number": "7",
+            "name": "PB2",
+            "type": "bidirectional",
+            "position": {
+              "x": 50,
+              "y": 10
+            },
+            "direction": "right"
+          },
+          {
+            "number": "8",
+            "name": "VCC",
+            "type": "power_in",
+            "position": {
+              "x": 50,
+              "y": 30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+        "symbol_library": "MCU_Microchip_ATtiny",
+        "symbol_name": "",
+        "reference": "R1",
+        "category": "mcu"
+      },
+      {
+        "id": "comp-2",
+        "name": "USB接口",
+        "model": "Micro-USB",
+        "position": {
+          "x": 500,
+          "y": 300
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "VBUS",
+            "type": "power_out",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "D-",
+            "type": "bidirectional",
+            "position": {
+              "x": -50,
+              "y": -10
+            },
+            "direction": "left"
+          },
+          {
+            "number": "3",
+            "name": "D+",
+            "type": "bidirectional",
+            "position": {
+              "x": -50,
+              "y": 10
+            },
+            "direction": "left"
+          },
+          {
+            "number": "4",
+            "name": "ID",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          },
+          {
+            "number": "5",
+            "name": "GND",
+            "type": "power_out",
+            "position": {
+              "x": 50,
+              "y": -10
+            },
+            "direction": "right"
+          },
+          {
+            "number": "SH",
+            "name": "Shield",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": 10
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Connector_USB:USB_Micro-B_Molex-105017-0001",
+        "symbol_library": "Connector:Conn_01x02_Pin",
+        "symbol_name": "",
+        "reference": "J1",
+        "category": "interface"
+      },
+      {
+        "id": "comp-3",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 150,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R3",
+        "category": "passive"
+      },
+      {
+        "id": "comp-4",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 350,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R5",
+        "category": "passive"
+      },
+      {
+        "id": "comp-5",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 500,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R7",
+        "category": "passive"
+      },
+      {
+        "id": "comp-6",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 700,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R9",
+        "category": "passive"
+      },
+      {
+        "id": "comp-7",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 850,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R11",
+        "category": "passive"
+      },
+      {
+        "id": "comp-8",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1050,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R13",
+        "category": "passive"
+      },
+      {
+        "id": "comp-9",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1250,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R15",
+        "category": "passive"
+      },
+      {
+        "id": "comp-10",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1400,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R17",
+        "category": "passive"
+      },
+      {
+        "id": "comp-11",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1600,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R19",
+        "category": "passive"
+      },
+      {
+        "id": "comp-12",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1750,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R21",
+        "category": "passive"
+      },
+      {
+        "id": "comp-13",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 1950,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R23",
+        "category": "passive"
+      },
+      {
+        "id": "comp-14",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 2150,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R25",
+        "category": "passive"
+      },
+      {
+        "id": "comp-15",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 2300,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R27",
+        "category": "passive"
+      },
+      {
+        "id": "comp-16",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 2500,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R29",
+        "category": "passive"
+      },
+      {
+        "id": "comp-17",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 2650,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R31",
+        "category": "passive"
+      },
+      {
+        "id": "comp-18",
+        "name": "电阻",
+        "model": "330Ω 5%",
+        "position": {
+          "x": 2850,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "R33",
+        "category": "passive"
+      },
+      {
+        "id": "comp-19",
+        "name": "电容",
+        "model": "100nF 50V",
+        "position": {
+          "x": 3050,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "C1",
+        "category": "passive"
+      },
+      {
+        "id": "comp-20",
+        "name": "电容",
+        "model": "100nF 50V",
+        "position": {
+          "x": 3200,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "C2",
+        "category": "passive"
+      },
+      {
+        "id": "comp-21",
+        "name": "电容",
+        "model": "10uF 25V",
+        "position": {
+          "x": 3400,
+          "y": 500
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "+",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "-",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "C3",
+        "category": "passive"
+      },
+      {
+        "id": "comp-22",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 150,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D2",
+        "category": "led"
+      },
+      {
+        "id": "comp-23",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 350,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D4",
+        "category": "led"
+      },
+      {
+        "id": "comp-24",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 500,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D6",
+        "category": "led"
+      },
+      {
+        "id": "comp-25",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 700,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D8",
+        "category": "led"
+      },
+      {
+        "id": "comp-26",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D10",
+        "category": "led"
+      },
+      {
+        "id": "comp-27",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 1050,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D12",
+        "category": "led"
+      },
+      {
+        "id": "comp-28",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 1250,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D14",
+        "category": "led"
+      },
+      {
+        "id": "comp-29",
+        "name": "LED",
+        "model": "0603 Red",
+        "position": {
+          "x": 1400,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D16",
+        "category": "led"
+      },
+      {
+        "id": "comp-30",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 1600,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D18",
+        "category": "led"
+      },
+      {
+        "id": "comp-31",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 1750,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D20",
+        "category": "led"
+      },
+      {
+        "id": "comp-32",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 1950,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D22",
+        "category": "led"
+      },
+      {
+        "id": "comp-33",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 2150,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D24",
+        "category": "led"
+      },
+      {
+        "id": "comp-34",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 2300,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D26",
+        "category": "led"
+      },
+      {
+        "id": "comp-35",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 2500,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D28",
+        "category": "led"
+      },
+      {
+        "id": "comp-36",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 2650,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D30",
+        "category": "led"
+      },
+      {
+        "id": "comp-37",
+        "name": "LED",
+        "model": "0603 Green",
+        "position": {
+          "x": 2850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "A",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "K",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device",
+        "symbol_name": "",
+        "reference": "D32",
+        "category": "led"
+      }
+    ],
+    "wires": [
+      {
+        "id": "wire-155",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 100,
+            "y": 3030
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-156",
+        "points": [
+          {
+            "x": 250,
+            "y": 50
+          },
+          {
+            "x": 250,
+            "y": 400
+          },
+          {
+            "x": 200,
+            "y": 400
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-157",
+        "points": [
+          {
+            "x": 250,
+            "y": 50
+          },
+          {
+            "x": 250,
+            "y": 300
+          },
+          {
+            "x": 450,
+            "y": 300
+          },
+          {
+            "x": 450,
+            "y": 250
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-158",
+        "points": [
+          {
+            "x": 3450,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 3050
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-159",
+        "points": [
+          {
+            "x": 100,
+            "y": 370
+          },
+          {
+            "x": 100,
+            "y": 3030
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-160",
+        "points": [
+          {
+            "x": 200,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-161",
+        "points": [
+          {
+            "x": 300,
+            "y": 350
+          },
+          {
+            "x": 300,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-162",
+        "points": [
+          {
+            "x": 400,
+            "y": 350
+          },
+          {
+            "x": 400,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-163",
+        "points": [
+          {
+            "x": 450,
+            "y": 350
+          },
+          {
+            "x": 450,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-164",
+        "points": [
+          {
+            "x": 550,
+            "y": 350
+          },
+          {
+            "x": 550,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-165",
+        "points": [
+          {
+            "x": 650,
+            "y": 350
+          },
+          {
+            "x": 650,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-166",
+        "points": [
+          {
+            "x": 750,
+            "y": 350
+          },
+          {
+            "x": 750,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-167",
+        "points": [
+          {
+            "x": 800,
+            "y": 350
+          },
+          {
+            "x": 800,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-168",
+        "points": [
+          {
+            "x": 900,
+            "y": 350
+          },
+          {
+            "x": 900,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-169",
+        "points": [
+          {
+            "x": 1000,
+            "y": 350
+          },
+          {
+            "x": 1000,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-170",
+        "points": [
+          {
+            "x": 1100,
+            "y": 350
+          },
+          {
+            "x": 1100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-171",
+        "points": [
+          {
+            "x": 1200,
+            "y": 350
+          },
+          {
+            "x": 1200,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-172",
+        "points": [
+          {
+            "x": 1300,
+            "y": 350
+          },
+          {
+            "x": 1300,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-173",
+        "points": [
+          {
+            "x": 1350,
+            "y": 350
+          },
+          {
+            "x": 1350,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-174",
+        "points": [
+          {
+            "x": 1450,
+            "y": 350
+          },
+          {
+            "x": 1450,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-175",
+        "points": [
+          {
+            "x": 1550,
+            "y": 350
+          },
+          {
+            "x": 1550,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-176",
+        "points": [
+          {
+            "x": 1650,
+            "y": 350
+          },
+          {
+            "x": 1650,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-177",
+        "points": [
+          {
+            "x": 1700,
+            "y": 350
+          },
+          {
+            "x": 1700,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-178",
+        "points": [
+          {
+            "x": 1800,
+            "y": 350
+          },
+          {
+            "x": 1800,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-179",
+        "points": [
+          {
+            "x": 1900,
+            "y": 350
+          },
+          {
+            "x": 1900,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-180",
+        "points": [
+          {
+            "x": 2000,
+            "y": 350
+          },
+          {
+            "x": 2000,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-181",
+        "points": [
+          {
+            "x": 2100,
+            "y": 350
+          },
+          {
+            "x": 2100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-182",
+        "points": [
+          {
+            "x": 2200,
+            "y": 350
+          },
+          {
+            "x": 2200,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-183",
+        "points": [
+          {
+            "x": 2250,
+            "y": 350
+          },
+          {
+            "x": 2250,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-184",
+        "points": [
+          {
+            "x": 2350,
+            "y": 350
+          },
+          {
+            "x": 2350,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-185",
+        "points": [
+          {
+            "x": 2450,
+            "y": 350
+          },
+          {
+            "x": 2450,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-186",
+        "points": [
+          {
+            "x": 2550,
+            "y": 350
+          },
+          {
+            "x": 2550,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-187",
+        "points": [
+          {
+            "x": 2600,
+            "y": 350
+          },
+          {
+            "x": 2600,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-188",
+        "points": [
+          {
+            "x": 2700,
+            "y": 350
+          },
+          {
+            "x": 2700,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3400
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-189",
+        "points": [
+          {
+            "x": 2800,
+            "y": 350
+          },
+          {
+            "x": 2900,
+            "y": 350
+          },
+          {
+            "x": 2900,
+            "y": 3050
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-190",
+        "points": [
+          {
+            "x": 2900,
+            "y": 350
+          },
+          {
+            "x": 3000,
+            "y": 350
+          },
+          {
+            "x": 3000,
+            "y": 3050
+          },
+          {
+            "x": 100,
+            "y": 3050
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-191",
+        "points": [
+          {
+            "x": 100,
+            "y": 450
+          },
+          {
+            "x": 100,
+            "y": 800
+          },
+          {
+            "x": 200,
+            "y": 800
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-192",
+        "points": [
+          {
+            "x": 200,
+            "y": 450
+          },
+          {
+            "x": 200,
+            "y": 800
+          },
+          {
+            "x": 100,
+            "y": 800
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-193",
+        "points": [
+          {
+            "x": 300,
+            "y": 450
+          },
+          {
+            "x": 300,
+            "y": 800
+          },
+          {
+            "x": 200,
+            "y": 800
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-194",
+        "points": [
+          {
+            "x": 400,
+            "y": 450
+          },
+          {
+            "x": 500,
+            "y": 450
+          },
+          {
+            "x": 500,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-195",
+        "points": [
+          {
+            "x": 450,
+            "y": 450
+          },
+          {
+            "x": 600,
+            "y": 450
+          },
+          {
+            "x": 600,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-196",
+        "points": [
+          {
+            "x": 550,
+            "y": 450
+          },
+          {
+            "x": 600,
+            "y": 450
+          },
+          {
+            "x": 600,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-197",
+        "points": [
+          {
+            "x": 650,
+            "y": 450
+          },
+          {
+            "x": 800,
+            "y": 450
+          },
+          {
+            "x": 800,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-198",
+        "points": [
+          {
+            "x": 750,
+            "y": 450
+          },
+          {
+            "x": 800,
+            "y": 450
+          },
+          {
+            "x": 800,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-199",
+        "points": [
+          {
+            "x": 800,
+            "y": 450
+          },
+          {
+            "x": 1000,
+            "y": 450
+          },
+          {
+            "x": 1000,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-200",
+        "points": [
+          {
+            "x": 900,
+            "y": 450
+          },
+          {
+            "x": 1000,
+            "y": 450
+          },
+          {
+            "x": 1000,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-201",
+        "points": [
+          {
+            "x": 1000,
+            "y": 450
+          },
+          {
+            "x": 1200,
+            "y": 450
+          },
+          {
+            "x": 1200,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-202",
+        "points": [
+          {
+            "x": 1100,
+            "y": 450
+          },
+          {
+            "x": 1200,
+            "y": 450
+          },
+          {
+            "x": 1200,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-203",
+        "points": [
+          {
+            "x": 1200,
+            "y": 450
+          },
+          {
+            "x": 1400,
+            "y": 450
+          },
+          {
+            "x": 1400,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-204",
+        "points": [
+          {
+            "x": 1300,
+            "y": 450
+          },
+          {
+            "x": 1400,
+            "y": 450
+          },
+          {
+            "x": 1400,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-205",
+        "points": [
+          {
+            "x": 1350,
+            "y": 450
+          },
+          {
+            "x": 1500,
+            "y": 450
+          },
+          {
+            "x": 1500,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-206",
+        "points": [
+          {
+            "x": 1450,
+            "y": 450
+          },
+          {
+            "x": 1500,
+            "y": 450
+          },
+          {
+            "x": 1500,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-207",
+        "points": [
+          {
+            "x": 1550,
+            "y": 450
+          },
+          {
+            "x": 1700,
+            "y": 450
+          },
+          {
+            "x": 1700,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-208",
+        "points": [
+          {
+            "x": 1650,
+            "y": 450
+          },
+          {
+            "x": 1700,
+            "y": 450
+          },
+          {
+            "x": 1700,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-209",
+        "points": [
+          {
+            "x": 1700,
+            "y": 450
+          },
+          {
+            "x": 1900,
+            "y": 450
+          },
+          {
+            "x": 1900,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-210",
+        "points": [
+          {
+            "x": 1800,
+            "y": 450
+          },
+          {
+            "x": 1900,
+            "y": 450
+          },
+          {
+            "x": 1900,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-211",
+        "points": [
+          {
+            "x": 1900,
+            "y": 450
+          },
+          {
+            "x": 2100,
+            "y": 450
+          },
+          {
+            "x": 2100,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-212",
+        "points": [
+          {
+            "x": 2000,
+            "y": 450
+          },
+          {
+            "x": 2100,
+            "y": 450
+          },
+          {
+            "x": 2100,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-213",
+        "points": [
+          {
+            "x": 2100,
+            "y": 450
+          },
+          {
+            "x": 2300,
+            "y": 450
+          },
+          {
+            "x": 2300,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-214",
+        "points": [
+          {
+            "x": 2200,
+            "y": 450
+          },
+          {
+            "x": 2300,
+            "y": 450
+          },
+          {
+            "x": 2300,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-215",
+        "points": [
+          {
+            "x": 2250,
+            "y": 450
+          },
+          {
+            "x": 2400,
+            "y": 450
+          },
+          {
+            "x": 2400,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-216",
+        "points": [
+          {
+            "x": 2350,
+            "y": 450
+          },
+          {
+            "x": 2400,
+            "y": 450
+          },
+          {
+            "x": 2400,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-217",
+        "points": [
+          {
+            "x": 2450,
+            "y": 450
+          },
+          {
+            "x": 2600,
+            "y": 450
+          },
+          {
+            "x": 2600,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-218",
+        "points": [
+          {
+            "x": 2550,
+            "y": 450
+          },
+          {
+            "x": 2600,
+            "y": 450
+          },
+          {
+            "x": 2600,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-219",
+        "points": [
+          {
+            "x": 2600,
+            "y": 450
+          },
+          {
+            "x": 2800,
+            "y": 450
+          },
+          {
+            "x": 2800,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-220",
+        "points": [
+          {
+            "x": 2700,
+            "y": 450
+          },
+          {
+            "x": 2800,
+            "y": 450
+          },
+          {
+            "x": 2800,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-221",
+        "points": [
+          {
+            "x": 2800,
+            "y": 450
+          },
+          {
+            "x": 3000,
+            "y": 450
+          },
+          {
+            "x": 3000,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-222",
+        "points": [
+          {
+            "x": 2900,
+            "y": 450
+          },
+          {
+            "x": 3000,
+            "y": 450
+          },
+          {
+            "x": 3000,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-223",
+        "points": [
+          {
+            "x": 3000,
+            "y": 450
+          },
+          {
+            "x": 3200,
+            "y": 450
+          },
+          {
+            "x": 3200,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-224",
+        "points": [
+          {
+            "x": 3100,
+            "y": 450
+          },
+          {
+            "x": 3200,
+            "y": 450
+          },
+          {
+            "x": 3200,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-225",
+        "points": [
+          {
+            "x": 3150,
+            "y": 450
+          },
+          {
+            "x": 3300,
+            "y": 450
+          },
+          {
+            "x": 3300,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-226",
+        "points": [
+          {
+            "x": 3250,
+            "y": 450
+          },
+          {
+            "x": 3300,
+            "y": 450
+          },
+          {
+            "x": 3300,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-227",
+        "points": [
+          {
+            "x": 3350,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 350
+          },
+          {
+            "x": 200,
+            "y": 350
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-228",
+        "points": [
+          {
+            "x": 3450,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 450
+          },
+          {
+            "x": 3500,
+            "y": 350
+          },
+          {
+            "x": 100,
+            "y": 350
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-229",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 200,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-230",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 400,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-231",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 550,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-232",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 750,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-233",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 900,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-234",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 1100,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-235",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 1300,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-236",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 1450,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-237",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 1650,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-238",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 1800,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-239",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2000,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-240",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2200,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-241",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2350,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-242",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2550,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-243",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2700,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-244",
+        "points": [
+          {
+            "x": 100,
+            "y": 330
+          },
+          {
+            "x": 2900,
+            "y": 370
+          }
+        ],
+        "net": "GND"
+      },
+      {
+        "id": "wire-245",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 100,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-246",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 300,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-247",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 450,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-248",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 650,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-249",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 800,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-250",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1000,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-251",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1200,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-252",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1350,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-253",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1550,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-254",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1700,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-255",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 1900,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-256",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 2100,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-257",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 2250,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-258",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 2450,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-259",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 2600,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-260",
+        "points": [
+          {
+            "x": 200,
+            "y": 330
+          },
+          {
+            "x": 2800,
+            "y": 370
+          }
+        ],
+        "net": "VCC"
+      },
+      {
+        "id": "wire-261",
+        "points": [
+          {
+            "x": 200,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R3_C1"
+      },
+      {
+        "id": "wire-262",
+        "points": [
+          {
+            "x": 200,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R3_C2"
+      },
+      {
+        "id": "wire-263",
+        "points": [
+          {
+            "x": 200,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R3_C3"
+      },
+      {
+        "id": "wire-264",
+        "points": [
+          {
+            "x": 400,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R5_C1"
+      },
+      {
+        "id": "wire-265",
+        "points": [
+          {
+            "x": 400,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R5_C2"
+      },
+      {
+        "id": "wire-266",
+        "points": [
+          {
+            "x": 400,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R5_C3"
+      },
+      {
+        "id": "wire-267",
+        "points": [
+          {
+            "x": 550,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R7_C1"
+      },
+      {
+        "id": "wire-268",
+        "points": [
+          {
+            "x": 550,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R7_C2"
+      },
+      {
+        "id": "wire-269",
+        "points": [
+          {
+            "x": 550,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R7_C3"
+      },
+      {
+        "id": "wire-270",
+        "points": [
+          {
+            "x": 750,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R9_C1"
+      },
+      {
+        "id": "wire-271",
+        "points": [
+          {
+            "x": 750,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R9_C2"
+      },
+      {
+        "id": "wire-272",
+        "points": [
+          {
+            "x": 750,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R9_C3"
+      },
+      {
+        "id": "wire-273",
+        "points": [
+          {
+            "x": 900,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R11_C1"
+      },
+      {
+        "id": "wire-274",
+        "points": [
+          {
+            "x": 900,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R11_C2"
+      },
+      {
+        "id": "wire-275",
+        "points": [
+          {
+            "x": 900,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R11_C3"
+      },
+      {
+        "id": "wire-276",
+        "points": [
+          {
+            "x": 1100,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R13_C1"
+      },
+      {
+        "id": "wire-277",
+        "points": [
+          {
+            "x": 1100,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R13_C2"
+      },
+      {
+        "id": "wire-278",
+        "points": [
+          {
+            "x": 1100,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R13_C3"
+      },
+      {
+        "id": "wire-279",
+        "points": [
+          {
+            "x": 1300,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R15_C1"
+      },
+      {
+        "id": "wire-280",
+        "points": [
+          {
+            "x": 1300,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R15_C2"
+      },
+      {
+        "id": "wire-281",
+        "points": [
+          {
+            "x": 1300,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R15_C3"
+      },
+      {
+        "id": "wire-282",
+        "points": [
+          {
+            "x": 1450,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R17_C1"
+      },
+      {
+        "id": "wire-283",
+        "points": [
+          {
+            "x": 1450,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R17_C2"
+      },
+      {
+        "id": "wire-284",
+        "points": [
+          {
+            "x": 1450,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R17_C3"
+      },
+      {
+        "id": "wire-285",
+        "points": [
+          {
+            "x": 1650,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R19_C1"
+      },
+      {
+        "id": "wire-286",
+        "points": [
+          {
+            "x": 1650,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R19_C2"
+      },
+      {
+        "id": "wire-287",
+        "points": [
+          {
+            "x": 1650,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R19_C3"
+      },
+      {
+        "id": "wire-288",
+        "points": [
+          {
+            "x": 1800,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R21_C1"
+      },
+      {
+        "id": "wire-289",
+        "points": [
+          {
+            "x": 1800,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R21_C2"
+      },
+      {
+        "id": "wire-290",
+        "points": [
+          {
+            "x": 1800,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R21_C3"
+      },
+      {
+        "id": "wire-291",
+        "points": [
+          {
+            "x": 2000,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R23_C1"
+      },
+      {
+        "id": "wire-292",
+        "points": [
+          {
+            "x": 2000,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R23_C2"
+      },
+      {
+        "id": "wire-293",
+        "points": [
+          {
+            "x": 2000,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R23_C3"
+      },
+      {
+        "id": "wire-294",
+        "points": [
+          {
+            "x": 2200,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R25_C1"
+      },
+      {
+        "id": "wire-295",
+        "points": [
+          {
+            "x": 2200,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R25_C2"
+      },
+      {
+        "id": "wire-296",
+        "points": [
+          {
+            "x": 2200,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R25_C3"
+      },
+      {
+        "id": "wire-297",
+        "points": [
+          {
+            "x": 2350,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R27_C1"
+      },
+      {
+        "id": "wire-298",
+        "points": [
+          {
+            "x": 2350,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R27_C2"
+      },
+      {
+        "id": "wire-299",
+        "points": [
+          {
+            "x": 2350,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R27_C3"
+      },
+      {
+        "id": "wire-300",
+        "points": [
+          {
+            "x": 2550,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R29_C1"
+      },
+      {
+        "id": "wire-301",
+        "points": [
+          {
+            "x": 2550,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R29_C2"
+      },
+      {
+        "id": "wire-302",
+        "points": [
+          {
+            "x": 2550,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R29_C3"
+      },
+      {
+        "id": "wire-303",
+        "points": [
+          {
+            "x": 2700,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R31_C1"
+      },
+      {
+        "id": "wire-304",
+        "points": [
+          {
+            "x": 2700,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R31_C2"
+      },
+      {
+        "id": "wire-305",
+        "points": [
+          {
+            "x": 2700,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R31_C3"
+      },
+      {
+        "id": "wire-306",
+        "points": [
+          {
+            "x": 2900,
+            "y": 470
+          },
+          {
+            "x": 3000,
+            "y": 470
+          }
+        ],
+        "net": "RC_R33_C1"
+      },
+      {
+        "id": "wire-307",
+        "points": [
+          {
+            "x": 2900,
+            "y": 470
+          },
+          {
+            "x": 3150,
+            "y": 470
+          }
+        ],
+        "net": "RC_R33_C2"
+      },
+      {
+        "id": "wire-308",
+        "points": [
+          {
+            "x": 2900,
+            "y": 470
+          },
+          {
+            "x": 3350,
+            "y": 470
+          }
+        ],
+        "net": "RC_R33_C3"
+      }
+    ],
+    "nets": [
+      {
+        "id": "net-1",
+        "name": "VCC"
+      },
+      {
+        "id": "net-2",
+        "name": "GND"
+      },
+      {
+        "id": "net-3",
+        "name": "RC_R3_C1"
+      },
+      {
+        "id": "net-4",
+        "name": "RC_R3_C2"
+      },
+      {
+        "id": "net-5",
+        "name": "RC_R3_C3"
+      },
+      {
+        "id": "net-6",
+        "name": "RC_R5_C1"
+      },
+      {
+        "id": "net-7",
+        "name": "RC_R5_C2"
+      },
+      {
+        "id": "net-8",
+        "name": "RC_R5_C3"
+      },
+      {
+        "id": "net-9",
+        "name": "RC_R7_C1"
+      },
+      {
+        "id": "net-10",
+        "name": "RC_R7_C2"
+      },
+      {
+        "id": "net-11",
+        "name": "RC_R7_C3"
+      },
+      {
+        "id": "net-12",
+        "name": "RC_R9_C1"
+      },
+      {
+        "id": "net-13",
+        "name": "RC_R9_C2"
+      },
+      {
+        "id": "net-14",
+        "name": "RC_R9_C3"
+      },
+      {
+        "id": "net-15",
+        "name": "RC_R11_C1"
+      },
+      {
+        "id": "net-16",
+        "name": "RC_R11_C2"
+      },
+      {
+        "id": "net-17",
+        "name": "RC_R11_C3"
+      },
+      {
+        "id": "net-18",
+        "name": "RC_R13_C1"
+      },
+      {
+        "id": "net-19",
+        "name": "RC_R13_C2"
+      },
+      {
+        "id": "net-20",
+        "name": "RC_R13_C3"
+      },
+      {
+        "id": "net-21",
+        "name": "RC_R15_C1"
+      },
+      {
+        "id": "net-22",
+        "name": "RC_R15_C2"
+      },
+      {
+        "id": "net-23",
+        "name": "RC_R15_C3"
+      },
+      {
+        "id": "net-24",
+        "name": "RC_R17_C1"
+      },
+      {
+        "id": "net-25",
+        "name": "RC_R17_C2"
+      },
+      {
+        "id": "net-26",
+        "name": "RC_R17_C3"
+      },
+      {
+        "id": "net-27",
+        "name": "RC_R19_C1"
+      },
+      {
+        "id": "net-28",
+        "name": "RC_R19_C2"
+      },
+      {
+        "id": "net-29",
+        "name": "RC_R19_C3"
+      },
+      {
+        "id": "net-30",
+        "name": "RC_R21_C1"
+      },
+      {
+        "id": "net-31",
+        "name": "RC_R21_C2"
+      },
+      {
+        "id": "net-32",
+        "name": "RC_R21_C3"
+      },
+      {
+        "id": "net-33",
+        "name": "RC_R23_C1"
+      },
+      {
+        "id": "net-34",
+        "name": "RC_R23_C2"
+      },
+      {
+        "id": "net-35",
+        "name": "RC_R23_C3"
+      },
+      {
+        "id": "net-36",
+        "name": "RC_R25_C1"
+      },
+      {
+        "id": "net-37",
+        "name": "RC_R25_C2"
+      },
+      {
+        "id": "net-38",
+        "name": "RC_R25_C3"
+      },
+      {
+        "id": "net-39",
+        "name": "RC_R27_C1"
+      },
+      {
+        "id": "net-40",
+        "name": "RC_R27_C2"
+      },
+      {
+        "id": "net-41",
+        "name": "RC_R27_C3"
+      },
+      {
+        "id": "net-42",
+        "name": "RC_R29_C1"
+      },
+      {
+        "id": "net-43",
+        "name": "RC_R29_C2"
+      },
+      {
+        "id": "net-44",
+        "name": "RC_R29_C3"
+      },
+      {
+        "id": "net-45",
+        "name": "RC_R31_C1"
+      },
+      {
+        "id": "net-46",
+        "name": "RC_R31_C2"
+      },
+      {
+        "id": "net-47",
+        "name": "RC_R31_C3"
+      },
+      {
+        "id": "net-48",
+        "name": "RC_R33_C1"
+      },
+      {
+        "id": "net-49",
+        "name": "RC_R33_C2"
+      },
+      {
+        "id": "net-50",
+        "name": "RC_R33_C3"
+      }
+    ],
+    "netLabels": [],
+    "powerSymbols": [
+      {
+        "id": "power-2",
+        "netName": "VCC",
+        "position": {
+          "x": 250,
+          "y": 50
+        },
+        "type": "vcc"
+      },
+      {
+        "id": "gnd-1",
+        "netName": "GND",
+        "position": {
+          "x": 100,
+          "y": 3050
+        },
+        "type": "gnd"
+      }
+    ]
+  },
+  "33f94511-d8a5-428c-8dc9-c1be94eceb5c": {
+    "components": [],
+    "wires": [],
+    "nets": [
+      {
+        "id": "net-1",
+        "name": "VCC"
+      },
+      {
+        "id": "net-2",
+        "name": "GND"
+      }
+    ],
+    "netLabels": [],
+    "powerSymbols": [
+      {
+        "id": "power-vcc",
+        "netName": "VCC",
+        "position": {
+          "x": 100,
+          "y": 50
+        },
+        "type": "vcc"
+      },
+      {
+        "id": "gnd-1",
+        "netName": "GND",
+        "position": {
+          "x": 100,
+          "y": 480
+        },
+        "type": "gnd"
+      }
+    ]
+  },
+  "050886e1-aed7-4237-a832-5cab811e074e": {
+    "components": [
+      {
+        "id": "comp-1",
+        "name": "Unknown",
+        "model": "AMS1117-3.3",
+        "position": {
+          "x": 150,
+          "y": 100
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Package_TO_SOT_SMD:SOT-223",
+        "symbol_library": "Regulator_Linear:AMS1117-3.3",
+        "symbol_name": "",
+        "reference": "U2",
+        "category": null
+      },
+      {
+        "id": "comp-2",
+        "name": "Unknown",
+        "model": "STM32F103C8T6",
+        "position": {
+          "x": 250,
+          "y": 300
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+        "symbol_library": "MCU_ST_STM32F1:STM32F103C8Tx",
+        "symbol_name": "",
+        "reference": "U4",
+        "category": null
+      },
+      {
+        "id": "comp-3",
+        "name": "Unknown",
+        "model": "16pin 全功能",
+        "position": {
+          "x": 150,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R1",
+        "category": null
+      },
+      {
+        "id": "comp-4",
+        "name": "Unknown",
+        "model": "4pin 1.27mm间距",
+        "position": {
+          "x": 350,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R2",
+        "category": null
+      },
+      {
+        "id": "comp-5",
+        "name": "Unknown",
+        "model": "4pin 2.54mm排母",
+        "position": {
+          "x": 500,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R3",
+        "category": null
+      },
+      {
+        "id": "comp-6",
+        "name": "Unknown",
+        "model": "4pin 2.54mm排母",
+        "position": {
+          "x": 700,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R4",
+        "category": null
+      },
+      {
+        "id": "comp-7",
+        "name": "Unknown",
+        "model": "8MHz ±20ppm",
+        "position": {
+          "x": 850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R5",
+        "category": null
+      },
+      {
+        "id": "comp-8",
+        "name": "Unknown",
+        "model": "22pF NPO",
+        "position": {
+          "x": 1050,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R6",
+        "category": null
+      },
+      {
+        "id": "comp-9",
+        "name": "Unknown",
+        "model": "22pF NPO",
+        "position": {
+          "x": 1250,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R7",
+        "category": null
+      },
+      {
+        "id": "comp-10",
+        "name": "Unknown",
+        "model": "轻触开关",
+        "position": {
+          "x": 1400,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R8",
+        "category": null
+      },
+      {
+        "id": "comp-11",
+        "name": "Unknown",
+        "model": "轻触开关",
+        "position": {
+          "x": 1600,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R9",
+        "category": null
+      },
+      {
+        "id": "comp-12",
+        "name": "Unknown",
+        "model": "轻触开关",
+        "position": {
+          "x": 1750,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0603_1608Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R10",
+        "category": null
+      },
+      {
+        "id": "comp-13",
+        "name": "Unknown",
+        "model": "绿色 3.3V",
+        "position": {
+          "x": 1950,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R11",
+        "category": null
+      },
+      {
+        "id": "comp-14",
+        "name": "Unknown",
+        "model": "绿色 3.3V",
+        "position": {
+          "x": 2150,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R12",
+        "category": null
+      },
+      {
+        "id": "comp-15",
+        "name": "Unknown",
+        "model": "绿色 3.3V",
+        "position": {
+          "x": 2300,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R13",
+        "category": null
+      },
+      {
+        "id": "comp-16",
+        "name": "Unknown",
+        "model": "绿色 3.3V",
+        "position": {
+          "x": 2500,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R14",
+        "category": null
+      },
+      {
+        "id": "comp-17",
+        "name": "Unknown",
+        "model": "330Ω ±5%",
+        "position": {
+          "x": 2650,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R15",
+        "category": null
+      },
+      {
+        "id": "comp-18",
+        "name": "Unknown",
+        "model": "330Ω ±5%",
+        "position": {
+          "x": 2850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R16",
+        "category": null
+      },
+      {
+        "id": "comp-19",
+        "name": "Unknown",
+        "model": "330Ω ±5%",
+        "position": {
+          "x": 3050,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R17",
+        "category": null
+      },
+      {
+        "id": "comp-20",
+        "name": "Unknown",
+        "model": "330Ω ±5%",
+        "position": {
+          "x": 3200,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R18",
+        "category": null
+      },
+      {
+        "id": "comp-21",
+        "name": "Unknown",
+        "model": "10kΩ ±5%",
+        "position": {
+          "x": 3400,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R19",
+        "category": null
+      },
+      {
+        "id": "comp-22",
+        "name": "Unknown",
+        "model": "10kΩ ±5%",
+        "position": {
+          "x": 3550,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R20",
+        "category": null
+      },
+      {
+        "id": "comp-23",
+        "name": "Unknown",
+        "model": "10μF 16V",
+        "position": {
+          "x": 3750,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R21",
+        "category": null
+      },
+      {
+        "id": "comp-24",
+        "name": "Unknown",
+        "model": "10μF 6.3V",
+        "position": {
+          "x": 3950,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R22",
+        "category": null
+      },
+      {
+        "id": "comp-25",
+        "name": "Unknown",
+        "model": "100nF 10V",
+        "position": {
+          "x": 4100,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R23",
+        "category": null
+      },
+      {
+        "id": "comp-26",
+        "name": "Unknown",
+        "model": "100nF 10V",
+        "position": {
+          "x": 4300,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R24",
+        "category": null
+      },
+      {
+        "id": "comp-27",
+        "name": "Unknown",
+        "model": "100nF 10V",
+        "position": {
+          "x": 4450,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R25",
+        "category": null
+      },
+      {
+        "id": "comp-28",
+        "name": "Unknown",
+        "model": "100nF 10V",
+        "position": {
+          "x": 4650,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Capacitor_SMD:C_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R26",
+        "category": null
+      },
+      {
+        "id": "comp-29",
+        "name": "Unknown",
+        "model": "红色 3.3V",
+        "position": {
+          "x": 4850,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R27",
+        "category": null
+      },
+      {
+        "id": "comp-30",
+        "name": "Unknown",
+        "model": "1kΩ ±5%",
+        "position": {
+          "x": 5000,
+          "y": 400
+        },
+        "pins": [
+          {
+            "number": "1",
+            "name": "P1",
+            "type": "passive",
+            "position": {
+              "x": -50,
+              "y": -30
+            },
+            "direction": "left"
+          },
+          {
+            "number": "2",
+            "name": "P2",
+            "type": "passive",
+            "position": {
+              "x": 50,
+              "y": -30
+            },
+            "direction": "right"
+          }
+        ],
+        "footprint": "Resistor_SMD:R_0805_2012Metric",
+        "symbol_library": "Device:R",
+        "symbol_name": "",
+        "reference": "R28",
+        "category": null
+      }
+    ],
+    "wires": [],
+    "nets": [
+      {
+        "id": "net-1",
+        "name": "VCC"
+      },
+      {
+        "id": "net-2",
+        "name": "GND"
+      }
+    ],
+    "netLabels": [],
+    "powerSymbols": [
+      {
+        "id": "power-vcc",
+        "netName": "VCC",
+        "position": {
+          "x": 100,
+          "y": 50
+        },
+        "type": "vcc"
+      },
+      {
+        "id": "gnd-1",
+        "netName": "GND",
+        "position": {
+          "x": 100,
+          "y": 3670
+        },
+        "type": "gnd"
+      }
+    ]
   }
 }

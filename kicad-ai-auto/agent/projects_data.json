@@ -188,7 +188,7 @@
     "schematicFile": null,
     "pcbFile": "/api/v1/projects/e086157d-28d3-45d1-9106-d168b88bb3bb/pcb/design",
     "createdAt": "2026-04-03T11:09:46.491572",
-    "updatedAt": "2026-04-03T15:43:14.284015",
+    "updatedAt": "2026-04-04T07:06:50.425529",
     "ownerId": "15"
   },
   "f925959c-f780-4d8d-97bc-9bae7b1c9bcf": {
@@ -202,5 +202,41 @@
     "createdAt": "2026-04-03T13:54:57.300770",
     "updatedAt": "2026-04-03T13:54:57.300770",
     "ownerId": "15"
+  },
+  "1052eaad-1802-4add-bb57-76b365644fc8": {
+    "id": "1052eaad-1802-4add-bb57-76b365644fc8",
+    "name": "LED驱动控制系统",
+    "description": "基于单片机控制的5V LED驱动系统",
+    "status": "active",
+    "projectFile": null,
+    "schematicFile": "/api/v1/projects/1052eaad-1802-4add-bb57-76b365644fc8/schematic",
+    "pcbFile": "/api/v1/projects/1052eaad-1802-4add-bb57-76b365644fc8/pcb/design",
+    "createdAt": "2026-04-04T23:37:12.953458",
+    "updatedAt": "2026-04-04T23:37:36.767228",
+    "ownerId": "5d1f63bf-ea25-4fe5-8719-b744a56a4333"
+  },
+  "33f94511-d8a5-428c-8dc9-c1be94eceb5c": {
+    "id": "33f94511-d8a5-428c-8dc9-c1be94eceb5c",
+    "name": "AI生成项目-1775318034288",
+    "description": "一款支持DALI协议的高效率、高功率因数AC-DC LED驱动电源，输入110V AC，输出24V/2A，具备完整的调光、编址、保护及通讯功能。",
+    "status": "active",
+    "projectFile": null,
+    "schematicFile": null,
+    "pcbFile": null,
+    "createdAt": "2026-04-04T23:53:54.298169",
+    "updatedAt": "2026-04-04T23:53:54.298169",
+    "ownerId": "16"
+  },
+  "050886e1-aed7-4237-a832-5cab811e074e": {
+    "id": "050886e1-aed7-4237-a832-5cab811e074e",
+    "name": "AI生成项目-1775518265498",
+    "description": "",
+    "status": "active",
+    "projectFile": null,
+    "schematicFile": "/api/v1/projects/050886e1-aed7-4237-a832-5cab811e074e/schematic",
+    "pcbFile": "/api/v1/projects/050886e1-aed7-4237-a832-5cab811e074e/pcb/design",
+    "createdAt": "2026-04-07T07:31:05.510368",
+    "updatedAt": "2026-04-07T07:31:27.078902",
+    "ownerId": "73cd9f08-4f28-4f95-8161-d57dacbdd87b"
   }
 }
